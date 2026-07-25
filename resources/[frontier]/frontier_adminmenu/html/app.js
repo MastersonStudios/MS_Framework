@@ -13,6 +13,7 @@ const state = {
     selectedPlayer: null,
     selectedWeather: null,
     page: 'overview',
+    selectedSupportLog: null,
     worldTab: 'npc',
     craftAdminTab: 'recipes',
     dataAdminTab: 'items',
@@ -468,6 +469,130 @@ function renderDataAdmin() {
     renderProps();
 }
 
+const supportLogTypes = {
+    connection: { label: 'Eingehende Verbindung', icon: '↪' },
+    player_spawn: { label: 'Playerspawn', icon: '⌖' },
+    damage_dealt: { label: 'Ausgeteilter Schaden', icon: '⚔' },
+    killed_by: { label: 'Getötet von', icon: '☠' }
+};
+
+function formatLogDate(value) {
+    if (!value) return 'Zeit unbekannt';
+    const date = new Date(typeof value === 'string' ? value.replace(' ', 'T') : value);
+    if (Number.isNaN(date.getTime())) return String(value);
+    return new Intl.DateTimeFormat('de-DE', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+    }).format(date);
+}
+
+function supportLogTitle(log) {
+    if (log.type === 'connection') return `${log.actorName} verbindet sich`;
+    if (log.type === 'player_spawn') return `${log.actorName} ist gespawnt`;
+    if (log.type === 'damage_dealt') return `${log.actorName} → ${log.targetName || 'Unbekannt'}`;
+    if (log.type === 'killed_by') return `${log.targetName || 'Unbekannt'} getötet von ${log.actorName}`;
+    return log.actorName || 'Unbekanntes Ereignis';
+}
+
+function supportLogMeta(log) {
+    if (log.type === 'damage_dealt') {
+        return `${log.damage ?? 0} Schaden · Waffe ${log.weaponHash || 'unbekannt'}`;
+    }
+    if (log.type === 'killed_by') return `Tödlicher Treffer · Waffe ${log.weaponHash || 'unbekannt'}`;
+    if (log.type === 'player_spawn') return `Charakter #${log.actorCharacterId || '–'} · Server-ID ${log.actorSource || '–'}`;
+    return `${log.actorIdentifier || 'Keine Lizenz'} · temporäre ID ${log.actorSource || '–'}`;
+}
+
+function supportPartyMeta(source, characterId) {
+    return `Server-ID ${source || '–'} · Charakter #${characterId || '–'}`;
+}
+
+function renderSupportDetail() {
+    const logs = state.data?.support?.logs || [];
+    const log = logs.find((entry) => Number(entry.id) === Number(state.selectedSupportLog));
+    $('#support-log-empty').classList.toggle('hidden', Boolean(log));
+    $('#support-log-detail').classList.toggle('hidden', !log);
+    if (!log) return;
+
+    const definition = supportLogTypes[log.type] || { label: log.type, icon: '•' };
+    $('#support-detail-type').textContent = definition.label.toUpperCase();
+    $('#support-detail-title').textContent = supportLogTitle(log);
+    $('#support-detail-time').textContent = formatLogDate(log.createdAt);
+    $('#support-detail-id').textContent = `#${log.id}`;
+    $('#support-actor-name').textContent = log.actorName || 'Unbekannt';
+    $('#support-actor-meta').textContent = supportPartyMeta(log.actorSource, log.actorCharacterId);
+    $('#support-actor-license').textContent = log.actorIdentifier || 'Keine Lizenz hinterlegt';
+    $('#support-target-name').textContent = log.targetName || 'Kein Ziel';
+    $('#support-target-meta').textContent = supportPartyMeta(log.targetSource, log.targetCharacterId);
+    $('#support-target-license').textContent = log.targetIdentifier || 'Keine Lizenz hinterlegt';
+    $('#support-detail-damage').textContent = log.damage == null ? '–' : String(log.damage);
+    $('#support-detail-weapon').textContent = log.weaponHash || '–';
+    $('#support-detail-json').textContent = JSON.stringify(log.details || {}, null, 2);
+    $('#support-retention').textContent =
+        `Aufbewahrung: ${state.data?.support?.retentionDays || 30} Tage · Anzeige: letzte ${state.data?.support?.limit || 500} Einträge`;
+}
+
+function renderSupportLogs() {
+    const logs = state.data?.support?.logs || [];
+    $('#support-connections').textContent = String(logs.filter((log) => log.type === 'connection').length);
+    $('#support-spawns').textContent = String(logs.filter((log) => log.type === 'player_spawn').length);
+    $('#support-damage').textContent = String(logs.filter((log) => log.type === 'damage_dealt').length);
+    $('#support-kills').textContent = String(logs.filter((log) => log.type === 'killed_by').length);
+
+    const query = $('#support-log-search').value.trim().toLowerCase();
+    const type = $('#support-log-type').value;
+    const visible = logs.filter((log) => {
+        if (type !== 'all' && log.type !== type) return false;
+        const haystack = [
+            log.id,
+            log.actorName,
+            log.actorSource,
+            log.actorCharacterId,
+            log.actorIdentifier,
+            log.targetName,
+            log.targetSource,
+            log.targetCharacterId,
+            log.targetIdentifier,
+            log.weaponHash,
+            log.damage
+        ].join(' ').toLowerCase();
+        return haystack.includes(query);
+    });
+
+    if (!visible.some((log) => Number(log.id) === Number(state.selectedSupportLog))) {
+        state.selectedSupportLog = visible[0]?.id ?? null;
+    }
+
+    $('#support-log-count').textContent = String(visible.length);
+    const list = $('#support-log-list');
+    list.replaceChildren();
+    visible.forEach((log) => {
+        const definition = supportLogTypes[log.type] || { label: log.type, icon: '•' };
+        const row = document.createElement('button');
+        row.type = 'button';
+        row.className = `support-log-row type-${log.type}${Number(log.id) === Number(state.selectedSupportLog) ? ' selected' : ''}`;
+        const copy = document.createElement('span');
+        copy.className = 'support-log-copy';
+        copy.append(text('strong', supportLogTitle(log)), text('small', `${definition.label} · ${supportLogMeta(log)}`));
+        row.append(
+            text('span', definition.icon, 'support-log-icon'),
+            copy,
+            text('time', formatLogDate(log.createdAt))
+        );
+        row.addEventListener('click', () => {
+            state.selectedSupportLog = log.id;
+            renderSupportLogs();
+        });
+        list.append(row);
+    });
+    if (!visible.length) list.append(text('div', 'Keine passenden Support-Logs gefunden.', 'empty-state'));
+    renderSupportDetail();
+}
+
 function fillRightsForPlayer() {
     const source = Number($('#rights-player').value);
     const player = state.data?.players?.find((entry) => entry.source === source);
@@ -561,6 +686,7 @@ function applyData(data) {
     renderWorldList();
     renderCraftingAdmin();
     renderDataAdmin();
+    renderSupportLogs();
     renderRights();
     applyPermissionVisibility();
 }
@@ -627,6 +753,8 @@ $('#refresh').addEventListener('click', () => post('refresh'));
 $('#close-crafting').addEventListener('click', closeCrafting);
 $('#player-search').addEventListener('input', renderPlayers);
 $('#world-search').addEventListener('input', renderWorldList);
+$('#support-log-search').addEventListener('input', renderSupportLogs);
+$('#support-log-type').addEventListener('change', renderSupportLogs);
 $('#data-item-search').addEventListener('input', renderDataItems);
 $('#prop-search').addEventListener('input', renderProps);
 $('#rights-player').addEventListener('change', fillRightsForPlayer);
@@ -877,7 +1005,7 @@ window.addEventListener('message', ({ data }) => {
 
 const mockData = {
     selfId: 4,
-    permissions: { access: true, players: true, economy: true, weather: true, world: true, crafting: true, data: true, rights: true },
+    permissions: { access: true, players: true, economy: true, weather: true, world: true, crafting: true, data: true, support: true, rights: true },
     permissionDefinitions: [
         { id: 'access', label: 'ACP-Zugriff', description: 'Darf das Administrations-Control-Panel öffnen.' },
         { id: 'players', label: 'Spielerverwaltung', description: 'Teleport, Heilen, Wiederbeleben, Einfrieren, Kick und Noclip.' },
@@ -886,6 +1014,7 @@ const mockData = {
         { id: 'world', label: 'World Builder', description: 'Darf NPCs, Storages und Türen verwalten.' },
         { id: 'crafting', label: 'Crafting', description: 'Darf Rezepte und Crafting-Punkte verwalten.' },
         { id: 'data', label: 'Data Admin', description: 'Darf Datenbank-Items erstellen und löschen.' },
+        { id: 'support', label: 'Support Admin', description: 'Darf Verbindungs-, Spawn-, Schadens- und Tötungslogs einsehen.' },
         { id: 'rights', label: 'Rechteverwaltung', description: 'Darf ACP-Rechte verteilen und entziehen.' }
     ],
     players: [
@@ -936,6 +1065,16 @@ const mockData = {
         ],
         points: [{ id: 1, label: 'Werkbank Valentine', radius: 2, accessJob: null, recipeIds: [1, 2], x: -274.1, y: 810.2, z: 119.3, heading: 80 }]
     },
+    support: {
+        retentionDays: 30,
+        limit: 500,
+        logs: [
+            { id: 104, type: 'killed_by', actorSource: 4, actorCharacterId: 3, actorIdentifier: 'license:attacker', actorName: 'Arthur Masterson', targetSource: 12, targetCharacterId: 8, targetIdentifier: 'license:victim', targetName: 'Elias Mercer', damage: 88, weaponHash: '3676417221', details: { willKill: true, hitComponent: 2 }, createdAt: '2026-07-25 21:44:13' },
+            { id: 103, type: 'damage_dealt', actorSource: 4, actorCharacterId: 3, actorIdentifier: 'license:attacker', actorName: 'Arthur Masterson', targetSource: 12, targetCharacterId: 8, targetIdentifier: 'license:victim', targetName: 'Elias Mercer', damage: 32, weaponHash: '3676417221', details: { willKill: false, hitComponent: 3 }, createdAt: '2026-07-25 21:44:11' },
+            { id: 102, type: 'player_spawn', actorSource: 12, actorCharacterId: 8, actorIdentifier: 'license:victim', actorName: 'Elias Mercer', details: { job: 'unemployed' }, createdAt: '2026-07-25 21:40:02' },
+            { id: 101, type: 'connection', actorSource: 12, actorIdentifier: 'license:victim', actorName: 'EliasM', details: { phase: 'playerConnecting' }, createdAt: '2026-07-25 21:39:43' }
+        ]
+    },
     limits: { money: 100000, items: 50, weatherTransition: 30, craftingAmount: 100, craftingIngredients: 8, craftingDuration: 30000 }
 };
 
@@ -960,7 +1099,7 @@ if (preview) {
     } else {
         app.classList.remove('hidden');
         applyData(mockData);
-        if (['players', 'world', 'crafting', 'data', 'rights'].includes(preview)) choosePage(preview);
+        if (['players', 'support', 'world', 'crafting', 'data', 'rights'].includes(preview)) choosePage(preview);
     }
 }
 

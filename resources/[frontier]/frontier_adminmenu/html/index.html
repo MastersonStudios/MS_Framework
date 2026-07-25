@@ -35,6 +35,9 @@
                         <button class="nav-button" data-tab="players" data-permission="players,economy" type="button">
                             <span>♟</span><span>Spieler</span>
                         </button>
+                        <button class="nav-button" data-tab="support" data-permission="support" type="button">
+                            <span>☏</span><span>Support Admin</span>
+                        </button>
                         <button class="nav-button" data-tab="world" data-permission="world" type="button">
                             <span>◇</span><span>World Builder</span>
                         </button>
@@ -143,6 +146,82 @@
                                     </div>
                                 </section>
                             </div>
+                        </div>
+                    </section>
+
+                    <section class="page" data-page="support">
+                        <header class="page-header">
+                            <div><p class="eyebrow">SUPPORT &amp; NACHVOLLZIEHBARKEIT</p><h2>Support Admin</h2></div>
+                            <div class="segmented" id="support-admin-tabs">
+                                <button class="active" type="button">Logs</button>
+                            </div>
+                        </header>
+
+                        <div class="metric-grid support-metrics">
+                            <article class="metric"><span>VERBINDUNGEN</span><strong id="support-connections">0</strong><small>eingehende Verbindungen</small></article>
+                            <article class="metric"><span>PLAYERSPAWNS</span><strong id="support-spawns">0</strong><small>geladene Charaktere</small></article>
+                            <article class="metric"><span>SCHADEN</span><strong id="support-damage">0</strong><small>ausgeteilte Treffer</small></article>
+                            <article class="metric"><span>GETÖTET VON</span><strong id="support-kills">0</strong><small>tödliche Spielertreffer</small></article>
+                        </div>
+
+                        <div class="support-log-layout">
+                            <aside class="list-panel support-log-panel">
+                                <div class="panel-heading">
+                                    <div><p class="eyebrow">EREIGNISREGISTER</p><h3>Logs</h3></div>
+                                    <span id="support-log-count" class="count-badge">0</span>
+                                </div>
+                                <div class="support-log-filters">
+                                    <label class="search"><span>⌕</span><input id="support-log-search" type="search" placeholder="Name, ID, Lizenz oder Waffe"></label>
+                                    <select id="support-log-type" aria-label="Logtyp">
+                                        <option value="all">Alle Ereignisse</option>
+                                        <option value="connection">Eingehende Verbindungen</option>
+                                        <option value="player_spawn">Playerspawn</option>
+                                        <option value="damage_dealt">Ausgeteilter Schaden</option>
+                                        <option value="killed_by">Getötet von</option>
+                                    </select>
+                                </div>
+                                <div id="support-log-list" class="support-log-list"></div>
+                            </aside>
+
+                            <div id="support-log-empty" class="empty-state support-log-empty">
+                                <span>☏</span>
+                                <h3>Log auswählen</h3>
+                                <p>Wähle links ein Ereignis aus, um Akteur, Ziel und technische Details zu prüfen.</p>
+                            </div>
+
+                            <article id="support-log-detail" class="detail-panel support-log-detail hidden">
+                                <header class="detail-header">
+                                    <div>
+                                        <p id="support-detail-type" class="eyebrow">EREIGNIS</p>
+                                        <h3 id="support-detail-title">Logeintrag</h3>
+                                        <p id="support-detail-time" class="muted"></p>
+                                    </div>
+                                    <span id="support-detail-id" class="count-badge">#0</span>
+                                </header>
+                                <div class="support-parties">
+                                    <section>
+                                        <span>AKTEUR</span>
+                                        <strong id="support-actor-name">–</strong>
+                                        <small id="support-actor-meta">–</small>
+                                        <code id="support-actor-license">–</code>
+                                    </section>
+                                    <section>
+                                        <span>ZIEL</span>
+                                        <strong id="support-target-name">–</strong>
+                                        <small id="support-target-meta">–</small>
+                                        <code id="support-target-license">–</code>
+                                    </section>
+                                </div>
+                                <div class="stat-row support-combat-stats">
+                                    <div><span>SCHADEN</span><strong id="support-detail-damage">–</strong></div>
+                                    <div><span>WAFFENHASH</span><strong id="support-detail-weapon">–</strong></div>
+                                </div>
+                                <section class="action-block">
+                                    <h4>Technische Details</h4>
+                                    <pre id="support-detail-json" class="support-detail-json">{}</pre>
+                                </section>
+                                <p id="support-retention" class="muted support-retention"></p>
+                            </article>
                         </div>
                     </section>
 

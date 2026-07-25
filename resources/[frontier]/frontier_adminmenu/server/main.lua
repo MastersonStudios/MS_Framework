@@ -5,6 +5,10 @@ local CraftingRecipes = {}
 local CraftingPoints = {}
 local CraftingLocks = {}
 local LastActions = {}
+local PendingSupportLogs = {}
+local RecentKills = {}
+local DroppedSupportLogs = 0
+local LastSupportLogError = -10000
 local CurrentWeather = AdminMenuConfig.DefaultWeather
 local CurrentTransition = AdminMenuConfig.DefaultTransition
 local Ready = false
@@ -166,6 +170,95 @@ local function playerCoordinates(source)
         z = coords.z,
         w = GetEntityHeading(ped)
     }
+end
+
+local function supportSnapshot(source, options)
+    options = type(options) == 'table' and options or {}
+    source = tonumber(source)
+    local player = options.player or (source and exports.frontier_core:GetPlayer(source))
+    return {
+        source = source,
+        characterId = player and tonumber(player.characterId) or nil,
+        identifier = options.identifier or (source and getLicense(source)) or nil,
+        name = options.name
+            or (player and player:getName())
+            or (source and GetPlayerName(source))
+            or 'Unbekannt',
+        serverName = options.serverName or (source and GetPlayerName(source)) or nil,
+        coords = source and not options.skipCoords and playerCoordinates(source) or nil
+    }
+end
+
+local function queueSupportLog(eventType, actor, target, data)
+    local knownTypes = {
+        connection = true,
+        player_spawn = true,
+        damage_dealt = true,
+        killed_by = true
+    }
+    if not knownTypes[eventType] or type(actor) ~= 'table' then return end
+
+    local maximum = math.max(100, math.min(
+        20000,
+        math.floor(tonumber(AdminMenuConfig.SupportLogQueueLimit) or 5000)
+    ))
+    if #PendingSupportLogs >= maximum then
+        DroppedSupportLogs = DroppedSupportLogs + 1
+        return
+    end
+
+    data = type(data) == 'table' and data or {}
+    local details = type(data.details) == 'table' and data.details or {}
+    PendingSupportLogs[#PendingSupportLogs + 1] = {
+        eventType = eventType,
+        actorSource = actor.source,
+        actorCharacterId = actor.characterId,
+        actorIdentifier = actor.identifier,
+        actorName = tostring(actor.name or 'Unbekannt'):sub(1, 80),
+        targetSource = target and target.source or nil,
+        targetCharacterId = target and target.characterId or nil,
+        targetIdentifier = target and target.identifier or nil,
+        targetName = target and tostring(target.name or 'Unbekannt'):sub(1, 80) or nil,
+        damage = data.damage and math.max(0, math.min(100000, math.floor(tonumber(data.damage) or 0))) or nil,
+        weaponHash = data.weaponHash and tonumber(data.weaponHash) or nil,
+        details = next(details) and json.encode(details) or nil
+    }
+end
+
+local function supportLogRows()
+    local limit = math.max(25, math.min(
+        2000,
+        math.floor(tonumber(AdminMenuConfig.SupportLogLimit) or 500)
+    ))
+    local rows = MySQL.query.await(([[
+        SELECT id, event_type, actor_source, actor_character_id, actor_identifier, actor_name,
+               target_source, target_character_id, target_identifier, target_name,
+               damage_amount, weapon_hash, details, created_at
+        FROM frontier_support_logs
+        ORDER BY id DESC
+        LIMIT %d
+    ]]):format(limit)) or {}
+
+    local logs = {}
+    for _, row in ipairs(rows) do
+        logs[#logs + 1] = {
+            id = tonumber(row.id),
+            type = row.event_type,
+            actorSource = tonumber(row.actor_source),
+            actorCharacterId = tonumber(row.actor_character_id),
+            actorIdentifier = row.actor_identifier,
+            actorName = row.actor_name,
+            targetSource = tonumber(row.target_source),
+            targetCharacterId = tonumber(row.target_character_id),
+            targetIdentifier = row.target_identifier,
+            targetName = row.target_name,
+            damage = tonumber(row.damage_amount),
+            weaponHash = row.weapon_hash and tostring(row.weapon_hash) or nil,
+            details = decodeTable(row.details),
+            createdAt = row.created_at
+        }
+    end
+    return logs
 end
 
 local function inventoryCount(player)
@@ -337,6 +430,15 @@ local function payload(source)
             recipes = sortedRows(CraftingRecipes),
             points = sortedRows(CraftingPoints)
         } or nil,
+        support = permissions.support and {
+            logs = supportLogRows(),
+            retentionDays = math.max(1, math.min(3650, math.floor(
+                tonumber(AdminMenuConfig.SupportLogRetentionDays) or 30
+            ))),
+            limit = math.max(25, math.min(2000, math.floor(
+                tonumber(AdminMenuConfig.SupportLogLimit) or 500
+            )))
+        } or nil,
         worldBuilder = worldBuilderData(source),
         limits = {
             money = AdminMenuConfig.MaxMoneyGrant,
@@ -420,10 +522,44 @@ local function createTables()
             KEY idx_frontier_crafting_points_position (x, y)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     ]])
+    MySQL.query.await([[
+        CREATE TABLE IF NOT EXISTS frontier_support_logs (
+            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            event_type VARCHAR(32) NOT NULL,
+            actor_source INT UNSIGNED NULL,
+            actor_character_id BIGINT UNSIGNED NULL,
+            actor_identifier VARCHAR(100) NULL,
+            actor_name VARCHAR(80) NOT NULL,
+            target_source INT UNSIGNED NULL,
+            target_character_id BIGINT UNSIGNED NULL,
+            target_identifier VARCHAR(100) NULL,
+            target_name VARCHAR(80) NULL,
+            damage_amount INT UNSIGNED NULL,
+            weapon_hash BIGINT NULL,
+            details LONGTEXT NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY idx_frontier_support_logs_created (created_at),
+            KEY idx_frontier_support_logs_type_time (event_type, created_at),
+            KEY idx_frontier_support_logs_actor (actor_character_id, created_at),
+            KEY idx_frontier_support_logs_target (target_character_id, created_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    ]])
+end
+
+local function cleanupSupportLogs()
+    local retentionDays = math.max(1, math.min(
+        3650,
+        math.floor(tonumber(AdminMenuConfig.SupportLogRetentionDays) or 30)
+    ))
+    MySQL.update.await(([[DELETE FROM frontier_support_logs
+        WHERE created_at < DATE_SUB(CURRENT_TIMESTAMP, INTERVAL %d DAY)
+    ]]):format(retentionDays))
 end
 
 MySQL.ready(function()
     createTables()
+    cleanupSupportLogs()
     for _, row in ipairs(MySQL.query.await('SELECT * FROM frontier_admin_permissions') or {}) do
         AdminGrants[row.identifier] = {
             displayName = row.display_name,
@@ -1058,7 +1194,110 @@ RegisterNetEvent('frontier_adminmenu:server:craft', function(pointId, recipeId)
     craftingView(source, point, player)
 end)
 
-AddEventHandler('frontier:server:playerLoaded', function(source)
+local function supportDetails(actor, target, extra)
+    local details = type(extra) == 'table' and extra or {}
+    details.actorServerName = actor and actor.serverName or nil
+    details.actorCoords = actor and actor.coords or nil
+    details.targetServerName = target and target.serverName or nil
+    details.targetCoords = target and target.coords or nil
+    return details
+end
+
+local function playerSourceFromNetworkId(networkId)
+    networkId = tonumber(networkId)
+    if not networkId or networkId < 1 then return nil end
+    local success, entity = pcall(NetworkGetEntityFromNetworkId, networkId)
+    if not success or not entity or entity == 0 then return nil end
+
+    local owner = tonumber(NetworkGetEntityOwner(entity))
+    if owner and owner > 0 and GetPlayerPed(owner) == entity
+        and exports.frontier_core:GetPlayer(owner) then
+        return owner
+    end
+    for playerSource in pairs(exports.frontier_core:GetPlayers()) do
+        playerSource = tonumber(playerSource)
+        if playerSource and GetPlayerPed(playerSource) == entity then return playerSource end
+    end
+end
+
+local function damageVictim(data)
+    if type(data) ~= 'table' then return nil end
+    local victim = playerSourceFromNetworkId(data.hitGlobalId)
+    if victim then return victim end
+    for _, networkId in ipairs(type(data.hitGlobalIds) == 'table' and data.hitGlobalIds or {}) do
+        victim = playerSourceFromNetworkId(networkId)
+        if victim then return victim end
+    end
+end
+
+AddEventHandler('playerConnecting', function(playerName)
+    local playerSource = source
+    local actor = supportSnapshot(playerSource, {
+        name = tostring(playerName or 'Unbekannt'),
+        serverName = tostring(playerName or 'Unbekannt'),
+        skipCoords = true
+    })
+    queueSupportLog('connection', actor, nil, {
+        details = supportDetails(actor, nil, { phase = 'playerConnecting' })
+    })
+end)
+
+AddEventHandler('weaponDamageEvent', function(sender, data)
+    sender = tonumber(sender)
+    if not sender or sender < 1 or type(data) ~= 'table' then return end
+    local victimSource = damageVictim(data)
+    if not victimSource or victimSource == sender then return end
+
+    local actorPlayer = exports.frontier_core:GetPlayer(sender)
+    local targetPlayer = exports.frontier_core:GetPlayer(victimSource)
+    if not actorPlayer or not targetPlayer then return end
+
+    local actor = supportSnapshot(sender, { player = actorPlayer })
+    local target = supportSnapshot(victimSource, { player = targetPlayer })
+    local damage = math.max(0, math.floor(tonumber(data.weaponDamage) or 0))
+    local minimumDamage = math.max(0, math.floor(
+        tonumber(AdminMenuConfig.SupportLogMinimumDamage) or 1
+    ))
+    local willKill = data.willKill == true or tonumber(data.willKill) == 1
+    local details = supportDetails(actor, target, {
+        willKill = willKill,
+        damageFlags = tonumber(data.damageFlags),
+        damageType = tonumber(data.damageType),
+        hitComponent = tonumber(data.hitComponent)
+    })
+
+    if damage >= minimumDamage then
+        queueSupportLog('damage_dealt', actor, target, {
+            damage = damage,
+            weaponHash = data.weaponType,
+            details = details
+        })
+    end
+
+    if willKill then
+        local killKey = target.characterId or target.source
+        local now = GetGameTimer()
+        if killKey and (not RecentKills[killKey] or now - RecentKills[killKey] > 2000) then
+            RecentKills[killKey] = now
+            queueSupportLog('killed_by', actor, target, {
+                damage = damage,
+                weaponHash = data.weaponType,
+                details = details
+            })
+        end
+    end
+end)
+
+AddEventHandler('frontier:server:playerLoaded', function(source, player)
+    if player then
+        local actor = supportSnapshot(source, { player = player })
+        queueSupportLog('player_spawn', actor, nil, {
+            details = supportDetails(actor, nil, {
+                characterId = tonumber(player.characterId),
+                job = player.job
+            })
+        })
+    end
     SetTimeout(1200, function()
         if not GetPlayerName(source) then return end
         syncCraftingPoints(source)
@@ -1088,6 +1327,8 @@ AddEventHandler('frontier:server:onboardingCompleted', function(source)
 end)
 
 AddEventHandler('frontier:server:playerUnloaded', function(source)
+    local player = exports.frontier_core:GetPlayer(source)
+    if player then RecentKills[player.characterId] = nil end
     FrozenPlayers[source] = nil
     CraftingLocks[source] = nil
     TriggerClientEvent('frontier_adminmenu:client:setFrozen', source, false)
@@ -1095,6 +1336,8 @@ AddEventHandler('frontier:server:playerUnloaded', function(source)
 end)
 
 AddEventHandler('playerDropped', function()
+    local player = exports.frontier_core:GetPlayer(source)
+    if player then RecentKills[player.characterId] = nil end
     FrozenPlayers[source] = nil
     OpenMenus[source] = nil
     CraftingLocks[source] = nil
@@ -1103,6 +1346,91 @@ AddEventHandler('playerDropped', function()
         if key:sub(1, #prefix) == prefix then LastActions[key] = nil end
     end
     refreshAllMenus()
+end)
+
+local function flushSupportLogs()
+    if not Ready or #PendingSupportLogs == 0 then return end
+    local batchSize = math.max(1, math.min(
+        250,
+        math.floor(tonumber(AdminMenuConfig.SupportLogBatchSize) or 50)
+    ))
+    local batch = {}
+    for _ = 1, math.min(batchSize, #PendingSupportLogs) do
+        batch[#batch + 1] = table.remove(PendingSupportLogs, 1)
+    end
+
+    local placeholders = {}
+    local parameters = {}
+    for _, entry in ipairs(batch) do
+        placeholders[#placeholders + 1] = [[
+            (?, NULLIF(?, 0), NULLIF(?, 0), NULLIF(?, ''), ?,
+             NULLIF(?, 0), NULLIF(?, 0), NULLIF(?, ''), NULLIF(?, ''),
+             NULLIF(?, -1), NULLIF(?, ''), NULLIF(?, ''))
+        ]]
+        local values = {
+            entry.eventType,
+            entry.actorSource or 0,
+            entry.actorCharacterId or 0,
+            entry.actorIdentifier or '',
+            entry.actorName,
+            entry.targetSource or 0,
+            entry.targetCharacterId or 0,
+            entry.targetIdentifier or '',
+            entry.targetName or '',
+            entry.damage == nil and -1 or entry.damage,
+            entry.weaponHash and tostring(entry.weaponHash) or '',
+            entry.details or ''
+        }
+        for _, value in ipairs(values) do parameters[#parameters + 1] = value end
+    end
+
+    local success, err = pcall(MySQL.insert.await, ([[
+        INSERT INTO frontier_support_logs
+            (event_type, actor_source, actor_character_id, actor_identifier, actor_name,
+             target_source, target_character_id, target_identifier, target_name,
+             damage_amount, weapon_hash, details)
+        VALUES %s
+    ]]):format(table.concat(placeholders, ', ')), parameters)
+
+    if not success then
+        for index = #batch, 1, -1 do table.insert(PendingSupportLogs, 1, batch[index]) end
+        local now = GetGameTimer()
+        if now - LastSupportLogError >= 10000 then
+            LastSupportLogError = now
+            print(('[Frontier ACP] Support-Logs konnten nicht gespeichert werden: %s'):format(
+                tostring(err)
+            ))
+        end
+    elseif DroppedSupportLogs > 0 then
+        print(('[Frontier ACP] %d Support-Logs wurden wegen voller Warteschlange verworfen.'):format(
+            DroppedSupportLogs
+        ))
+        DroppedSupportLogs = 0
+    end
+end
+
+CreateThread(function()
+    local interval = math.max(100, math.floor(
+        tonumber(AdminMenuConfig.SupportLogFlushInterval) or 500
+    ))
+    while true do
+        Wait(interval)
+        flushSupportLogs()
+    end
+end)
+
+CreateThread(function()
+    while true do
+        Wait(3600000)
+        if Ready then
+            local success, err = pcall(cleanupSupportLogs)
+            if not success then
+                print(('[Frontier ACP] Alte Support-Logs konnten nicht bereinigt werden: %s'):format(
+                    tostring(err)
+                ))
+            end
+        end
+    end
 end)
 
 CreateThread(function()

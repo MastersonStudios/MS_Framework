@@ -431,6 +431,90 @@ select option { color: var(--ink); background: #171411; }
 .prop-card code { margin: 6px 0; overflow: hidden; color: var(--gold); font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
 .prop-card small { color: var(--muted); font-size: 8px; text-transform: uppercase; }
 .prop-card .mini-button { width: 100%; margin-top: 9px; }
+
+.support-log-layout {
+    min-height: 590px;
+    display: grid;
+    grid-template-columns: minmax(390px, .92fr) minmax(430px, 1.08fr);
+    gap: 14px;
+}
+.support-log-panel { padding: 16px; }
+.support-log-filters {
+    display: grid;
+    grid-template-columns: minmax(210px, 1fr) 190px;
+    gap: 8px;
+}
+.support-log-list {
+    display: grid;
+    align-content: start;
+    gap: 7px;
+    max-height: 500px;
+    margin-top: 12px;
+    overflow: auto;
+}
+.support-log-row {
+    display: grid;
+    grid-template-columns: 38px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 11px;
+    border: 1px solid var(--line);
+    color: var(--ink);
+    background: #15120f;
+    text-align: left;
+    cursor: pointer;
+}
+.support-log-row:hover, .support-log-row.selected {
+    border-color: var(--line-gold);
+    background: rgba(196,154,87,.07);
+}
+.support-log-icon {
+    display: grid;
+    width: 34px;
+    height: 34px;
+    place-items: center;
+    border: 1px solid var(--line-gold);
+    color: var(--gold);
+    font-size: 15px;
+}
+.support-log-row.type-damage_dealt .support-log-icon { color: #d99862; border-color: rgba(217,152,98,.45); }
+.support-log-row.type-killed_by .support-log-icon { color: #df7971; border-color: rgba(223,121,113,.48); }
+.support-log-copy { min-width: 0; }
+.support-log-copy strong, .support-log-copy small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.support-log-copy strong { font-size: 11px; }
+.support-log-copy small, .support-log-row time { margin-top: 4px; color: var(--muted); font-size: 8px; }
+.support-log-empty { border: 1px solid var(--line); background: var(--panel-soft); }
+.support-log-detail { min-height: 590px; }
+.support-parties {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 12px;
+}
+.support-parties section {
+    min-width: 0;
+    padding: 13px;
+    border: 1px solid var(--line);
+    background: #15120f;
+}
+.support-parties span, .support-parties strong, .support-parties small, .support-parties code { display: block; }
+.support-parties span { color: var(--gold); font-size: 8px; font-weight: 700; letter-spacing: .12em; }
+.support-parties strong { margin-top: 8px; font: 400 16px/1.2 Georgia, serif; }
+.support-parties small { margin-top: 5px; color: var(--muted); font-size: 9px; }
+.support-parties code { margin-top: 9px; overflow: hidden; color: #81796e; font-size: 8px; text-overflow: ellipsis; white-space: nowrap; user-select: text; }
+.support-combat-stats { grid-template-columns: repeat(2, minmax(0,1fr)); }
+.support-detail-json {
+    max-height: 185px;
+    margin: 0;
+    overflow: auto;
+    color: #b8ad9c;
+    font: 9px/1.55 Consolas, monospace;
+    white-space: pre-wrap;
+    user-select: text;
+}
+.support-retention { margin-top: 12px; text-align: right; }
+
 .ingredient-heading { margin: 13px 0 8px; }
 .ingredient-heading > span { margin: 0; }
 .ingredient-list { display: grid; gap: 7px; margin-bottom: 13px; }
@@ -544,6 +628,9 @@ select option { color: var(--ink); background: #171411; }
     .metric-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
     .builder-layout { min-height: 540px; grid-template-columns: minmax(280px,.85fr) minmax(360px,1.15fr); }
     .data-layout { grid-template-columns: minmax(390px,.92fr) minmax(380px,1.08fr); }
+    .support-log-layout { min-height: 520px; grid-template-columns: minmax(340px,.92fr) minmax(390px,1.08fr); }
+    .support-log-list { max-height: 415px; }
+    .support-log-detail { min-height: 520px; }
     .split-view { min-height: 540px; grid-template-columns: 270px minmax(0,1fr); }
     .record-list, .card-list { max-height: 430px; }
     .prop-grid { grid-template-columns: repeat(2, minmax(0,1fr)); max-height: 430px; }

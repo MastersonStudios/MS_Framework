@@ -17,6 +17,7 @@ Ein schlankes, eigenständiges Roleplay-Framework für RedM.
 - Admin-Logout zurück zur Charakterauswahl
 - Guarma-Onboarding mit Sturm-Cinematic und Bewegungstutorial
 - grafisches ACP mit Rechte-, Wetter-, Spieler-, Geld- und Itemverwaltung
+- Support Admin mit persistenten Verbindungs-, Spawn-, Schadens- und Tötungslogs
 - grafischer World Builder für NPCs, Storages und sperrbare Türen
 - persistente Crafting-Rezepte und frei platzierbare Crafting-Punkte
 - Data Admin mit Datenbank-Itemcreator und durchsuchbarem Prop-Katalog
@@ -256,13 +257,18 @@ Enthalten sind:
 - Data Admin zum vollständigen Konfigurieren und direkten Speichern neuer Items
 - durchsuchbarer Prop-Katalog mit Übernahme in den Itemcreator
 - geschützte Löschfunktion für benutzerdefinierte Items
+- Support Admin mit filterbarem Unterpunkt **Logs**
+- eingehende Verbindungen und geladene Charakter-/Playerspawns
+- ausgeteilter Spielerschaden mit Waffenhash, Schadenswert, Akteur und Ziel
+- separate **Getötet von**-Einträge für tödliche Spielertreffer
 - serverseitige Validierung und Konsolenprotokollierung aller Aktionen
 
 Das ACE-Recht `frontier.admin.menu` dient als Root-Zugriff und kann im ACP
 weitere Administratoren freischalten. Vergebene Rechte werden anhand der
 Rockstar-Lizenz in `frontier_admin_permissions` gespeichert und bleiben nach
 einem Neustart erhalten. Ein Root-Admin besitzt immer alle Rechte. Wettertypen,
-Betragsgrenzen, Standardtaste, Crafting-Limits und weitere Einstellungen stehen
+Betragsgrenzen, Standardtaste, Crafting-Limits, Log-Aufbewahrungsdauer und
+weitere Einstellungen stehen
 in `frontier_adminmenu/config.lua`. Der Itemkatalog und die Stack-Limits befinden
 sich in der Tabelle `frontier_items`. Die Einträge aus
 `frontier_core/config.lua` werden beim ersten Start als geschützte Systemitems
@@ -278,11 +284,18 @@ Crafting-Rezepten referenziert sind. Systemitems bleiben geschützt. Der
 Prop-Katalog ist in `frontier_adminmenu/config.lua` erweiterbar; zusätzlich
 können gültige eigene RedM-Modellnamen eingegeben werden.
 
+Support-Logs werden in `frontier_support_logs` gespeichert. Die Berechtigung
+`support` kann wie alle anderen ACP-Rechte über **Adminrechte** verteilt werden.
+Anzahl der angezeigten Einträge, Aufbewahrungsdauer, Mindestschaden,
+Batchgröße und Warteschlangenlimit sind konfigurierbar. Lizenzkennungen und
+Charakternamen werden als Momentaufnahme gespeichert, damit Einträge auch nach
+einem Disconnect nachvollziehbar bleiben.
+
 Spieler benutzen einen nahen Crafting-Punkt standardmäßig mit `E`. Zutaten,
 Inventarplatz, Entfernung und Jobzugriff werden bei jeder Herstellung
-serverseitig erneut geprüft. Die Tabellen für Rechte, Rezepte und Crafting-Punkte
-werden automatisch erstellt und sind zusätzlich in `database/schema.sql`
-enthalten.
+serverseitig erneut geprüft. Die Tabellen für Rechte, Support-Logs, Rezepte und
+Crafting-Punkte werden automatisch erstellt und sind zusätzlich in
+`database/schema.sql` enthalten.
 
 ## World Builder
 

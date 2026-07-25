@@ -118,6 +118,28 @@ CREATE TABLE IF NOT EXISTS `frontier_admin_permissions` (
   PRIMARY KEY (`identifier`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS `frontier_support_logs` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `event_type` VARCHAR(32) NOT NULL,
+  `actor_source` INT UNSIGNED NULL,
+  `actor_character_id` BIGINT UNSIGNED NULL,
+  `actor_identifier` VARCHAR(100) NULL,
+  `actor_name` VARCHAR(80) NOT NULL,
+  `target_source` INT UNSIGNED NULL,
+  `target_character_id` BIGINT UNSIGNED NULL,
+  `target_identifier` VARCHAR(100) NULL,
+  `target_name` VARCHAR(80) NULL,
+  `damage_amount` INT UNSIGNED NULL,
+  `weapon_hash` BIGINT NULL,
+  `details` LONGTEXT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_frontier_support_logs_created` (`created_at`),
+  KEY `idx_frontier_support_logs_type_time` (`event_type`, `created_at`),
+  KEY `idx_frontier_support_logs_actor` (`actor_character_id`, `created_at`),
+  KEY `idx_frontier_support_logs_target` (`target_character_id`, `created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS `frontier_items` (
   `name` VARCHAR(64) NOT NULL,
   `label` VARCHAR(64) NOT NULL,

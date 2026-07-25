@@ -2,8 +2,8 @@ fx_version 'cerulean'
 game 'rdr3'
 
 author 'Frontier Framework'
-description 'Administration Control Panel with permissions, world builder and crafting'
-version '2.0.0'
+description 'Administration Control Panel with support logs, permissions, world builder and crafting'
+version '2.1.0'
 
 lua54 'yes'
 

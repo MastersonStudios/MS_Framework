@@ -18,6 +18,12 @@ AdminMenuConfig.DefaultCraftingRadius = 2.0
 AdminMenuConfig.MaxPlacementDistance = 12.0
 AdminMenuConfig.CraftingInteractionKey = 'E'
 AdminMenuConfig.MaxItemDefinitions = 2000
+AdminMenuConfig.SupportLogLimit = 500
+AdminMenuConfig.SupportLogRetentionDays = 30
+AdminMenuConfig.SupportLogBatchSize = 50
+AdminMenuConfig.SupportLogFlushInterval = 500
+AdminMenuConfig.SupportLogQueueLimit = 5000
+AdminMenuConfig.SupportLogMinimumDamage = 1
 
 AdminMenuConfig.Permissions = {
     {
@@ -54,6 +60,11 @@ AdminMenuConfig.Permissions = {
         id = 'data',
         label = 'Data Admin',
         description = 'Darf Datenbank-Items erstellen und löschen.'
+    },
+    {
+        id = 'support',
+        label = 'Support Admin',
+        description = 'Darf Verbindungs-, Spawn-, Schadens- und Tötungslogs einsehen.'
     },
     {
         id = 'rights',
