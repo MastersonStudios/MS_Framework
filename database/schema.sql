@@ -30,3 +30,21 @@ CREATE TABLE IF NOT EXISTS `frontier_characters` (
   CONSTRAINT `fk_frontier_characters_user`
     FOREIGN KEY (`user_id`) REFERENCES `frontier_users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `frontier_map_objects` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `model` VARCHAR(100) NOT NULL,
+  `x` DOUBLE NOT NULL,
+  `y` DOUBLE NOT NULL,
+  `z` DOUBLE NOT NULL,
+  `rot_x` DOUBLE NOT NULL DEFAULT 0,
+  `rot_y` DOUBLE NOT NULL DEFAULT 0,
+  `rot_z` DOUBLE NOT NULL DEFAULT 0,
+  `collision_enabled` TINYINT(1) NOT NULL DEFAULT 1,
+  `frozen` TINYINT(1) NOT NULL DEFAULT 1,
+  `created_by` VARCHAR(64) NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_frontier_map_objects_position` (`x`, `y`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

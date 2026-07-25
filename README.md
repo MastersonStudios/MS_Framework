@@ -12,6 +12,7 @@ Ein schlankes, eigenständiges Roleplay-Framework für RedM.
 - Admin- und Spieler-Commands
 - Spawn/Respawn-Grundablauf
 - SQL-Schema und Beispiel-Resource
+- persistenter Ingame-Mapeditor mit Objekt-Streaming
 
 ## Voraussetzungen
 
@@ -25,7 +26,7 @@ Ein schlankes, eigenständiges Roleplay-Framework für RedM.
 2. Die Ordner aus `resources/` in den `resources`-Ordner des Servers kopieren.
 3. `server.cfg.example` nach `server.cfg` kopieren und Connection-String sowie
    Lizenzschlüssel anpassen.
-4. In der Konsole `ensure frontier_core` und danach `ensure frontier_example`
+4. In der Konsole `ensure frontier_core`, `ensure frontier_mapeditor` und danach `ensure frontier_example`
    ausführen (oder den Server neu starten).
 5. Zum Testen verbinden und `/characters` verwenden.
 
@@ -43,6 +44,26 @@ local player = exports.frontier_core:GetPlayerFromCharacterId(characterId)
 ```
 
 Weitere Beispiele stehen in `resources/[frontier]/frontier_example`.
+
+## Mapeditor
+
+Administratoren mit dem ACE-Recht `frontier.mapeditor` können persistente
+Map-Objekte direkt im Spiel bearbeiten:
+
+```text
+/mapeditor [modell]   Neues Objekt platzieren
+/mapedit [id]         Objekt nach ID oder das nächste Objekt bearbeiten
+/mapdelete [id]       Objekt nach ID oder das nächste Objekt löschen
+/mapobjects           IDs der nahen Objekte anzeigen
+/mapcatalog           vorkonfigurierte Modelle anzeigen
+/mapundo              letzte Änderung zurücknehmen
+```
+
+Während der Bearbeitung bewegen `W/A/S/D` das Objekt, `Bild hoch/runter` ändern
+die Höhe, `Q/E` drehen um Z, `R/F` kippen um X und `Z/X` kippen um Y. `Shift`
+beschleunigt, `G` setzt das Objekt auf den Boden, `Enter` speichert und
+`Backspace` bricht ab. Die vorkonfigurierten Modelle sowie Reichweiten stehen
+in `frontier_mapeditor/config.lua`.
 
 ## Sicherheit
 
