@@ -26,6 +26,7 @@ Ein schlankes, eigenständiges Roleplay-Framework für RedM.
 - `MS_ClothingShop` mit Charaktervorschau und gemeinsamer Einkaufsliste
 - `MS_Stables` mit Pferde-, Ausrüstungs-, Fellfarben- und Kutschenhandel
 - `MS_Telegrams` mit persönlichen Telegrammnummern und persistenten Nachrichten
+- `MS_LoadingScreen` mit Video-Cutscene, animierter Ersatzszene und Mute-Funktion
 
 ## Voraussetzungen
 
@@ -39,7 +40,8 @@ Ein schlankes, eigenständiges Roleplay-Framework für RedM.
 2. Die Ordner aus `resources/` in den `resources`-Ordner des Servers kopieren.
 3. `server.cfg.example` nach `server.cfg` kopieren und Connection-String sowie
    Lizenzschlüssel anpassen.
-4. In der Konsole zuerst `ensure frontier_core`, danach
+4. In der Konsole zuerst `ensure MS_LoadingScreen` und `ensure frontier_core`,
+   danach
    `ensure frontier_playersync`, `ensure MS_Inventory`,
    `ensure MS_ClothingShop`, `ensure MS_Stables`, `ensure MS_Telegrams`,
    `ensure frontier_worldbuilder`,
@@ -204,6 +206,25 @@ Textlimits, Konto und Interaktionstaste befinden sich in
 Telegrafenamt mit `E` oder `/telegrams` geöffnet. Die benötigten Tabellen
 werden beim Resource-Start automatisch erstellt und sind zusätzlich in
 `database/schema.sql` enthalten.
+
+## MS Loading Screen
+
+`MS_LoadingScreen` zeigt beim Verbinden eine filmische Ladeszene, den echten
+RedM-Ladefortschritt, wechselnde Hinweise und eine Mute-Funktion. Der Ton wird
+über den Button rechts oben oder die Taste `M` ein- und ausgeschaltet.
+
+Die Original-Cutscene und Musik aus Red Dead Redemption 2 werden nicht
+mitgeliefert. Eine rechtmäßig verwendbare, browserkompatible Videodatei kann
+als
+`resources/[frontier]/MS_LoadingScreen/html/media/ring_dang_doo.mp4`
+hinterlegt werden. Ohne diese Datei startet automatisch die integrierte
+animierte Sturm- und Schiffszene, sodass die Resource trotzdem vollständig
+funktioniert.
+
+Titel, Servername, Untertitel, Videopfad, Lautstärke, Start-Mute und Hinweise
+werden in `resources/[frontier]/MS_LoadingScreen/html/config.js` konfiguriert.
+Die Resource muss vor den Framework-Resources mit `ensure MS_LoadingScreen`
+gestartet werden; `server.cfg.example` enthält die passende Reihenfolge.
 
 ## Mapeditor
 
