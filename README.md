@@ -29,6 +29,7 @@ Aktuelle Framework-Version: `0.0.1`
 - `MS_Medic` mit Krankheiten, Behandlungen und Wiederbelebung
 - `MS_WeaponDamage` mit einzeln konfigurierbarem Schaden für sämtliche Waffen
 - `MS_Inventory` mit konfigurierbarer Kapazität, Kontextaktionen und Outfit-Drag-and-Drop
+- `MS_BasicNeeds` mit konfigurierbarem Hunger, Durst und kompaktem HUD
 - `MS_ClothingShop` mit Charaktervorschau und gemeinsamer Einkaufsliste
 - `MS_Stables` mit Pferde-, Ausrüstungs-, Fellfarben- und Kutschenhandel
 - `MS_Trains` mit fahrbaren Zügen und konfigurierbaren Bahnhof-NPCs
@@ -51,6 +52,7 @@ Aktuelle Framework-Version: `0.0.1`
    danach
    `ensure frontier_playersync`, `ensure MS_mechat`, `ensure MS_pointing`,
    `ensure MS_Medic`, `ensure MS_WeaponDamage`, `ensure MS_Inventory`,
+   `ensure MS_BasicNeeds`,
    `ensure MS_ClothingShop`, `ensure MS_Stables`, `ensure MS_Trains`,
    `ensure MS_Telegrams`,
    `ensure frontier_worldbuilder`,
@@ -242,6 +244,26 @@ damit das Kleidungsstück auch am Ped dargestellt wird:
 Gültige Standardslots stehen in
 `resources/[frontier]/MS_Inventory/config.lua`. Neue Kleidungsitems lassen
 sich damit direkt über **ACP → Data Admin → Itemcreator** anlegen.
+
+## MS Basic Needs
+
+`MS_BasicNeeds` verwaltet Hunger und Durst serverseitig und speichert beide
+Werte charaktergebunden in den vorhandenen Metadaten. Ein kompaktes HUD zeigt
+den aktuellen Zustand und warnt bei kritischen Werten.
+
+- Startwerte, Wertebereich, Tickintervall und Abbau pro Tick sind frei
+  konfigurierbar.
+- Warnschwelle, Warntexte, Schaden, tödlicher Schaden und Speicherintervall
+  können getrennt eingestellt werden.
+- Position, Abstand, Skalierung, Beschriftung und Prozentwerte des HUDs lassen
+  sich anpassen.
+- `water` füllt standardmäßig 25 Durst und `bread` 20 Hunger auf. Weitere
+  nutzbare Items können mit eigenen Hunger- und Dursteffekten ergänzt werden.
+
+Alle Einstellungen befinden sich in
+`resources/[frontier]/MS_BasicNeeds/config.lua`. Die Resource wird nach
+`MS_Inventory` gestartet. Andere Server-Resources können die Werte über
+`GetNeeds`, `SetNeeds` und `AddNeed` lesen oder ändern.
 
 ## MS Clothing Shop
 

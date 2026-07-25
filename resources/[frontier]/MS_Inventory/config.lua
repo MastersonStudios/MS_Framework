@@ -19,14 +19,13 @@ MSInventoryConfig.OutfitSlots = {
     { key = 'neckwear', label = 'Halstuch', icon = 'N' }
 }
 
--- Positive Werte füllen die jeweilige Spieler-Metadatenanzeige bis maximal 100.
+-- Hunger und Durst werden nach der Itembenutzung durch MS_BasicNeeds
+-- verarbeitet. Hier verbleiben die Inventar-Bestätigungstexte.
 MSInventoryConfig.UseEffects = {
     water = {
-        metadata = { thirst = 25 },
         message = 'Du hast Wasser getrunken.'
     },
     bread = {
-        metadata = { hunger = 20 },
         message = 'Du hast Brot gegessen.'
     },
     bandage = {

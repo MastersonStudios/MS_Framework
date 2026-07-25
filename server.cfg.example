@@ -18,6 +18,7 @@ ensure MS_pointing
 ensure MS_Medic
 ensure MS_WeaponDamage
 ensure MS_Inventory
+ensure MS_BasicNeeds
 ensure MS_ClothingShop
 ensure MS_Stables
 ensure MS_Trains

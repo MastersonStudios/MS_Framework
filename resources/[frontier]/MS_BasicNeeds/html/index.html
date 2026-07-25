@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>MS Basic Needs</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <main id="needs" class="needs needs--bottom-right" aria-label="Grundbedürfnisse">
+        <section class="need need--hunger" data-need="hunger">
+            <header>
+                <span class="need__mark" aria-hidden="true">H</span>
+                <span class="need__label">Hunger</span>
+                <span class="need__value">100%</span>
+            </header>
+            <div class="need__track" role="progressbar" aria-label="Hunger" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100">
+                <span class="need__fill"></span>
+            </div>
+        </section>
+        <section class="need need--thirst" data-need="thirst">
+            <header>
+                <span class="need__mark" aria-hidden="true">D</span>
+                <span class="need__label">Durst</span>
+                <span class="need__value">100%</span>
+            </header>
+            <div class="need__track" role="progressbar" aria-label="Durst" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100">
+                <span class="need__fill"></span>
+            </div>
+        </section>
+    </main>
+    <script src="app.js"></script>
+</body>
+</html>
