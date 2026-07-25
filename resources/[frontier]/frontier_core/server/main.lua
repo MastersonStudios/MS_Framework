@@ -90,20 +90,7 @@ function GetPlayerFromCharacterId(characterId)
     end
 end
 function GetPlayers() return Players end
-function GetItemCatalog()
-    local items = {}
-    for name, item in pairs(Config.Items) do
-        items[#items + 1] = {
-            name = name,
-            label = item.label,
-            description = item.description,
-            maxStack = item.maxStack or Config.MaxItemStack
-        }
-    end
-    table.sort(items, function(a, b) return a.label < b.label end)
-    return items
-end
-
+Frontier.GetPlayers = GetPlayers
 function LogoutPlayer(source)
     source = tonumber(source)
     local player = source and Players[source]
@@ -134,7 +121,6 @@ end
 exports('GetPlayer', GetPlayer)
 exports('GetPlayerFromCharacterId', GetPlayerFromCharacterId)
 exports('GetPlayers', GetPlayers)
-exports('GetItemCatalog', GetItemCatalog)
 exports('LogoutPlayer', LogoutPlayer)
 
 function Frontier.RegisterCallback(name, callback)

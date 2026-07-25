@@ -41,6 +41,9 @@
                         <button class="nav-button" data-tab="crafting" data-permission="crafting" type="button">
                             <span>⚒</span><span>Crafting</span>
                         </button>
+                        <button class="nav-button" data-tab="data" data-permission="data" type="button">
+                            <span>▦</span><span>Data Admin</span>
+                        </button>
                         <button class="nav-button" data-tab="rights" data-permission="rights" type="button">
                             <span>⚿</span><span>Adminrechte</span>
                         </button>
@@ -266,6 +269,80 @@
                             <div class="panel">
                                 <div class="panel-heading"><div><p class="eyebrow">PERSISTENTE PROFILE</p><h3>Administratoren</h3></div><span id="admin-count" class="count-badge">0</span></div>
                                 <div id="admin-list" class="card-list"></div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="page" data-page="data">
+                        <header class="page-header">
+                            <div><p class="eyebrow">DATENBANK-VERWALTUNG</p><h2>Data Admin</h2></div>
+                            <div class="segmented" id="data-admin-tabs">
+                                <button class="active" data-data-tab="items" type="button">Items</button>
+                                <button data-data-tab="props" type="button">Prop-Katalog</button>
+                            </div>
+                        </header>
+
+                        <div class="data-admin-view active" data-data-view="items">
+                            <div class="builder-layout data-layout">
+                                <form id="item-creator-form" class="builder-form">
+                                    <h3>Itemcreator</h3>
+                                    <div class="form-grid">
+                                        <label><span>Technischer Name</span><input id="creator-name" maxlength="64" pattern="[a-z0-9_]+" required placeholder="z. B. gold_nugget"></label>
+                                        <label><span>Anzeigename</span><input id="creator-label" maxlength="64" required placeholder="z. B. Goldnugget"></label>
+                                    </div>
+                                    <label><span>Beschreibung</span><textarea id="creator-description" maxlength="255" placeholder="Beschreibung des Items"></textarea></label>
+                                    <div class="form-grid">
+                                        <label><span>Kategorie</span><input id="creator-category" list="item-categories" maxlength="32" value="general" required></label>
+                                        <datalist id="item-categories">
+                                            <option value="general"><option value="food"><option value="drink">
+                                            <option value="medical"><option value="tool"><option value="material">
+                                            <option value="valuable"><option value="document"><option value="quest">
+                                        </datalist>
+                                        <label><span>Seltenheit</span>
+                                            <select id="creator-rarity">
+                                                <option value="common">Gewöhnlich</option>
+                                                <option value="uncommon">Ungewöhnlich</option>
+                                                <option value="rare">Selten</option>
+                                                <option value="epic">Episch</option>
+                                                <option value="legendary">Legendär</option>
+                                            </select>
+                                        </label>
+                                        <label><span>Stack-Limit</span><input id="creator-max-stack" type="number" min="1" max="10000" value="10" required></label>
+                                        <label><span>Gewicht in Gramm</span><input id="creator-weight" type="number" min="0" max="1000000" value="100" required></label>
+                                    </div>
+                                    <label><span>Prop-Modell</span><input id="creator-prop" list="item-props" maxlength="100" placeholder="Prop auswählen oder eigenen Modellnamen eingeben"></label>
+                                    <datalist id="item-props"></datalist>
+                                    <label><span>Bildpfad / URL</span><input id="creator-image" maxlength="255" placeholder="Optional, z. B. images/gold_nugget.png"></label>
+                                    <label><span>Standard-Metadaten (JSON)</span><textarea id="creator-metadata" class="code-input" maxlength="4000">{}</textarea></label>
+                                    <div class="toggle-grid">
+                                        <label class="checkbox-row"><input id="creator-usable" type="checkbox"><span>Benutzbar</span></label>
+                                        <label class="checkbox-row"><input id="creator-consumable" type="checkbox"><span>Beim Benutzen verbrauchbar</span></label>
+                                        <label class="checkbox-row"><input id="creator-unique" type="checkbox"><span>Einzigartig / Stack 1</span></label>
+                                        <label class="checkbox-row"><input id="creator-tradable" type="checkbox" checked><span>Handelbar</span></label>
+                                    </div>
+                                    <button class="button primary full" type="submit">Item in Datenbank erstellen</button>
+                                </form>
+
+                                <div class="builder-records">
+                                    <div class="panel-heading">
+                                        <div><p class="eyebrow">ITEMKATALOG</p><h3>Verfügbare Items</h3></div>
+                                        <span id="data-item-count" class="count-badge">0</span>
+                                    </div>
+                                    <label class="search"><span>⌕</span><input id="data-item-search" type="search" placeholder="Name, Kategorie oder Prop suchen"></label>
+                                    <div id="data-item-list" class="card-list data-item-list"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="data-admin-view" data-data-view="props">
+                            <div class="panel prop-catalog">
+                                <div class="panel-heading">
+                                    <div><p class="eyebrow">MODELLKATALOG</p><h3>Alle verfügbaren Props</h3></div>
+                                    <span id="prop-count" class="count-badge">0</span>
+                                </div>
+                                <p class="muted catalog-hint">Ein Prop kann direkt in den Itemcreator übernommen werden. Eigene gültige RedM-Modellnamen bleiben zusätzlich möglich.</p>
+                                <label class="search"><span>⌕</span><input id="prop-search" type="search" placeholder="Prop, Modell oder Kategorie suchen"></label>
+                                <div id="prop-list" class="prop-grid"></div>
                             </div>
                         </div>
                     </section>

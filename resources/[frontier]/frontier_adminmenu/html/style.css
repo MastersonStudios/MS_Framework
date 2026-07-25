@@ -378,6 +378,59 @@ select option { color: var(--ink); background: #171411; }
 
 .craft-admin-view { display: none; }
 .craft-admin-view.active { display: block; }
+.data-admin-view { display: none; }
+.data-admin-view.active { display: block; }
+.data-layout { grid-template-columns: minmax(430px, .92fr) minmax(430px, 1.08fr); }
+.data-layout .builder-form { overflow: auto; }
+.code-input { min-height: 58px; font: 11px/1.45 Consolas, monospace; }
+.toggle-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+    margin: 12px 0 15px;
+}
+.toggle-grid .checkbox-row {
+    min-height: 38px;
+    margin: 0;
+    padding: 9px;
+    border: 1px solid var(--line);
+    background: #15120f;
+}
+.data-item-list { max-height: 515px; }
+.item-flags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+.item-flag {
+    padding: 4px 6px;
+    border: 1px solid var(--line);
+    color: var(--muted);
+    background: #12100e;
+    font-size: 8px;
+    text-transform: uppercase;
+}
+.item-flag.rarity-uncommon { color: #83b990; }
+.item-flag.rarity-rare { color: #78a8d1; }
+.item-flag.rarity-epic { color: #af86d3; }
+.item-flag.rarity-legendary { color: var(--gold-bright); border-color: var(--line-gold); }
+.prop-catalog { min-height: 615px; }
+.catalog-hint { margin: -5px 0 14px; }
+.prop-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    max-height: 515px;
+    margin-top: 13px;
+    overflow: auto;
+}
+.prop-card {
+    min-width: 0;
+    padding: 11px;
+    border: 1px solid var(--line);
+    background: #15120f;
+}
+.prop-card strong, .prop-card code, .prop-card small { display: block; }
+.prop-card strong { font: 400 14px/1.2 Georgia, serif; }
+.prop-card code { margin: 6px 0; overflow: hidden; color: var(--gold); font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+.prop-card small { color: var(--muted); font-size: 8px; text-transform: uppercase; }
+.prop-card .mini-button { width: 100%; margin-top: 9px; }
 .ingredient-heading { margin: 13px 0 8px; }
 .ingredient-heading > span { margin: 0; }
 .ingredient-list { display: grid; gap: 7px; margin-bottom: 13px; }
@@ -490,7 +543,9 @@ select option { color: var(--ink); background: #171411; }
     .page { padding: 17px; }
     .metric-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
     .builder-layout { min-height: 540px; grid-template-columns: minmax(280px,.85fr) minmax(360px,1.15fr); }
+    .data-layout { grid-template-columns: minmax(390px,.92fr) minmax(380px,1.08fr); }
     .split-view { min-height: 540px; grid-template-columns: 270px minmax(0,1fr); }
     .record-list, .card-list { max-height: 430px; }
+    .prop-grid { grid-template-columns: repeat(2, minmax(0,1fr)); max-height: 430px; }
     .topbar .status-pill { display: none; }
 }

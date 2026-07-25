@@ -19,6 +19,7 @@ Ein schlankes, eigenständiges Roleplay-Framework für RedM.
 - grafisches ACP mit Rechte-, Wetter-, Spieler-, Geld- und Itemverwaltung
 - grafischer World Builder für NPCs, Storages und sperrbare Türen
 - persistente Crafting-Rezepte und frei platzierbare Crafting-Punkte
+- Data Admin mit Datenbank-Itemcreator und durchsuchbarem Prop-Katalog
 
 ## Voraussetzungen
 
@@ -108,6 +109,9 @@ Enthalten sind:
 - persistente, lizenzgebundene ACP-Rechte mit getrennten Funktionsbereichen
 - Crafting-Rezepteditor mit mehreren Zutaten, Ergebnis, Menge und Herstellzeit
 - frei platzierbare Crafting-Punkte mit Rezeptauswahl und optionalem Jobzugriff
+- Data Admin zum vollständigen Konfigurieren und direkten Speichern neuer Items
+- durchsuchbarer Prop-Katalog mit Übernahme in den Itemcreator
+- geschützte Löschfunktion für benutzerdefinierte Items
 - serverseitige Validierung und Konsolenprotokollierung aller Aktionen
 
 Das ACE-Recht `frontier.admin.menu` dient als Root-Zugriff und kann im ACP
@@ -116,7 +120,19 @@ Rockstar-Lizenz in `frontier_admin_permissions` gespeichert und bleiben nach
 einem Neustart erhalten. Ein Root-Admin besitzt immer alle Rechte. Wettertypen,
 Betragsgrenzen, Standardtaste, Crafting-Limits und weitere Einstellungen stehen
 in `frontier_adminmenu/config.lua`. Der Itemkatalog und die Stack-Limits befinden
-sich in `frontier_core/config.lua`.
+sich in der Tabelle `frontier_items`. Die Einträge aus
+`frontier_core/config.lua` werden beim ersten Start als geschützte Systemitems
+in die Tabelle übernommen.
+
+Der Menüpunkt **Data Admin** konfiguriert technischen Namen, Anzeigenamen,
+Beschreibung, Kategorie, Seltenheit, Stack-Limit, Gewicht, Benutzbarkeit,
+Verbrauch, Einzigartigkeit, Handelbarkeit, Prop-Modell, Bildpfad und
+Standard-Metadaten. Neue Items stehen ohne Resource-Neustart unmittelbar für
+Adminvergabe, Storages und Crafting zur Verfügung. Benutzerdefinierte Items
+können gelöscht werden, wenn sie nicht mehr in Inventaren, Storages oder
+Crafting-Rezepten referenziert sind. Systemitems bleiben geschützt. Der
+Prop-Katalog ist in `frontier_adminmenu/config.lua` erweiterbar; zusätzlich
+können gültige eigene RedM-Modellnamen eingegeben werden.
 
 Spieler benutzen einen nahen Crafting-Punkt standardmäßig mit `E`. Zutaten,
 Inventarplatz, Entfernung und Jobzugriff werden bei jeder Herstellung

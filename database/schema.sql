@@ -118,6 +118,29 @@ CREATE TABLE IF NOT EXISTS `frontier_admin_permissions` (
   PRIMARY KEY (`identifier`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS `frontier_items` (
+  `name` VARCHAR(64) NOT NULL,
+  `label` VARCHAR(64) NOT NULL,
+  `description` VARCHAR(255) NULL,
+  `category` VARCHAR(32) NOT NULL DEFAULT 'general',
+  `rarity` ENUM('common','uncommon','rare','epic','legendary') NOT NULL DEFAULT 'common',
+  `max_stack` INT UNSIGNED NOT NULL DEFAULT 1,
+  `weight` INT UNSIGNED NOT NULL DEFAULT 0,
+  `usable` TINYINT(1) NOT NULL DEFAULT 0,
+  `consumable` TINYINT(1) NOT NULL DEFAULT 0,
+  `unique_item` TINYINT(1) NOT NULL DEFAULT 0,
+  `tradable` TINYINT(1) NOT NULL DEFAULT 1,
+  `prop_model` VARCHAR(100) NULL,
+  `image` VARCHAR(255) NULL,
+  `metadata` LONGTEXT NULL,
+  `is_system` TINYINT(1) NOT NULL DEFAULT 0,
+  `created_by` VARCHAR(100) NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`name`),
+  KEY `idx_frontier_items_category` (`category`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS `frontier_crafting_recipes` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `label` VARCHAR(64) NOT NULL,

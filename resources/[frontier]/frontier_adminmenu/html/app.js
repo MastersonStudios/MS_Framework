@@ -15,6 +15,7 @@ const state = {
     page: 'overview',
     worldTab: 'npc',
     craftAdminTab: 'recipes',
+    dataAdminTab: 'items',
     worldPositions: {},
     capturedDoor: null,
     craftPointPosition: null,
@@ -295,6 +296,12 @@ function selectCraftAdminTab(tab) {
     $$('[data-craft-view]').forEach((view) => view.classList.toggle('active', view.dataset.craftView === tab));
 }
 
+function selectDataAdminTab(tab) {
+    state.dataAdminTab = tab;
+    $$('[data-data-tab]').forEach((button) => button.classList.toggle('active', button.dataset.dataTab === tab));
+    $$('[data-data-view]').forEach((view) => view.classList.toggle('active', view.dataset.dataView === tab));
+}
+
 function renderCraftingAdmin() {
     const crafting = state.data?.crafting || { recipes: [], points: [] };
     const recipeList = $('#recipe-list');
@@ -357,6 +364,108 @@ function renderCraftingAdmin() {
     });
     if (!crafting.points.length) pointList.append(text('div', 'Noch keine Crafting-Punkte vorhanden.', 'empty-state'));
     $('#craft-point-count').textContent = String(crafting.points.length);
+}
+
+function rarityLabel(rarity) {
+    return {
+        common: 'Gewöhnlich',
+        uncommon: 'Ungewöhnlich',
+        rare: 'Selten',
+        epic: 'Episch',
+        legendary: 'Legendär'
+    }[rarity] || rarity;
+}
+
+function renderDataItems() {
+    const query = $('#data-item-search').value.trim().toLowerCase();
+    const items = (state.data?.items || []).filter((item) =>
+        `${item.name} ${item.label} ${item.category || ''} ${item.prop || ''}`.toLowerCase().includes(query)
+    );
+    $('#data-item-count').textContent = String(items.length);
+    const list = $('#data-item-list');
+    list.replaceChildren();
+    items.forEach((item) => {
+        const card = document.createElement('article');
+        card.className = 'definition-card';
+        const heading = document.createElement('header');
+        const title = document.createElement('div');
+        title.append(text('strong', item.label), text('small', item.name));
+        heading.append(title, text('span', item.category || 'general', 'count-badge'));
+        card.append(
+            heading,
+            text('small', item.description || 'Keine Beschreibung'),
+            text('small', `Stack ${item.maxStack} · ${item.weight || 0} g · Prop ${item.prop || 'keine Zuordnung'}`)
+        );
+        const flags = document.createElement('div');
+        flags.className = 'item-flags';
+        flags.append(text('span', rarityLabel(item.rarity || 'common'), `item-flag rarity-${item.rarity || 'common'}`));
+        if (item.usable) flags.append(text('span', 'Benutzbar', 'item-flag'));
+        if (item.consumable) flags.append(text('span', 'Verbrauchbar', 'item-flag'));
+        if (item.unique) flags.append(text('span', 'Einzigartig', 'item-flag'));
+        flags.append(text('span', item.tradable === false ? 'Nicht handelbar' : 'Handelbar', 'item-flag'));
+        if (item.protected) flags.append(text('span', 'Systemitem', 'item-flag'));
+        card.append(flags);
+
+        const footer = document.createElement('footer');
+        if (!item.protected) {
+            const remove = text('button', 'Item löschen', 'mini-button danger');
+            remove.type = 'button';
+            remove.addEventListener('click', () => confirmAction(remove, () => post('execute', {
+                action: 'deleteItem',
+                data: { name: item.name }
+            })));
+            footer.append(remove);
+        } else {
+            footer.append(text('small', 'Geschützt durch frontier_core/config.lua'));
+        }
+        card.append(footer);
+        list.append(card);
+    });
+    if (!items.length) list.append(text('div', 'Keine Items gefunden.', 'empty-state'));
+}
+
+function renderProps() {
+    const props = state.data?.props || [];
+    const datalist = $('#item-props');
+    datalist.replaceChildren();
+    props.forEach((prop) => {
+        const option = document.createElement('option');
+        option.value = prop.model;
+        option.label = `${prop.label} · ${prop.category}`;
+        datalist.append(option);
+    });
+
+    const query = $('#prop-search').value.trim().toLowerCase();
+    const visible = props.filter((prop) =>
+        `${prop.label} ${prop.model} ${prop.category}`.toLowerCase().includes(query)
+    );
+    $('#prop-count').textContent = String(visible.length);
+    const list = $('#prop-list');
+    list.replaceChildren();
+    visible.forEach((prop) => {
+        const card = document.createElement('article');
+        card.className = 'prop-card';
+        card.append(
+            text('strong', prop.label),
+            text('code', prop.model || 'ohne_prop'),
+            text('small', prop.category)
+        );
+        const use = text('button', 'In Itemcreator übernehmen', 'mini-button');
+        use.type = 'button';
+        use.addEventListener('click', () => {
+            $('#creator-prop').value = prop.model;
+            selectDataAdminTab('items');
+            showToast(prop.model ? `${prop.model} übernommen.` : 'Prop-Zuordnung entfernt.', true);
+        });
+        card.append(use);
+        list.append(card);
+    });
+    if (!visible.length) list.append(text('div', 'Keine Props gefunden.', 'empty-state'));
+}
+
+function renderDataAdmin() {
+    renderDataItems();
+    renderProps();
 }
 
 function fillRightsForPlayer() {
@@ -451,6 +560,7 @@ function applyData(data) {
     renderWorldCatalog();
     renderWorldList();
     renderCraftingAdmin();
+    renderDataAdmin();
     renderRights();
     applyPermissionVisibility();
 }
@@ -510,12 +620,15 @@ function renderPlayerCrafting(data) {
 $$('.nav-button').forEach((button) => button.addEventListener('click', () => choosePage(button.dataset.tab)));
 $$('[data-world-tab]').forEach((button) => button.addEventListener('click', () => selectWorldTab(button.dataset.worldTab)));
 $$('[data-craft-tab]').forEach((button) => button.addEventListener('click', () => selectCraftAdminTab(button.dataset.craftTab)));
+$$('[data-data-tab]').forEach((button) => button.addEventListener('click', () => selectDataAdminTab(button.dataset.dataTab)));
 
 $('#close').addEventListener('click', closeAcp);
 $('#refresh').addEventListener('click', () => post('refresh'));
 $('#close-crafting').addEventListener('click', closeCrafting);
 $('#player-search').addEventListener('input', renderPlayers);
 $('#world-search').addEventListener('input', renderWorldList);
+$('#data-item-search').addEventListener('input', renderDataItems);
+$('#prop-search').addEventListener('input', renderProps);
 $('#rights-player').addEventListener('change', fillRightsForPlayer);
 $('#weather-transition').addEventListener('input', () => {
     $('#transition-value').textContent = `${$('#weather-transition').value}s`;
@@ -670,6 +783,45 @@ $('#rights-form').addEventListener('submit', (event) => {
     });
 });
 
+$('#creator-unique').addEventListener('change', () => {
+    if ($('#creator-unique').checked) {
+        $('#creator-max-stack').value = '1';
+        $('#creator-max-stack').disabled = true;
+    } else {
+        $('#creator-max-stack').disabled = false;
+    }
+});
+
+$('#item-creator-form').addEventListener('submit', (event) => {
+    event.preventDefault();
+    let metadata;
+    try {
+        metadata = JSON.parse($('#creator-metadata').value || '{}');
+        if (!metadata || Array.isArray(metadata) || typeof metadata !== 'object') throw new Error('object');
+    } catch {
+        return showToast('Die Standard-Metadaten müssen ein gültiges JSON-Objekt sein.');
+    }
+    post('execute', {
+        action: 'createItem',
+        data: {
+            name: $('#creator-name').value,
+            label: $('#creator-label').value,
+            description: $('#creator-description').value,
+            category: $('#creator-category').value,
+            rarity: $('#creator-rarity').value,
+            maxStack: Number($('#creator-max-stack').value),
+            weight: Number($('#creator-weight').value),
+            prop: $('#creator-prop').value,
+            image: $('#creator-image').value,
+            metadata,
+            usable: $('#creator-usable').checked,
+            consumable: $('#creator-consumable').checked,
+            unique: $('#creator-unique').checked,
+            tradable: $('#creator-tradable').checked
+        }
+    });
+});
+
 document.addEventListener('keydown', (event) => {
     if (event.key !== 'Escape' && event.key !== 'F2') return;
     if (!craftingUi.classList.contains('hidden')) closeCrafting();
@@ -725,7 +877,7 @@ window.addEventListener('message', ({ data }) => {
 
 const mockData = {
     selfId: 4,
-    permissions: { access: true, players: true, economy: true, weather: true, world: true, crafting: true, rights: true },
+    permissions: { access: true, players: true, economy: true, weather: true, world: true, crafting: true, data: true, rights: true },
     permissionDefinitions: [
         { id: 'access', label: 'ACP-Zugriff', description: 'Darf das Administrations-Control-Panel öffnen.' },
         { id: 'players', label: 'Spielerverwaltung', description: 'Teleport, Heilen, Wiederbeleben, Einfrieren, Kick und Noclip.' },
@@ -733,6 +885,7 @@ const mockData = {
         { id: 'weather', label: 'Wetter', description: 'Darf das globale Wetter konfigurieren.' },
         { id: 'world', label: 'World Builder', description: 'Darf NPCs, Storages und Türen verwalten.' },
         { id: 'crafting', label: 'Crafting', description: 'Darf Rezepte und Crafting-Punkte verwalten.' },
+        { id: 'data', label: 'Data Admin', description: 'Darf Datenbank-Items erstellen und löschen.' },
         { id: 'rights', label: 'Rechteverwaltung', description: 'Darf ACP-Rechte verteilen und entziehen.' }
     ],
     players: [
@@ -741,10 +894,19 @@ const mockData = {
         { source: 27, serverName: 'ClaraB', characterName: 'Clara Bennett', characterId: 11, job: 'sheriff', jobGrade: 0, cash: 215, bank: 970, ping: 37, health: 0, itemCount: 9, frozen: true, permissions: {} }
     ],
     items: [
-        { name: 'bandage', label: 'Verband', maxStack: 10 },
-        { name: 'bread', label: 'Brot', maxStack: 20 },
-        { name: 'lockpick', label: 'Dietrich', maxStack: 10 },
-        { name: 'water', label: 'Wasserflasche', maxStack: 20 }
+        { name: 'bandage', label: 'Verband', description: 'Medizinischer Verband.', category: 'medical', rarity: 'common', maxStack: 10, weight: 120, usable: true, consumable: true, unique: false, tradable: true, prop: 'p_cs_bandage01x', protected: true },
+        { name: 'bread', label: 'Brot', description: 'Ein einfacher Reiseproviant.', category: 'food', rarity: 'common', maxStack: 20, weight: 300, usable: true, consumable: true, unique: false, tradable: true, prop: 'p_bread_06x', protected: true },
+        { name: 'lockpick', label: 'Dietrich', description: 'Werkzeug für Schlösser.', category: 'tool', rarity: 'uncommon', maxStack: 10, weight: 50, usable: true, consumable: false, unique: false, tradable: true, prop: 'p_lockpick01x', protected: false },
+        { name: 'water', label: 'Wasserflasche', description: 'Sauberes Trinkwasser.', category: 'drink', rarity: 'common', maxStack: 20, weight: 500, usable: true, consumable: true, unique: false, tradable: true, prop: 'p_canteen01x', protected: true }
+    ],
+    props: [
+        { label: 'Keine Prop-Zuordnung', model: '', category: 'Allgemein' },
+        { label: 'Bierflasche', model: 'p_bottlebeer01x', category: 'Getränke' },
+        { label: 'Brotlaib', model: 'p_bread_06x', category: 'Nahrung' },
+        { label: 'Verband', model: 'p_cs_bandage01x', category: 'Medizin' },
+        { label: 'Hammer', model: 'p_hammer01x', category: 'Werkzeuge' },
+        { label: 'Laterne', model: 'p_lantern09x', category: 'Ausrüstung' },
+        { label: 'Goldbarren', model: 'p_goldbar01x', category: 'Wertsachen' }
     ],
     weathers: [
         { id: 'sunny', label: 'Sonnig', description: 'Klarer Himmel und warmes Licht.' },
@@ -798,7 +960,7 @@ if (preview) {
     } else {
         app.classList.remove('hidden');
         applyData(mockData);
-        if (['players', 'world', 'crafting', 'rights'].includes(preview)) choosePage(preview);
+        if (['players', 'world', 'crafting', 'data', 'rights'].includes(preview)) choosePage(preview);
     }
 }
 

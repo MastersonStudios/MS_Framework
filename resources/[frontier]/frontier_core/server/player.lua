@@ -72,7 +72,7 @@ function Player:getInventory()
 end
 
 function Player:addItem(itemName, amount, reason)
-    local item = type(itemName) == 'string' and Config.Items[itemName]
+    local item = type(itemName) == 'string' and Frontier.GetItemDefinition(itemName)
     if not item or not Frontier.IsInteger(amount) or amount < 1 then return false end
 
     local inventory = self:getInventory()
@@ -88,7 +88,7 @@ function Player:addItem(itemName, amount, reason)
 end
 
 function Player:removeItem(itemName, amount, reason)
-    local item = type(itemName) == 'string' and Config.Items[itemName]
+    local item = type(itemName) == 'string' and Frontier.GetItemDefinition(itemName)
     if not item or not Frontier.IsInteger(amount) or amount < 1 then return false end
 
     local inventory = self:getInventory()

@@ -3,7 +3,7 @@ game 'rdr3'
 
 author 'Frontier Framework'
 description 'Standalone RedM roleplay core'
-version '1.3.0'
+version '1.4.0'
 
 lua54 'yes'
 
@@ -16,7 +16,10 @@ shared_scripts {
 
 server_scripts {
     '@oxmysql/lib/MySQL.lua',
-    'server/*.lua'
+    'server/items.lua',
+    'server/player.lua',
+    'server/main.lua',
+    'server/commands.lua'
 }
 
 client_scripts {
@@ -37,5 +40,8 @@ dependencies {
 server_export 'GetPlayer'
 server_export 'GetPlayerFromCharacterId'
 server_export 'GetPlayers'
+server_export 'GetItem'
 server_export 'GetItemCatalog'
+server_export 'CreateItem'
+server_export 'DeleteItem'
 server_export 'LogoutPlayer'

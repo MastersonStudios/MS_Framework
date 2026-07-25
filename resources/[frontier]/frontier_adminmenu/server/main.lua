@@ -332,6 +332,7 @@ local function payload(source)
         permissionDefinitions = AdminMenuConfig.Permissions,
         root = isRoot(source),
         admins = permissions.rights and adminRows() or {},
+        props = permissions.data and AdminMenuConfig.ItemProps or {},
         crafting = permissions.crafting and {
             recipes = sortedRows(CraftingRecipes),
             points = sortedRows(CraftingPoints)
@@ -343,7 +344,8 @@ local function payload(source)
             weatherTransition = AdminMenuConfig.MaxWeatherTransition,
             craftingAmount = AdminMenuConfig.MaxCraftingAmount,
             craftingIngredients = AdminMenuConfig.MaxCraftingIngredients,
-            craftingDuration = AdminMenuConfig.MaxCraftingDuration
+            craftingDuration = AdminMenuConfig.MaxCraftingDuration,
+            itemDefinitions = AdminMenuConfig.MaxItemDefinitions
         }
     }
 end
@@ -702,6 +704,46 @@ local function deleteCraftingPoint(source, data)
     return result(source, true, ('Crafting-Punkt #%d gelöscht.'):format(id))
 end
 
+local function createDatabaseItem(source, data)
+    if not hasPermission(source, 'data') then
+        return result(source, false, 'Keine Berechtigung für den Data Admin.')
+    end
+    local catalog = exports.frontier_core:GetItemCatalog()
+    if #catalog >= AdminMenuConfig.MaxItemDefinitions then
+        return result(source, false, 'Das konfigurierte Itemlimit wurde erreicht.')
+    end
+    local callOk, success, itemOrError = pcall(function()
+        return exports.frontier_core:CreateItem(data, getLicense(source) or 'console')
+    end)
+    if not callOk then
+        print(('[Frontier ACP] Itemcreator-Fehler: %s'):format(tostring(success)))
+        return result(source, false, 'Der Core konnte das Item nicht erstellen.')
+    end
+    if not success then return result(source, false, itemOrError or 'Item konnte nicht erstellt werden.') end
+    audit(source, 'Datenbank-Item erstellt', itemOrError.name, itemOrError.label)
+    refreshAllMenus()
+    return result(source, true, ('Item „%s“ wurde direkt in der Datenbank erstellt.'):format(itemOrError.label))
+end
+
+local function deleteDatabaseItem(source, data)
+    if not hasPermission(source, 'data') then
+        return result(source, false, 'Keine Berechtigung für den Data Admin.')
+    end
+    local name = type(data.name) == 'string' and data.name:lower()
+    if not name then return result(source, false, 'Itemname fehlt.') end
+    local callOk, success, itemOrError = pcall(function()
+        return exports.frontier_core:DeleteItem(name)
+    end)
+    if not callOk then
+        print(('[Frontier ACP] Item-Löschfehler: %s'):format(tostring(success)))
+        return result(source, false, 'Der Core konnte das Item nicht löschen.')
+    end
+    if not success then return result(source, false, itemOrError or 'Item konnte nicht gelöscht werden.') end
+    audit(source, 'Datenbank-Item gelöscht', name, itemOrError.label)
+    refreshAllMenus()
+    return result(source, true, ('Item „%s“ wurde gelöscht.'):format(itemOrError.label))
+end
+
 RegisterNetEvent('frontier_adminmenu:server:open', function()
     local source = source
     if not Ready then return notify(source, 'Das ACP wird noch initialisiert.') end
@@ -737,6 +779,8 @@ RegisterNetEvent('frontier_adminmenu:server:execute', function(action, data)
     if action == 'deleteRecipe' then return deleteRecipe(source, data) end
     if action == 'createCraftingPoint' then return createCraftingPoint(source, data) end
     if action == 'deleteCraftingPoint' then return deleteCraftingPoint(source, data) end
+    if action == 'createItem' then return createDatabaseItem(source, data) end
+    if action == 'deleteItem' then return deleteDatabaseItem(source, data) end
 
     if action == 'setWeather' then
         if not hasPermission(source, 'weather') then

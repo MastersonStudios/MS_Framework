@@ -25,22 +25,50 @@ Config.Items = {
     water = {
         label = 'Wasserflasche',
         description = 'Sauberes Trinkwasser.',
-        maxStack = 20
+        category = 'drink',
+        rarity = 'common',
+        maxStack = 20,
+        weight = 500,
+        usable = true,
+        consumable = true,
+        tradable = true,
+        prop = 'p_canteen01x'
     },
     bread = {
         label = 'Brot',
         description = 'Ein einfacher Reiseproviant.',
-        maxStack = 20
+        category = 'food',
+        rarity = 'common',
+        maxStack = 20,
+        weight = 300,
+        usable = true,
+        consumable = true,
+        tradable = true,
+        prop = 'p_bread_06x'
     },
     bandage = {
         label = 'Verband',
         description = 'Medizinischer Verband zur Wundversorgung.',
-        maxStack = 10
+        category = 'medical',
+        rarity = 'common',
+        maxStack = 10,
+        weight = 120,
+        usable = true,
+        consumable = true,
+        tradable = true,
+        prop = 'p_cs_bandage01x'
     },
     lockpick = {
         label = 'Dietrich',
         description = 'Ein empfindliches Werkzeug für Schlösser.',
-        maxStack = 10
+        category = 'tool',
+        rarity = 'uncommon',
+        maxStack = 10,
+        weight = 50,
+        usable = true,
+        consumable = false,
+        tradable = true,
+        prop = 'p_lockpick01x'
     }
 }
 
