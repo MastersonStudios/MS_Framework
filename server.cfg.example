@@ -13,6 +13,7 @@ ensure MS_LoadingScreen
 ensure oxmysql
 ensure frontier_core
 ensure frontier_playersync
+ensure MS_WeaponDamage
 ensure MS_Inventory
 ensure MS_ClothingShop
 ensure MS_Stables
@@ -31,4 +32,5 @@ add_ace group.admin frontier.worldbuilder allow
 add_ace group.admin frontier.mapeditor allow
 add_ace group.admin frontier.admin.logout allow
 add_ace group.admin frontier.admin.guarma allow
+add_ace group.admin frontier.weapon.damage allow
 # add_principal identifier.license:YOUR_LICENSE group.admin

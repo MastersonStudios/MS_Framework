@@ -22,6 +22,7 @@ Ein schlankes, eigenständiges Roleplay-Framework für RedM.
 - persistente Crafting-Rezepte und frei platzierbare Crafting-Punkte
 - Data Admin mit Datenbank-Itemcreator und durchsuchbarem Prop-Katalog
 - serverautoritatives Spieler-Presence-Sync für bis zu 64 Slots
+- `MS_WeaponDamage` mit einzeln konfigurierbarem Schaden für sämtliche Waffen
 - `MS_Inventory` mit konfigurierbarer Kapazität, Kontextaktionen und Outfit-Drag-and-Drop
 - `MS_ClothingShop` mit Charaktervorschau und gemeinsamer Einkaufsliste
 - `MS_Stables` mit Pferde-, Ausrüstungs-, Fellfarben- und Kutschenhandel
@@ -42,7 +43,7 @@ Ein schlankes, eigenständiges Roleplay-Framework für RedM.
    Lizenzschlüssel anpassen.
 4. In der Konsole zuerst `ensure MS_LoadingScreen` und `ensure frontier_core`,
    danach
-   `ensure frontier_playersync`, `ensure MS_Inventory`,
+   `ensure frontier_playersync`, `ensure MS_WeaponDamage`, `ensure MS_Inventory`,
    `ensure MS_ClothingShop`, `ensure MS_Stables`, `ensure MS_Telegrams`,
    `ensure frontier_worldbuilder`,
    `ensure frontier_adminmenu`,
@@ -225,6 +226,32 @@ Titel, Servername, Untertitel, Videopfad, Lautstärke, Start-Mute und Hinweise
 werden in `resources/[frontier]/MS_LoadingScreen/html/config.js` konfiguriert.
 Die Resource muss vor den Framework-Resources mit `ensure MS_LoadingScreen`
 gestartet werden; `server.cfg.example` enthält die passende Reihenfolge.
+
+## MS Weapon Damage
+
+`MS_WeaponDamage` konfiguriert den ausgeteilten Schaden für jede RedM-Waffe
+einzeln. Basiswaffen, Story-Varianten und die später hinzugefügten
+Red-Dead-Online-Waffen sind in
+`resources/[frontier]/MS_WeaponDamage/config.lua` eingetragen.
+
+Der Wert `1.00` verwendet den originalen Waffenschaden, `0.50` halbiert ihn
+und `2.00` verdoppelt ihn. Die serverseitig geprüfte Konfiguration wird an alle
+Spieler verteilt und beim Waffenwechsel erneut angewendet. Verschiedene
+Munitionstypen derselben Waffe verwenden denselben Waffenmultiplikator.
+
+Admins mit dem ACE-Recht `frontier.weapon.damage` können Werte bis zum nächsten
+Resource-Neustart ändern:
+
+```text
+/weapondamage status
+/weapondamage set WEAPON_REVOLVER_CATTLEMAN 0.75
+/weapondamage reset WEAPON_REVOLVER_CATTLEMAN
+/weapondamage resetall
+```
+
+Dauerhafte Änderungen werden direkt in `config.lua` vorgenommen und mit
+`restart MS_WeaponDamage` aktiviert. Unter- und Obergrenze, Prüfintervall,
+Debug-Ausgabe und Laufzeitänderungen sind dort ebenfalls konfigurierbar.
 
 ## Mapeditor
 
