@@ -1,7 +1,6 @@
 const jail = document.getElementById('jail');
 const time = document.getElementById('time');
 const reason = document.getElementById('reason');
-const jailedBy = document.getElementById('jailed-by');
 const positions = new Set(['top-center', 'top-left', 'top-right']);
 
 function formatTime(rawSeconds) {
@@ -28,7 +27,6 @@ function configure(config = {}) {
 function applyState(state = {}) {
     time.textContent = formatTime(state.remainingSeconds);
     reason.textContent = String(state.reason || 'Keine Begründung angegeben.');
-    jailedBy.textContent = `Inhaftiert durch: ${String(state.jailedBy || 'System')}`;
 }
 
 window.addEventListener('message', ({ data }) => {
@@ -47,6 +45,5 @@ window.addEventListener('message', ({ data }) => {
         jail.classList.remove('is-visible');
         time.textContent = '00:00';
         reason.textContent = 'Keine Begründung angegeben.';
-        jailedBy.textContent = 'Inhaftiert durch: System';
     }
 });

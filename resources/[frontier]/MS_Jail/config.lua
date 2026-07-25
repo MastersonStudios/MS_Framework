@@ -5,10 +5,24 @@ MSJailConfig.JailCommand = 'jail'
 MSJailConfig.UnjailCommand = 'unjail'
 MSJailConfig.StatusCommand = 'jailstatus'
 
+-- Jobrechte gelten zusätzlich zum Admin-ACE. Bereits inhaftierte Jobträger
+-- können ihre Jail-Rechte nicht verwenden.
+MSJailConfig.JobPermissions = {
+    sheriff = {
+        JailMinGrade = 0,
+        UnjailMinGrade = 0,
+        StatusMinGrade = 0
+    }
+}
+
 MSJailConfig.MinimumSentenceMinutes = 1
 MSJailConfig.MaximumSentenceMinutes = 1440
 MSJailConfig.MaximumReasonLength = 180
 MSJailConfig.DefaultReason = 'Keine Begründung angegeben.'
+
+-- 0.5 bedeutet: Zehn reale Offline-Minuten reduzieren die Haft um fünf Minuten.
+MSJailConfig.OfflineProgressMultiplier = 0.5
+MSJailConfig.PersistenceIntervalMs = 10000
 
 -- Standardpunkt auf Sisika. Weitere Zellen können ergänzt werden; die Auswahl
 -- erfolgt stabil anhand der Charakter-ID.

@@ -1,6 +1,7 @@
 local Config = MSJailConfig
 local ActiveJails = {}
 local LastReturns = {}
+local LastPersists = {}
 local DatabaseReady = false
 
 local function debugLog(message, ...)
@@ -20,9 +21,29 @@ local function getPlayer(playerSource)
     return exports.frontier_core:GetPlayer(tonumber(playerSource))
 end
 
-local function isAdmin(playerSource)
-    return playerSource == 0
-        or IsPlayerAceAllowed(playerSource, tostring(Config.AdminAce or 'frontier.admin.jail'))
+local function hasPermission(playerSource, action)
+    if playerSource == 0
+        or IsPlayerAceAllowed(playerSource, tostring(Config.AdminAce or 'frontier.admin.jail')) then
+        return true
+    end
+    if ActiveJails[playerSource] then return false end
+
+    local player = getPlayer(playerSource)
+    local permissions = player
+        and type(Config.JobPermissions) == 'table'
+        and Config.JobPermissions[player.job]
+    if type(permissions) ~= 'table' then return false end
+
+    local requiredGrade
+    if action == 'jail' then
+        requiredGrade = permissions.JailMinGrade
+    elseif action == 'unjail' then
+        requiredGrade = permissions.UnjailMinGrade
+    elseif action == 'status' then
+        requiredGrade = permissions.StatusMinGrade
+    end
+    requiredGrade = tonumber(requiredGrade)
+    return requiredGrade ~= nil and (tonumber(player.jobGrade) or -1) >= requiredGrade
 end
 
 local function cleanReason(value)
@@ -58,19 +79,35 @@ local function cellFor(characterId)
     return cells[index], index
 end
 
-local function remainingSeconds(state)
-    return math.max(0, math.floor((tonumber(state and state.releaseAt) or 0) - os.time()))
+local function updateOnlineClock(state, now)
+    if not state then return 0 end
+    now = tonumber(now) or os.time()
+    local lastTick = tonumber(state.lastTick) or now
+    local elapsed = math.max(0, now - lastTick)
+    if elapsed > 0 then
+        state.remainingSeconds = math.max(
+            0,
+            (tonumber(state.remainingSeconds) or 0) - elapsed
+        )
+        state.lastTick = now
+    end
+    return math.max(0, math.floor(tonumber(state.remainingSeconds) or 0))
+end
+
+local function remainingSeconds(state, now)
+    return updateOnlineClock(state, now)
 end
 
 local function statePayload(state)
     if not state then return nil end
+    local remaining = remainingSeconds(state)
     return {
         characterId = state.characterId,
         reason = state.reason,
         jailedBy = state.jailedBy,
         startedAt = state.startedAt,
-        releaseAt = state.releaseAt,
-        remainingSeconds = remainingSeconds(state),
+        releaseAt = os.time() + remaining,
+        remainingSeconds = remaining,
         cell = coordsPayload(state.cell),
         cellIndex = state.cellIndex
     }
@@ -83,13 +120,61 @@ local function createTable()
             jailed_by VARCHAR(100) NOT NULL,
             reason VARCHAR(180) NOT NULL,
             started_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            release_at TIMESTAMP NOT NULL,
+            release_at TIMESTAMP NULL,
+            remaining_seconds INT UNSIGNED NOT NULL DEFAULT 0,
+            last_update_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY (character_id),
             KEY idx_ms_jail_release (release_at),
             CONSTRAINT fk_ms_jail_character
                 FOREIGN KEY (character_id) REFERENCES frontier_characters(id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    ]])
+end
+
+local function columnExists(columnName)
+    return (tonumber(MySQL.scalar.await([[
+        SELECT COUNT(*)
+        FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'ms_jail_sentences'
+          AND COLUMN_NAME = ?
+    ]], { columnName })) or 0) > 0
+end
+
+local function migrateTable()
+    createTable()
+    if not columnExists('remaining_seconds') then
+        MySQL.query.await([[
+            ALTER TABLE ms_jail_sentences
+            ADD COLUMN remaining_seconds INT UNSIGNED NULL AFTER release_at
+        ]])
+    end
+    if not columnExists('last_update_at') then
+        MySQL.query.await([[
+            ALTER TABLE ms_jail_sentences
+            ADD COLUMN last_update_at TIMESTAMP NULL DEFAULT NULL AFTER remaining_seconds
+        ]])
+    end
+
+    MySQL.update.await([[
+        UPDATE ms_jail_sentences
+        SET remaining_seconds = GREATEST(
+                0,
+                COALESCE(TIMESTAMPDIFF(SECOND, CURRENT_TIMESTAMP, release_at), 0)
+            )
+        WHERE remaining_seconds IS NULL
+    ]])
+    MySQL.update.await([[
+        UPDATE ms_jail_sentences
+        SET last_update_at = CURRENT_TIMESTAMP
+        WHERE last_update_at IS NULL
+    ]])
+    MySQL.query.await([[
+        ALTER TABLE ms_jail_sentences
+            MODIFY release_at TIMESTAMP NULL,
+            MODIFY remaining_seconds INT UNSIGNED NOT NULL DEFAULT 0,
+            MODIFY last_update_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     ]])
 end
 
@@ -103,22 +188,29 @@ end
 
 local function persistSentence(state)
     if not DatabaseReady then return false end
+    local now = os.time()
+    local remaining = remainingSeconds(state, now)
     MySQL.update.await([[
         INSERT INTO ms_jail_sentences
-            (character_id, jailed_by, reason, started_at, release_at)
-        VALUES (?, ?, ?, FROM_UNIXTIME(?), FROM_UNIXTIME(?))
+            (character_id, jailed_by, reason, started_at, release_at,
+             remaining_seconds, last_update_at)
+        VALUES (?, ?, ?, FROM_UNIXTIME(?), FROM_UNIXTIME(?), ?, FROM_UNIXTIME(?))
         ON DUPLICATE KEY UPDATE
             jailed_by = VALUES(jailed_by),
             reason = VALUES(reason),
             started_at = VALUES(started_at),
             release_at = VALUES(release_at),
+            remaining_seconds = VALUES(remaining_seconds),
+            last_update_at = VALUES(last_update_at),
             updated_at = CURRENT_TIMESTAMP
     ]], {
         state.characterId,
         state.jailedBy,
         state.reason,
         state.startedAt,
-        state.releaseAt
+        now + remaining,
+        remaining,
+        now
     })
     return true
 end
@@ -148,6 +240,7 @@ local function releaseInternal(playerSource, releaseReason, actorSource)
     deleteSentence(state.characterId)
     ActiveJails[playerSource] = nil
     LastReturns[playerSource] = nil
+    LastPersists[playerSource] = nil
 
     local reason = cleanReason(releaseReason or 'Haftzeit beendet.')
     local releaseCoords = Config.ReleaseCoords
@@ -188,7 +281,8 @@ local function jailInternal(playerSource, minutes, reason, actorSource)
         reason = cleanReason(reason),
         jailedBy = actorLabel(actorSource),
         startedAt = now,
-        releaseAt = now + minutes * 60,
+        remainingSeconds = minutes * 60,
+        lastTick = now,
         cell = cell,
         cellIndex = cellIndex
     }
@@ -196,6 +290,7 @@ local function jailInternal(playerSource, minutes, reason, actorSource)
     persistSentence(state)
     ActiveJails[playerSource] = state
     LastReturns[playerSource] = nil
+    LastPersists[playerSource] = GetGameTimer()
     teleportAndSave(
         playerSource,
         player,
@@ -226,7 +321,9 @@ local function loadSentence(playerSource, player)
     local row = MySQL.single.await([[
         SELECT jailed_by, reason,
                UNIX_TIMESTAMP(started_at) AS started_unix,
-               UNIX_TIMESTAMP(release_at) AS release_unix
+               UNIX_TIMESTAMP(release_at) AS release_unix,
+               remaining_seconds,
+               UNIX_TIMESTAMP(last_update_at) AS last_update_unix
         FROM ms_jail_sentences
         WHERE character_id = ?
     ]], { player.characterId })
@@ -237,34 +334,44 @@ local function loadSentence(playerSource, player)
         return false
     end
 
-    local releaseAt = tonumber(row.release_unix) or 0
-    if releaseAt <= os.time() then
-        deleteSentence(player.characterId)
-        ActiveJails[playerSource] = nil
-        teleportAndSave(
-            playerSource,
-            player,
-            Config.ReleaseCoords,
-            'ms_jail:client:released',
-            { reason = 'Deine Haftzeit ist während deiner Abwesenheit abgelaufen.' }
-        )
-        notify(playerSource, 'Deine Haftzeit ist während deiner Abwesenheit abgelaufen.')
-        return false
-    end
-
     local cell, cellIndex = cellFor(player.characterId)
     if not cell then return false end
+    local now = os.time()
+    local storedRemaining = tonumber(row.remaining_seconds)
+    if storedRemaining == nil then
+        storedRemaining = math.max(0, (tonumber(row.release_unix) or now) - now)
+    end
+    local lastUpdate = tonumber(row.last_update_unix) or now
+    local offlineSeconds = math.max(0, now - lastUpdate)
+    local offlineMultiplier = math.max(
+        0.0,
+        math.min(1.0, tonumber(Config.OfflineProgressMultiplier) or 0.5)
+    )
+    local creditedOfflineSeconds = math.floor(offlineSeconds * offlineMultiplier)
     local state = {
         characterId = player.characterId,
         reason = cleanReason(row.reason),
         jailedBy = tostring(row.jailed_by or 'System'),
-        startedAt = tonumber(row.started_unix) or os.time(),
-        releaseAt = releaseAt,
+        startedAt = tonumber(row.started_unix) or now,
+        remainingSeconds = math.max(0, storedRemaining - creditedOfflineSeconds),
+        lastTick = now,
         cell = cell,
         cellIndex = cellIndex
     }
     ActiveJails[playerSource] = state
     LastReturns[playerSource] = nil
+    LastPersists[playerSource] = GetGameTimer()
+
+    if remainingSeconds(state, now) <= 0 then
+        releaseInternal(
+            playerSource,
+            'Deine Haftzeit ist während deiner Abwesenheit abgelaufen.',
+            0
+        )
+        return false
+    end
+
+    persistSentence(state)
     teleportAndSave(
         playerSource,
         player,
@@ -301,7 +408,9 @@ exports('JailPlayer', JailPlayer)
 exports('ReleasePlayer', ReleasePlayer)
 
 RegisterCommand(Config.JailCommand or 'jail', function(playerSource, args)
-    if not isAdmin(playerSource) then return notify(playerSource, 'Keine Berechtigung.') end
+    if not hasPermission(playerSource, 'jail') then
+        return notify(playerSource, 'Keine Berechtigung.')
+    end
     local targetSource = tonumber(args[1])
     local minutes = tonumber(args[2])
     local reason = table.concat(args, ' ', 3)
@@ -314,7 +423,9 @@ RegisterCommand(Config.JailCommand or 'jail', function(playerSource, args)
 end, false)
 
 RegisterCommand(Config.UnjailCommand or 'unjail', function(playerSource, args)
-    if not isAdmin(playerSource) then return notify(playerSource, 'Keine Berechtigung.') end
+    if not hasPermission(playerSource, 'unjail') then
+        return notify(playerSource, 'Keine Berechtigung.')
+    end
     local targetSource = tonumber(args[1])
     if not targetSource then
         return notify(playerSource, 'Verwendung: unjail <Server-ID> [Grund]')
@@ -332,7 +443,7 @@ RegisterCommand(Config.StatusCommand or 'jailstatus', function(playerSource, arg
         return notify(playerSource, 'Verwendung: jailstatus <Server-ID>')
     end
     if not targetSource then targetSource = playerSource end
-    if targetSource ~= playerSource and not isAdmin(playerSource) then
+    if targetSource ~= playerSource and not hasPermission(playerSource, 'status') then
         return notify(playerSource, 'Keine Berechtigung für den Haftstatus anderer Spieler.')
     end
 
@@ -357,20 +468,25 @@ AddEventHandler('frontier:server:playerLoaded', function(playerSource, player)
     end
 end)
 
-local function clearSource(playerSource)
+local function clearSource(playerSource, persist)
     playerSource = tonumber(playerSource)
     if not playerSource then return end
+    local state = ActiveJails[playerSource]
+    if persist == true and state and DatabaseReady then persistSentence(state) end
     ActiveJails[playerSource] = nil
     LastReturns[playerSource] = nil
+    LastPersists[playerSource] = nil
 end
 
-AddEventHandler('frontier:server:playerUnloaded', clearSource)
+AddEventHandler('frontier:server:playerUnloaded', function(playerSource)
+    clearSource(playerSource, true)
+end)
 AddEventHandler('playerDropped', function()
-    clearSource(source)
+    clearSource(source, true)
 end)
 
 MySQL.ready(function()
-    createTable()
+    migrateTable()
     DatabaseReady = true
     for playerSource, player in pairs(exports.frontier_core:GetPlayers() or {}) do
         loadSentence(tonumber(playerSource), player)
@@ -388,10 +504,20 @@ CreateThread(function()
         for playerSource, state in pairs(ActiveJails) do
             local player = getPlayer(playerSource)
             if not player or player.characterId ~= state.characterId then
-                clearSource(playerSource)
-            elseif remainingSeconds(state) <= 0 then
+                clearSource(playerSource, true)
+            elseif remainingSeconds(state, now) <= 0 then
                 releaseInternal(playerSource, 'Deine Haftzeit ist beendet.', 0)
             else
+                local persistInterval = math.max(
+                    1000,
+                    math.floor(tonumber(Config.PersistenceIntervalMs) or 10000)
+                )
+                if not LastPersists[playerSource]
+                    or gameTimer - LastPersists[playerSource] >= persistInterval then
+                    persistSentence(state)
+                    LastPersists[playerSource] = gameTimer
+                end
+
                 local ped = GetPlayerPed(playerSource)
                 if ped and ped ~= 0 and boundary.Center then
                     local coords = GetEntityCoords(ped)
@@ -419,4 +545,9 @@ CreateThread(function()
             end
         end
     end
+end)
+
+AddEventHandler('onResourceStop', function(resourceName)
+    if resourceName ~= GetCurrentResourceName() or not DatabaseReady then return end
+    for _, state in pairs(ActiveJails) do persistSentence(state) end
 end)

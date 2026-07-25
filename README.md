@@ -114,9 +114,9 @@ werden hier nicht aufgeführt.
 | `/guarmareset [Server-ID]` | `frontier.admin.guarma` | Setzt das Guarma-Tutorial zurück und startet es erneut; ohne ID für den eigenen Charakter. |
 | `/frameworkversion check` | `frontier.version.check` | Erzwingt unter Beachtung des konfigurierten Mindestintervalls eine neue Versionsabfrage. |
 | `/medicdisease <Server-ID> <add\|remove\|clear\|list> [Krankheit] [Schweregrad]` | `frontier.admin` | Verwaltet Krankheiten eines aktiven Charakters. |
-| `/jail <Server-ID> <Minuten> [Grund]` | `frontier.admin.jail` | Inhaftiert einen aktiven Charakter persistent in Sisika. |
-| `/unjail <Server-ID> [Grund]` | `frontier.admin.jail` | Entlässt einen Gefangenen vorzeitig. |
-| `/jailstatus <Server-ID>` | `frontier.admin.jail` | Zeigt den Haftstatus eines anderen Spielers. |
+| `/jail <Server-ID> <Minuten> [Grund]` | `frontier.admin.jail` oder Job `sheriff` | Inhaftiert einen aktiven Charakter persistent in Sisika. |
+| `/unjail <Server-ID> [Grund]` | `frontier.admin.jail` oder Job `sheriff` | Entlässt einen Gefangenen vorzeitig. |
+| `/jailstatus <Server-ID>` | `frontier.admin.jail` oder Job `sheriff` | Zeigt den Haftstatus eines anderen Spielers. |
 | `/weapondamage status` | `frontier.weapon.damage` | Zeigt Waffenanzahl, Laufzeitänderungen und Revision. |
 | `/weapondamage set <WEAPON_NAME> <Multiplikator>` | `frontier.weapon.damage` | Setzt den Schaden einer Waffe bis zum nächsten Resource-Neustart. |
 | `/weapondamage reset <WEAPON_NAME>` | `frontier.weapon.damage` | Entfernt die Laufzeitänderung einer Waffe. |
@@ -294,18 +294,23 @@ und optional im Pausenmenü ausgeblendet.
 `MS_Jail` inhaftiert aktive Charaktere persistent im Sisika Penitentiary.
 Admins verwenden `/jail <Server-ID> <Minuten> [Grund]` und
 `/unjail <Server-ID> [Grund]`; das benötigte ACE-Recht lautet
-`frontier.admin.jail`.
+`frontier.admin.jail`. Alternativ dürfen konfigurierbare Grade des Jobs
+`sheriff` diese Befehle verwenden. Standardmäßig sind Deputy und Sheriff
+freigeschaltet; inhaftierte Sheriffs verlieren ihre Jobrechte bis zur
+Entlassung.
 
 Haftzeit, Begründung und verantwortlicher Admin werden in
-`ms_jail_sentences` gespeichert. Die Restzeit läuft auch bei einem Reconnect
-weiter. Nach Ablauf wird der Charakter automatisch entlassen. Verlässt ein
+`ms_jail_sentences` gespeichert. Online läuft die Restzeit normal, offline mit
+dem Faktor `0.5`: Zehn reale Offline-Minuten reduzieren die Haft um fünf
+Minuten. Nach Ablauf wird der Charakter automatisch entlassen. Verlässt ein
 Gefangener den konfigurierten Sisika-Bereich, bringt ihn die serverseitige
 Grenzprüfung zurück in seine Zelle.
 
 Zellen, Entlassungsposition, Gefängnismittelpunkt, Radius, erlaubte Strafzeiten,
-HUD und Rechte befinden sich in `resources/[frontier]/MS_Jail/config.lua`.
-Gefangene sehen Restzeit und Haftgrund im oberen Bildschirmbereich und können
-den Status zusätzlich mit `/jailstatus` abfragen.
+HUD, Sheriff-Jobgrade, Offline-Faktor und Rechte befinden sich in
+`resources/[frontier]/MS_Jail/config.lua`. Das reduzierte HUD zeigt
+ausschließlich Restzeit und Haftgrund; der Status kann zusätzlich mit
+`/jailstatus` abgefragt werden.
 
 ## MS Clothing Shop
 
