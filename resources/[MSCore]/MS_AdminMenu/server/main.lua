@@ -440,6 +440,41 @@ local function worldBuilderData(source)
     return success and data or nil
 end
 
+local function resourceGuardData(source)
+    if not hasPermission(source, 'resources') then return nil end
+    local state = GetResourceState('MS_ResourceGuard')
+    if state ~= 'started' then
+        return {
+            available = false,
+            enabled = false,
+            resourceState = state,
+            summary = {
+                total = 0,
+                started = 0,
+                stopped = 0,
+                warnings = 0,
+                critical = 1,
+                quarantined = 0
+            },
+            resources = {}
+        }
+    end
+    local success, snapshot = pcall(function()
+        return exports.MS_ResourceGuard:GetSnapshot()
+    end)
+    if not success or type(snapshot) ~= 'table' then
+        return {
+            available = false,
+            enabled = false,
+            resourceState = state,
+            error = 'Status konnte nicht gelesen werden.',
+            resources = {}
+        }
+    end
+    snapshot.resourceState = state
+    return snapshot
+end
+
 local function payload(source)
     local permissions = permissionState(source)
     return {
@@ -467,6 +502,7 @@ local function payload(source)
                 tonumber(AdminMenuConfig.SupportLogLimit) or 500
             )))
         } or nil,
+        resourceGuard = resourceGuardData(source),
         worldBuilder = worldBuilderData(source),
         limits = {
             money = AdminMenuConfig.MaxMoneyGrant,
@@ -1050,6 +1086,59 @@ RegisterNetEvent('ms_adminmenu:server:execute', function(action, data)
         return result(source, true, 'Server-Announcement gesendet.')
     end
 
+    if action == 'resourceGuardRefresh'
+        or action == 'resourceGuardToggle'
+        or action == 'resourceGuardQuarantine'
+        or action == 'resourceGuardRelease' then
+        if not hasPermission(source, 'resources') then
+            return result(source, false, 'Keine Berechtigung für den KI-Ressourcenwächter.')
+        end
+        if GetResourceState('MS_ResourceGuard') ~= 'started' then
+            return result(source, false, 'MS_ResourceGuard ist nicht gestartet.')
+        end
+        if action == 'resourceGuardRefresh' then
+            local success = pcall(function() exports.MS_ResourceGuard:RunCheck() end)
+            return result(
+                source,
+                success,
+                success and 'Resource-Prüfung abgeschlossen.' or 'Resource-Prüfung fehlgeschlagen.'
+            )
+        end
+        if action == 'resourceGuardToggle' then
+            if type(data.enabled) ~= 'boolean' then
+                return result(source, false, 'Ungültiger Überwachungsstatus.')
+            end
+            local success, changed, message = pcall(function()
+                return exports.MS_ResourceGuard:SetEnabled(data.enabled)
+            end)
+            if not success then return result(source, false, 'Überwachung konnte nicht geändert werden.') end
+            audit(source, 'KI-Ressourcenwächter', nil, data.enabled and 'aktiviert' or 'deaktiviert')
+            return result(source, changed == true, message or 'Überwachungsstatus aktualisiert.')
+        end
+        local resource = cleanText(data.resource, 100, false)
+        if not resource then return result(source, false, 'Resource-Name ungültig.') end
+        if action == 'resourceGuardQuarantine' then
+            local success, changed, message = pcall(function()
+                return exports.MS_ResourceGuard:QuarantineResource(
+                    resource,
+                    GetPlayerName(source) or ('Admin %d'):format(source)
+                )
+            end)
+            if not success then return result(source, false, 'Quarantäneaktion fehlgeschlagen.') end
+            audit(source, 'Resource-Quarantäne', resource, message)
+            return result(source, changed == true, message or 'Quarantäneaktion verarbeitet.')
+        end
+        local success, changed, message = pcall(function()
+            return exports.MS_ResourceGuard:ReleaseResource(
+                resource,
+                GetPlayerName(source) or ('Admin %d'):format(source)
+            )
+        end)
+        if not success then return result(source, false, 'Freigabeaktion fehlgeschlagen.') end
+        audit(source, 'Resource-Freigabe', resource, message)
+        return result(source, changed == true, message or 'Freigabeaktion verarbeitet.')
+    end
+
     local target, player = activeTarget(data)
     if not target then return result(source, false, 'Spieler nicht gefunden.') end
 
@@ -1537,5 +1626,16 @@ AddEventHandler('onResourceStop', function(resource)
     if resource ~= GetCurrentResourceName() then return end
     for target in pairs(FrozenPlayers) do
         TriggerClientEvent('ms_adminmenu:client:setFrozen', target, false)
+    end
+end)
+
+AddEventHandler('ms_resourceguard:server:alert', function(alert)
+    if type(alert) ~= 'table' or type(alert.resource) ~= 'string' then return end
+    local reason = type(alert.reason) == 'string' and alert.reason or 'Anomalie erkannt.'
+    if #reason > 180 then reason = reason:sub(1, 180) end
+    local message = ('KI-Ressourcenwächter: %s – %s'):format(alert.resource, reason)
+    for _, playerId in ipairs(GetPlayers()) do
+        local target = tonumber(playerId)
+        if target and hasPermission(target, 'resources') then notify(target, message) end
     end
 end)

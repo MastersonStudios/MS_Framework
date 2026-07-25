@@ -46,6 +46,11 @@ AdminMenuConfig.Permissions = {
         description = 'Darf serverweite Nachrichten über das ACP senden.'
     },
     {
+        id = 'resources',
+        label = 'KI-Ressourcenwächter',
+        description = 'Darf den Resource-Status einsehen und sichere Quarantäneaktionen ausführen.'
+    },
+    {
         id = 'economy',
         label = 'Wirtschaft',
         description = 'Darf Geld und Items vergeben.'

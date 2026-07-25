@@ -15,6 +15,7 @@ const state = {
     selectedWeather: null,
     page: 'overview',
     selectedSupportLog: null,
+    adminControlTab: 'announcement',
     worldTab: 'npc',
     craftAdminTab: 'recipes',
     dataAdminTab: 'items',
@@ -104,12 +105,13 @@ function applyPermissionVisibility() {
         const allowed = button.dataset.permission.split(',').some((permission) => hasPermission(permission));
         button.classList.toggle('permission-hidden', !allowed);
     });
-    ['players', 'economy', 'weather'].forEach((permission) => {
+    (state.data?.permissionDefinitions || []).forEach(({ id: permission }) => {
         $(`.permission-${permission}`)?.classList.toggle('permission-hidden', !hasPermission(permission));
         $$(`.permission-${permission}`).forEach((element) => {
             element.classList.toggle('permission-hidden', !hasPermission(permission));
         });
     });
+    selectAdminControlTab(state.adminControlTab);
     choosePage(state.page);
 }
 
@@ -327,6 +329,82 @@ function selectDataAdminTab(tab) {
     state.dataAdminTab = tab;
     $$('[data-data-tab]').forEach((button) => button.classList.toggle('active', button.dataset.dataTab === tab));
     $$('[data-data-view]').forEach((view) => view.classList.toggle('active', view.dataset.dataView === tab));
+}
+
+function selectAdminControlTab(tab) {
+    let button = $(`[data-control-tab="${tab}"]`);
+    if (!button || button.classList.contains('permission-hidden')) {
+        button = $$('[data-control-tab]').find((candidate) => !candidate.classList.contains('permission-hidden'));
+    }
+    if (!button) return;
+    tab = button.dataset.controlTab;
+    state.adminControlTab = tab;
+    $$('[data-control-tab]').forEach((item) => item.classList.toggle('active', item.dataset.controlTab === tab));
+    $$('[data-control-view]').forEach((view) => view.classList.toggle('active', view.dataset.controlView === tab));
+}
+
+function renderResourceGuard() {
+    const guard = state.data?.resourceGuard;
+    const summary = guard?.summary || {};
+    $('#guard-total').textContent = String(summary.total || 0);
+    $('#guard-started').textContent = String(summary.started || 0);
+    $('#guard-anomalies').textContent = String((summary.warnings || 0) + (summary.critical || 0));
+    $('#guard-quarantined').textContent = String(summary.quarantined || 0);
+    $('#guard-state').textContent = !guard?.available
+        ? `Nicht verfügbar · ${guard?.resourceState || 'missing'}`
+        : guard.enabled
+            ? `Überwachung aktiv${guard.startupGraceRemainingMs > 0 ? ' · Startschutz aktiv' : ''}`
+            : 'Überwachung pausiert';
+    const toggle = $('#resource-guard-toggle');
+    toggle.disabled = !guard?.available;
+    toggle.textContent = guard?.enabled ? 'Überwachung pausieren' : 'Überwachung aktivieren';
+    toggle.classList.toggle('danger', guard?.enabled === true);
+
+    const list = $('#resource-guard-list');
+    list.replaceChildren();
+    if (!guard?.available) {
+        list.append(text('div', guard?.error || 'MS_ResourceGuard ist nicht gestartet.', 'empty-state'));
+        return;
+    }
+    const query = $('#resource-guard-search').value.trim().toLowerCase();
+    const resources = (guard.resources || []).filter((resource) => {
+        const reasons = (resource.reasons || []).join(' ');
+        return `${resource.name} ${resource.state} ${resource.status} ${reasons}`.toLowerCase().includes(query);
+    });
+    resources.forEach((resource) => {
+        const row = document.createElement('article');
+        row.className = `resource-guard-row status-${resource.status || 'healthy'}`;
+        row.append(text('div', `${Number(resource.health) || 0}%`, 'resource-health'));
+        const copy = document.createElement('div');
+        copy.className = 'resource-guard-copy';
+        const flags = [
+            resource.critical ? 'kritisch' : '',
+            resource.expected ? 'erwartet' : '',
+            resource.protected ? 'geschützt' : '',
+            resource.transitionCount ? `${resource.transitionCount} Wechsel` : ''
+        ].filter(Boolean).join(' · ');
+        const diagnosis = (resource.reasons || [])[0] || 'Keine Auffälligkeit erkannt.';
+        copy.append(text('strong', resource.name), text('small', `${diagnosis}${flags ? ` · ${flags}` : ''}`));
+        const actions = document.createElement('div');
+        actions.className = 'resource-guard-actions';
+        actions.append(text('span', resource.state || 'unknown', 'resource-state'));
+        if (!resource.protected) {
+            const control = text(
+                'button',
+                resource.quarantined ? 'Freigeben' : 'Quarantäne',
+                `mini-button${resource.quarantined ? '' : ' danger'}`
+            );
+            control.type = 'button';
+            control.addEventListener('click', () => post('execute', {
+                action: resource.quarantined ? 'resourceGuardRelease' : 'resourceGuardQuarantine',
+                data: { resource: resource.name }
+            }));
+            actions.append(control);
+        }
+        row.append(copy, actions);
+        list.append(row);
+    });
+    if (!resources.length) list.append(text('div', 'Keine passenden Resources gefunden.', 'empty-state'));
 }
 
 function renderCraftingAdmin() {
@@ -714,6 +792,7 @@ function applyData(data) {
     renderCraftingAdmin();
     renderDataAdmin();
     renderSupportLogs();
+    renderResourceGuard();
     renderRights();
     applyPermissionVisibility();
 }
@@ -774,6 +853,7 @@ $$('.nav-button').forEach((button) => button.addEventListener('click', () => cho
 $$('[data-world-tab]').forEach((button) => button.addEventListener('click', () => selectWorldTab(button.dataset.worldTab)));
 $$('[data-craft-tab]').forEach((button) => button.addEventListener('click', () => selectCraftAdminTab(button.dataset.craftTab)));
 $$('[data-data-tab]').forEach((button) => button.addEventListener('click', () => selectDataAdminTab(button.dataset.dataTab)));
+$$('[data-control-tab]').forEach((button) => button.addEventListener('click', () => selectAdminControlTab(button.dataset.controlTab)));
 
 $('#close').addEventListener('click', closeAcp);
 $('#refresh').addEventListener('click', () => post('refresh'));
@@ -785,6 +865,7 @@ $('#support-log-type').addEventListener('change', renderSupportLogs);
 $('#data-item-search').addEventListener('input', renderDataItems);
 $('#prop-search').addEventListener('input', renderProps);
 $('#announcement-message').addEventListener('input', updateAnnouncementLength);
+$('#resource-guard-search').addEventListener('input', renderResourceGuard);
 $('#rights-player').addEventListener('change', fillRightsForPlayer);
 $('#weather-transition').addEventListener('input', () => {
     $('#transition-value').textContent = `${$('#weather-transition').value}s`;
@@ -802,6 +883,13 @@ $('#announcement-form').addEventListener('submit', (event) => {
     if (message.length < 2) return showToast('Gib mindestens zwei Zeichen ein.');
     post('execute', { action: 'announcement', data: { message } });
 });
+$('#resource-guard-refresh').addEventListener('click', () => post('execute', {
+    action: 'resourceGuardRefresh'
+}));
+$('#resource-guard-toggle').addEventListener('click', () => post('execute', {
+    action: 'resourceGuardToggle',
+    data: { enabled: state.data?.resourceGuard?.enabled !== true }
+}));
 $('#teleport-coords').addEventListener('click', () => post('execute', {
     action: 'teleportCoords',
     data: {
@@ -1046,11 +1134,12 @@ window.addEventListener('message', ({ data }) => {
 
 const mockData = {
     selfId: 4,
-    permissions: { access: true, announcements: true, players: true, economy: true, weather: true, world: true, crafting: true, data: true, support: true, rights: true },
+    permissions: { access: true, announcements: true, resources: true, players: true, economy: true, weather: true, world: true, crafting: true, data: true, support: true, rights: true },
     permissionDefinitions: [
         { id: 'access', label: 'ACP-Zugriff', description: 'Darf das Administrations-Control-Panel öffnen.' },
         { id: 'players', label: 'Spielerverwaltung', description: 'Teleport, Heilen, Wiederbeleben, Einfrieren, Kick, Ghost Mode und Noclip.' },
         { id: 'announcements', label: 'Server-Announcements', description: 'Darf serverweite Nachrichten über das ACP senden.' },
+        { id: 'resources', label: 'KI-Ressourcenwächter', description: 'Darf den Resource-Status einsehen und sichere Quarantäneaktionen ausführen.' },
         { id: 'economy', label: 'Wirtschaft', description: 'Darf Geld und Items vergeben.' },
         { id: 'weather', label: 'Wetter', description: 'Darf das globale Wetter konfigurieren.' },
         { id: 'world', label: 'World Builder', description: 'Darf NPCs, Storages und Türen verwalten.' },
@@ -1117,6 +1206,20 @@ const mockData = {
             { id: 101, type: 'connection', actorSource: 12, actorIdentifier: 'license:victim', actorName: 'EliasM', details: { phase: 'playerConnecting' }, createdAt: '2026-07-25 21:39:43' }
         ]
     },
+    resourceGuard: {
+        available: true,
+        enabled: true,
+        autoStop: true,
+        startupGraceRemainingMs: 0,
+        summary: { total: 24, started: 22, stopped: 2, warnings: 1, critical: 1, quarantined: 1 },
+        resources: [
+            { name: 'MS_Example', state: 'stopped', health: 0, status: 'quarantined', reasons: ['Instabile Resource (7 Wechsel)'], transitionCount: 7, expected: true, critical: false, protected: false, quarantined: true },
+            { name: 'MS_Inventory', state: 'stopped', health: 25, status: 'critical', reasons: ['Erwartete Resource läuft nicht.'], transitionCount: 1, expected: true, critical: true, protected: false, quarantined: false },
+            { name: 'MS_MapEditor', state: 'stopped', health: 55, status: 'warning', reasons: ['Erwartete Resource läuft nicht.'], transitionCount: 0, expected: true, critical: false, protected: false, quarantined: false },
+            { name: 'MSCore', state: 'started', health: 100, status: 'healthy', reasons: [], transitionCount: 0, expected: true, critical: true, protected: true, quarantined: false },
+            { name: 'MS_AdminMenu', state: 'started', health: 100, status: 'healthy', reasons: [], transitionCount: 0, expected: true, critical: true, protected: true, quarantined: false }
+        ]
+    },
     limits: { money: 100000, items: 50, announcementLength: 500, weatherTransition: 30, craftingAmount: 100, craftingIngredients: 8, craftingDuration: 30000 }
 };
 
@@ -1141,7 +1244,11 @@ if (preview) {
     } else {
         app.classList.remove('hidden');
         applyData(mockData);
-        if (['players', 'support', 'world', 'crafting', 'data', 'rights'].includes(preview)) choosePage(preview);
+        if (['admin', 'players', 'support', 'world', 'crafting', 'data', 'rights'].includes(preview)) choosePage(preview);
+        if (preview === 'resources') {
+            choosePage('admin');
+            selectAdminControlTab('resources');
+        }
     }
 }
 

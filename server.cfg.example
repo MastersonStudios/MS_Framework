@@ -26,6 +26,7 @@ ensure MS_Stables
 ensure MS_Trains
 ensure MS_Telegrams
 ensure MS_WorldBuilder
+ensure MS_ResourceGuard
 ensure MS_AdminMenu
 ensure MS_GuarmaOnboarding
 ensure MS_MapEditor
@@ -42,4 +43,5 @@ add_ace group.admin mscore.admin.guarma allow
 add_ace group.admin mscore.admin.jail allow
 add_ace group.admin mscore.weapon.damage allow
 add_ace group.admin mscore.version.check allow
+add_ace group.admin mscore.resourceguard allow
 # add_principal identifier.license:YOUR_LICENSE group.admin

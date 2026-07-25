@@ -3,7 +3,7 @@ game 'rdr3'
 
 author 'MSCore Framework'
 description 'Administration Control Panel with support logs, permissions, world builder and crafting'
-version '2.3.0'
+version '2.4.0'
 
 lua54 'yes'
 

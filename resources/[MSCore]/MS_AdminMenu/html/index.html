@@ -32,7 +32,7 @@
                         <button class="nav-button active" data-tab="overview" data-permission="access" type="button">
                             <span>⌂</span><span>Übersicht</span>
                         </button>
-                        <button class="nav-button" data-tab="admin" data-permission="announcements" type="button">
+                        <button class="nav-button" data-tab="admin" data-permission="announcements,resources" type="button">
                             <span>!</span><span>Admin</span>
                         </button>
                         <button class="nav-button" data-tab="players" data-permission="players,economy" type="button">
@@ -102,34 +102,61 @@
                     <section class="page" data-page="admin">
                         <header class="page-header">
                             <div><p class="eyebrow">SERVERKOMMUNIKATION</p><h2>Admin</h2></div>
-                            <div class="segmented">
-                                <button class="active" type="button">Announcement</button>
+                            <div class="segmented" id="admin-control-tabs">
+                                <button class="active permission-announcements" data-control-tab="announcement" type="button">Announcement</button>
+                                <button class="permission-resources" data-control-tab="resources" type="button">KI Ressourcenwächter</button>
                             </div>
                         </header>
-                        <div class="announcement-layout">
-                            <form id="announcement-form" class="panel announcement-form">
-                                <div class="panel-heading">
-                                    <div><p class="eyebrow">SERVERWEITE NACHRICHT</p><h3>Announcement erstellen</h3></div>
-                                    <span class="status-pill">Alle Spieler</span>
+                        <div class="admin-control-view active" data-control-view="announcement">
+                            <div class="announcement-layout">
+                                <form id="announcement-form" class="panel announcement-form">
+                                    <div class="panel-heading">
+                                        <div><p class="eyebrow">SERVERWEITE NACHRICHT</p><h3>Announcement erstellen</h3></div>
+                                        <span class="status-pill">Alle Spieler</span>
+                                    </div>
+                                    <label>
+                                        <span>Nachricht</span>
+                                        <textarea id="announcement-message" minlength="2" maxlength="500" required placeholder="Nachricht an alle Spieler eingeben …"></textarea>
+                                    </label>
+                                    <div class="announcement-footer">
+                                        <small id="announcement-length">0 / 500</small>
+                                        <button class="button primary" type="submit">Announcement senden</button>
+                                    </div>
+                                </form>
+                                <aside class="panel announcement-info">
+                                    <p class="eyebrow">HINWEIS</p>
+                                    <h3>Server Announcement</h3>
+                                    <p>Die Nachricht erscheint bei allen verbundenen Spielern als Banner und zusätzlich im Chat.</p>
+                                    <div class="notice">
+                                        <strong>Protokolliert und geschützt</strong>
+                                        <span>Nur Administratoren mit der Berechtigung „Server-Announcements“ können Nachrichten senden. Jede Nachricht wird serverseitig protokolliert.</span>
+                                    </div>
+                                </aside>
+                            </div>
+                        </div>
+
+                        <div class="admin-control-view" data-control-view="resources">
+                            <div class="metric-grid guard-metrics">
+                                <article class="metric"><span>RESOURCES</span><strong id="guard-total">0</strong><small>erkannte Einträge</small></article>
+                                <article class="metric"><span>GESTARTET</span><strong id="guard-started">0</strong><small>aktiver Zustand</small></article>
+                                <article class="metric"><span>ANOMALIEN</span><strong id="guard-anomalies">0</strong><small>Warnungen und kritisch</small></article>
+                                <article class="metric"><span>QUARANTÄNE</span><strong id="guard-quarantined">0</strong><small>automatisch oder manuell</small></article>
+                            </div>
+                            <section class="panel resource-guard-panel">
+                                <div class="panel-heading resource-guard-heading">
+                                    <div>
+                                        <p class="eyebrow">PASSIVE ZUSTANDSANALYSE</p>
+                                        <h3>KI Ressourcenwächter</h3>
+                                        <span id="guard-state" class="muted">Status wird geladen …</span>
+                                    </div>
+                                    <div class="page-header-actions">
+                                        <button id="resource-guard-refresh" class="button ghost" type="button">Jetzt prüfen</button>
+                                        <button id="resource-guard-toggle" class="button primary" type="button">Überwachung</button>
+                                    </div>
                                 </div>
-                                <label>
-                                    <span>Nachricht</span>
-                                    <textarea id="announcement-message" minlength="2" maxlength="500" required placeholder="Nachricht an alle Spieler eingeben …"></textarea>
-                                </label>
-                                <div class="announcement-footer">
-                                    <small id="announcement-length">0 / 500</small>
-                                    <button class="button primary" type="submit">Announcement senden</button>
-                                </div>
-                            </form>
-                            <aside class="panel announcement-info">
-                                <p class="eyebrow">HINWEIS</p>
-                                <h3>Server Announcement</h3>
-                                <p>Die Nachricht erscheint bei allen verbundenen Spielern als Banner und zusätzlich im Chat.</p>
-                                <div class="notice">
-                                    <strong>Protokolliert und geschützt</strong>
-                                    <span>Nur Administratoren mit der Berechtigung „Server-Announcements“ können Nachrichten senden. Jede Nachricht wird serverseitig protokolliert.</span>
-                                </div>
-                            </aside>
+                                <label class="search"><span>⌕</span><input id="resource-guard-search" type="search" placeholder="Resource, Zustand oder Diagnose suchen"></label>
+                                <div id="resource-guard-list" class="resource-guard-list"></div>
+                            </section>
                         </div>
                     </section>
 

@@ -21,6 +21,7 @@ Aktuelle Framework-Version: `0.0.2`
 - grafisches ACP mit Rechte-, Wetter-, Spieler-, Geld- und Itemverwaltung
 - Support Admin mit persistenten Verbindungs-, Spawn-, Schadens- und Tötungslogs
 - Admin-Bereich für serverweite Announcements mit Banner- und Chat-Ausgabe
+- passiver KI-Ressourcenwächter mit Gesundheitsanalyse und sicherer Quarantäne
 - grafischer World Builder für NPCs, Storages und sperrbare Türen
 - persistente Crafting-Rezepte und frei platzierbare Crafting-Punkte
 - Data Admin mit Datenbank-Itemcreator und durchsuchbarem Prop-Katalog
@@ -58,7 +59,7 @@ Aktuelle Framework-Version: `0.0.2`
    `ensure MS_BasicNeeds`, `ensure MS_HUD`, `ensure MS_Jail`,
    `ensure MS_ClothingShop`, `ensure MS_Stables`, `ensure MS_Trains`,
    `ensure MS_Telegrams`,
-   `ensure MS_WorldBuilder`,
+   `ensure MS_WorldBuilder`, `ensure MS_ResourceGuard`,
    `ensure MS_AdminMenu`,
    `ensure MS_GuarmaOnboarding`, `ensure MS_MapEditor`,
    `ensure MS_AdminLogout` sowie `ensure MS_Example` ausführen
@@ -128,6 +129,10 @@ werden hier nicht aufgeführt.
 | `/guarmaadmin` | `mscore.admin.guarma` | Öffnet das Guarma-Teleport- und Neueinsteigermenü. |
 | `/guarmareset [Server-ID]` | `mscore.admin.guarma` | Setzt das Guarma-Tutorial zurück und startet es erneut; ohne ID für den eigenen Charakter. |
 | `/frameworkversion check` | `mscore.version.check` | Erzwingt unter Beachtung des konfigurierten Mindestintervalls eine neue Versionsabfrage. |
+| `/resourceguard status` | `mscore.resourceguard` | Führt eine Prüfung aus und zeigt die Resource-Zusammenfassung im Chat beziehungsweise in der Serverkonsole. |
+| `/resourceguard enable\|disable` | `mscore.resourceguard` | Aktiviert oder pausiert die passive Resource-Überwachung. |
+| `/resourceguard quarantine <Resource>` | `mscore.resourceguard` | Stoppt eine nicht geschützte Resource und setzt sie unter Quarantäne. |
+| `/resourceguard release <Resource>` | `mscore.resourceguard` | Hebt die Quarantäne auf; ein automatischer Start erfolgt bewusst nicht. |
 | `/medicdisease <Server-ID> <add\|remove\|clear\|list> [Krankheit] [Schweregrad]` | `mscore.admin` | Verwaltet Krankheiten eines aktiven Charakters. |
 | `/jail <Server-ID> <Minuten> [Grund]` | `mscore.admin.jail` oder Job `sheriff` | Inhaftiert einen aktiven Charakter persistent in Sisika. |
 | `/unjail <Server-ID> [Grund]` | `mscore.admin.jail` oder Job `sheriff` | Entlässt einen Gefangenen vorzeitig. |
@@ -607,6 +612,7 @@ Enthalten sind:
 
 - serverweit synchronisierter Wetterkonfigurator mit Übergangszeit
 - Admin-Unterpunkt **Announcement** für serverweite Banner- und Chatnachrichten
+- Admin-Unterpunkt **KI Ressourcenwächter** für Status, Diagnose und Quarantäne
 - Bargeld- und Bankgutschriften mit konfigurierbarem Betragslimit
 - persistente Itemvergabe aus dem Core-Itemkatalog
 - Goto, Bring, Heilen, Wiederbeleben, Einfrieren und Kick
@@ -670,6 +676,29 @@ Inventarplatz, Entfernung und Jobzugriff werden bei jeder Herstellung
 serverseitig erneut geprüft. Die Tabellen für Rechte, Support-Logs, Rezepte und
 Crafting-Punkte werden automatisch erstellt und sind zusätzlich in
 `database/schema.sql` enthalten.
+
+## KI-Ressourcenwächter
+
+Die Resource `MS_ResourceGuard` prüft passiv alle vom Server erkannten
+Resources sowie die in `MS_ResourceGuard/config.lua` erwarteten
+Framework-Resources. Die lokale Zustandsanalyse arbeitet ohne externen
+KI-Dienst: Sie bewertet Startstatus, kritische Abhängigkeiten, festhängende
+Start-/Stop-Zustände und ungewöhnlich viele Zustandswechsel mit einem
+Gesundheitswert von 0 bis 100.
+
+Eine automatische Abschaltung erfolgt nur nach der konfigurierten Startschutzzeit
+und mehreren bestätigten Prüfungen. Geschützte Core-Resources werden immer nur
+gemeldet und niemals durch den Wächter oder das ACP gestoppt. Auffällige
+nicht geschützte Resources können automatisch oder im ACP unter
+**Admin → KI Ressourcenwächter** gestoppt und in Quarantäne gehalten werden.
+Das Aufheben einer Quarantäne startet die Resource aus Sicherheitsgründen nicht
+automatisch.
+
+Prüfintervall, erwartete, kritische und geschützte Resources, Flapping-Grenze,
+Bestätigungsanzahl, Timeout, Sperr- und Freigabelisten sowie alle
+Auto-Stop-Regeln sind in `MS_ResourceGuard/config.lua` konfigurierbar. Für das
+ACP wird die Berechtigung `resources`, für die Konsolen- und Chatbefehle das
+ACE-Recht `mscore.resourceguard` benötigt.
 
 ## World Builder
 
