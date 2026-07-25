@@ -15,6 +15,7 @@ ensure frontier_playersync
 ensure MS_Inventory
 ensure MS_ClothingShop
 ensure MS_Stables
+ensure MS_Telegrams
 ensure frontier_worldbuilder
 ensure frontier_adminmenu
 ensure frontier_guarma_onboarding

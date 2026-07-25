@@ -24,6 +24,7 @@ Ein schlankes, eigenständiges Roleplay-Framework für RedM.
 - `MS_Inventory` mit konfigurierbarer Kapazität, Kontextaktionen und Outfit-Drag-and-Drop
 - `MS_ClothingShop` mit Charaktervorschau und gemeinsamer Einkaufsliste
 - `MS_Stables` mit Pferde-, Ausrüstungs-, Fellfarben- und Kutschenhandel
+- `MS_Telegrams` mit persönlichen Telegrammnummern und persistenten Nachrichten
 
 ## Voraussetzungen
 
@@ -39,7 +40,8 @@ Ein schlankes, eigenständiges Roleplay-Framework für RedM.
    Lizenzschlüssel anpassen.
 4. In der Konsole zuerst `ensure frontier_core`, danach
    `ensure frontier_playersync`, `ensure MS_Inventory`,
-   `ensure MS_ClothingShop`, `ensure MS_Stables`, `ensure frontier_worldbuilder`,
+   `ensure MS_ClothingShop`, `ensure MS_Stables`, `ensure MS_Telegrams`,
+   `ensure frontier_worldbuilder`,
    `ensure frontier_adminmenu`,
    `ensure frontier_guarma_onboarding`, `ensure frontier_mapeditor`,
    `ensure frontier_adminlogout` sowie `ensure frontier_example` ausführen
@@ -178,6 +180,29 @@ Spieler öffnen den nächsten Stall standardmäßig mit `E` oder `/stables`.
 Es kann genau ein eigenes Stallobjekt – Pferd oder Kutsche – gleichzeitig
 aktiv sein. Fellwechsel und neu angelegte Ausrüstung werden beim nächsten
 Abholen des Pferdes sichtbar beziehungsweise wirksam.
+
+## MS Telegrams
+
+`MS_Telegrams` ergänzt ein persistentes Nachrichtensystem für Charaktere:
+
+- Jeder Charakter erhält automatisch eine eindeutige persönliche
+  Telegrammnummer.
+- Telegramme werden anhand dieser Nummer adressiert und dauerhaft in der
+  Datenbank gespeichert.
+- Das grafische Telegrafenamt bietet Posteingang, Ungelesenstatus,
+  Gesendet-Ordner, Leseansicht, Verfassen und eine getrennte Löschoption je
+  Ordner.
+- Online-Empfänger werden sofort benachrichtigt; beim nächsten Charakterstart
+  wird auf noch ungelesene Telegramme hingewiesen.
+- Nummer, Empfänger, Nachrichtslimits, Entfernung, Versandkosten und
+  Kontostand werden bei jeder Aktion serverseitig geprüft.
+
+Die NPC-Positionen, Ped-Modelle, Szenarien, Versandkosten, Nummernlänge,
+Textlimits, Konto und Interaktionstaste befinden sich in
+`resources/[frontier]/MS_Telegrams/config.lua`. Standardmäßig wird das nächste
+Telegrafenamt mit `E` oder `/telegrams` geöffnet. Die benötigten Tabellen
+werden beim Resource-Start automatisch erstellt und sind zusätzlich in
+`database/schema.sql` enthalten.
 
 ## Mapeditor
 

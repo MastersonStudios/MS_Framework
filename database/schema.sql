@@ -205,3 +205,37 @@ CREATE TABLE IF NOT EXISTS `ms_stable_wagons` (
   CONSTRAINT `fk_ms_stable_wagons_character`
     FOREIGN KEY (`character_id`) REFERENCES `frontier_characters` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `ms_telegram_accounts` (
+  `character_id` BIGINT UNSIGNED NOT NULL,
+  `telegram_number` VARCHAR(16) NOT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`character_id`),
+  UNIQUE KEY `uq_ms_telegram_accounts_number` (`telegram_number`),
+  CONSTRAINT `fk_ms_telegram_accounts_character`
+    FOREIGN KEY (`character_id`) REFERENCES `frontier_characters` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `ms_telegrams` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `sender_character_id` BIGINT UNSIGNED NOT NULL,
+  `sender_number` VARCHAR(16) NOT NULL,
+  `sender_name` VARCHAR(80) NOT NULL,
+  `recipient_character_id` BIGINT UNSIGNED NOT NULL,
+  `recipient_number` VARCHAR(16) NOT NULL,
+  `recipient_name` VARCHAR(80) NOT NULL,
+  `subject` VARCHAR(64) NOT NULL,
+  `body` TEXT NOT NULL,
+  `sent_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `read_at` TIMESTAMP NULL DEFAULT NULL,
+  `deleted_by_sender` TINYINT(1) NOT NULL DEFAULT 0,
+  `deleted_by_recipient` TINYINT(1) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `idx_ms_telegrams_sender` (`sender_character_id`, `sent_at`),
+  KEY `idx_ms_telegrams_recipient` (`recipient_character_id`, `sent_at`),
+  KEY `idx_ms_telegrams_unread` (`recipient_character_id`, `read_at`),
+  CONSTRAINT `fk_ms_telegrams_sender`
+    FOREIGN KEY (`sender_character_id`) REFERENCES `frontier_characters` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_ms_telegrams_recipient`
+    FOREIGN KEY (`recipient_character_id`) REFERENCES `frontier_characters` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
