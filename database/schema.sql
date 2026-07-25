@@ -1,0 +1,32 @@
+CREATE TABLE IF NOT EXISTS `frontier_users` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `license` VARCHAR(64) NOT NULL,
+  `last_seen` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_frontier_users_license` (`license`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `frontier_characters` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `user_id` BIGINT UNSIGNED NOT NULL,
+  `firstname` VARCHAR(32) NOT NULL,
+  `lastname` VARCHAR(32) NOT NULL,
+  `date_of_birth` DATE NULL,
+  `sex` ENUM('male','female') NOT NULL DEFAULT 'male',
+  `job` VARCHAR(32) NOT NULL DEFAULT 'unemployed',
+  `job_grade` INT NOT NULL DEFAULT 0,
+  `group_name` VARCHAR(32) NOT NULL DEFAULT 'user',
+  `cash` INT UNSIGNED NOT NULL DEFAULT 50,
+  `bank` INT UNSIGNED NOT NULL DEFAULT 250,
+  `health` INT NOT NULL DEFAULT 200,
+  `coords` LONGTEXT NULL,
+  `metadata` LONGTEXT NULL,
+  `is_deleted` TINYINT(1) NOT NULL DEFAULT 0,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_frontier_characters_user` (`user_id`),
+  CONSTRAINT `fk_frontier_characters_user`
+    FOREIGN KEY (`user_id`) REFERENCES `frontier_users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

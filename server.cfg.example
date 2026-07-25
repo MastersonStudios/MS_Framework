@@ -1,0 +1,16 @@
+# RedM
+set gamename rdr3
+set sv_enforceGameBuild 1491
+sv_maxclients 32
+sv_licenseKey "CHANGE_ME"
+
+# Database
+set mysql_connection_string "mysql://redm:password@127.0.0.1/redm?charset=utf8mb4"
+
+ensure oxmysql
+ensure frontier_core
+ensure frontier_example
+
+# Framework admins
+add_ace group.admin frontier.admin allow
+# add_principal identifier.license:YOUR_LICENSE group.admin
