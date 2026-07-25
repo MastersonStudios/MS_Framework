@@ -1,6 +1,14 @@
 Config = {}
 
 Config.Debug = false
+Config.VersionCheck = {
+    Enabled = true,
+    Url = 'https://raw.githubusercontent.com/MastersonStudios/MS_Framework/main/version.json',
+    RepositoryUrl = 'https://github.com/MastersonStudios/MS_Framework',
+    DelayMs = 2500,
+    MinimumIntervalMinutes = 10,
+    AdminAce = 'frontier.version.check'
+}
 Config.AutoCreateCharacter = false
 Config.MaxCharacters = 3
 Config.CharacterBirthDateMin = '1800-01-01'

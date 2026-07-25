@@ -2,6 +2,8 @@
 
 Ein schlankes, eigenständiges Roleplay-Framework für RedM.
 
+Aktuelle Framework-Version: `0.0.1`
+
 ## Enthalten
 
 - persistente Benutzer und mehrere Charaktere
@@ -55,6 +57,34 @@ Ein schlankes, eigenständiges Roleplay-Framework für RedM.
 Beim ersten Beitritt öffnet sich die Charaktererstellung. In
 `frontier_core/config.lua` kann optional die automatische Erstellung eines
 Platzhalter-Charakters aktiviert werden.
+
+## Versionsabfrage
+
+`frontier_core` prüft nach dem Serverstart automatisch die zentrale
+`version.json` auf GitHub. Die lokale Version stammt aus dem
+Resource-Manifest und ist aktuell auf `0.0.1` gesetzt. Netzwerk- oder
+GitHub-Fehler werden nur protokolliert und blockieren den Serverstart nicht.
+
+```text
+/frameworkversion
+/frameworkversion check
+```
+
+Die einfache Abfrage ist für alle Spieler verfügbar. Eine neue GitHub-Abfrage
+benötigt das ACE-Recht `frontier.version.check`. URL, Verzögerung,
+Mindestintervall und Aktivierung befinden sich in
+`resources/[frontier]/frontier_core/config.lua`.
+
+Andere Server-Resources können Version und Prüfstatus abfragen:
+
+```lua
+local version = exports.frontier_core:GetFrameworkVersion()
+local state = exports.frontier_core:GetFrameworkVersionState()
+exports.frontier_core:CheckFrameworkVersion()
+```
+
+Nach jeder abgeschlossenen Prüfung wird zusätzlich das Serverevent
+`frontier:server:versionChecked` mit dem aktuellen Status ausgelöst.
 
 ## Wichtige API
 

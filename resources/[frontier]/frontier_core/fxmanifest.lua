@@ -3,7 +3,7 @@ game 'rdr3'
 
 author 'Frontier Framework'
 description 'Standalone RedM roleplay core'
-version '1.6.0'
+version '0.0.1'
 
 lua54 'yes'
 
@@ -16,6 +16,7 @@ shared_scripts {
 
 server_scripts {
     '@oxmysql/lib/MySQL.lua',
+    'server/version.lua',
     'server/items.lua',
     'server/player.lua',
     'server/main.lua',
@@ -46,3 +47,6 @@ server_export 'GetInventoryLimits'
 server_export 'CreateItem'
 server_export 'DeleteItem'
 server_export 'LogoutPlayer'
+server_export 'GetFrameworkVersion'
+server_export 'GetFrameworkVersionState'
+server_export 'CheckFrameworkVersion'

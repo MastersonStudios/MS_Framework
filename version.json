@@ -1,0 +1,9 @@
+{
+  "name": "MS Framework",
+  "version": "0.0.1",
+  "repository": "https://github.com/MastersonStudios/MS_Framework",
+  "releaseUrl": "https://github.com/MastersonStudios/MS_Framework/releases",
+  "changelog": [
+    "Initiale öffentliche Framework-Version"
+  ]
+}
