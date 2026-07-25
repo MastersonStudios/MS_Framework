@@ -15,6 +15,7 @@ Ein schlankes, eigenständiges Roleplay-Framework für RedM.
 - SQL-Schema und Beispiel-Resource
 - persistenter Ingame-Mapeditor mit Objekt-Streaming
 - Admin-Logout zurück zur Charakterauswahl
+- Guarma-Onboarding mit Sturm-Cinematic und Bewegungstutorial
 
 ## Voraussetzungen
 
@@ -28,8 +29,10 @@ Ein schlankes, eigenständiges Roleplay-Framework für RedM.
 2. Die Ordner aus `resources/` in den `resources`-Ordner des Servers kopieren.
 3. `server.cfg.example` nach `server.cfg` kopieren und Connection-String sowie
    Lizenzschlüssel anpassen.
-4. In der Konsole `ensure frontier_core`, `ensure frontier_mapeditor` und danach `ensure frontier_example`
-   ausführen (oder den Server neu starten).
+4. In der Konsole zuerst `ensure frontier_core` und danach
+   `ensure frontier_guarma_onboarding`, `ensure frontier_mapeditor`,
+   `ensure frontier_adminlogout` sowie `ensure frontier_example` ausführen
+   (oder den Server neu starten).
 5. Zum Testen verbinden und `/characters` verwenden.
 
 Beim ersten Beitritt öffnet sich die Charaktererstellung. In
@@ -81,6 +84,20 @@ Charakter, bevor sie den Spieler zur Charakterauswahl zurückbringt.
 
 Benötigt wird das ACE-Recht `frontier.admin.logout`. Ob Admins andere Spieler
 abmelden dürfen, kann in `frontier_adminlogout/config.lua` eingestellt werden.
+
+## Guarma-Onboarding
+
+Neue Charaktere erleben einmalig eine geskriptete Sturm- und
+Schiffbruch-Cinematic. Danach beginnt am Strand von Bahia de la Paz ein
+Bewegungstutorial für Laufen, Sprinten, Springen und Ducken, das am Hafen endet.
+Der Abschluss wird in den Charakter-Metadaten gespeichert.
+
+Admins mit dem ACE-Recht `frontier.admin.guarma` werden bei der Strandankunft
+benachrichtigt. `/guarmaadmin` öffnet das Teleportmenü, dessen Ziele vollständig
+in `frontier_guarma_onboarding/config.lua` konfiguriert werden. Mit
+`/guarmareset [Server-ID]` kann das Tutorial für Support oder Tests neu gestartet
+werden. Strand, Hafen, Kamerafahrten, Tutorialpunkte, Inselgrenzen und sämtliche
+Admin-Teleportziele lassen sich in derselben Konfigurationsdatei ändern.
 
 ## Sicherheit
 
