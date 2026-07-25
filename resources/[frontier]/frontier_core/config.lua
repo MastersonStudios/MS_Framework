@@ -19,6 +19,30 @@ Config.DefaultCharacter = {
 Config.Spawn = vector4(-275.14, 805.09, 119.38, 282.0)
 Config.SaveInterval = 60 * 1000
 Config.IdentifierType = 'license'
+Config.MaxItemStack = 100
+
+Config.Items = {
+    water = {
+        label = 'Wasserflasche',
+        description = 'Sauberes Trinkwasser.',
+        maxStack = 20
+    },
+    bread = {
+        label = 'Brot',
+        description = 'Ein einfacher Reiseproviant.',
+        maxStack = 20
+    },
+    bandage = {
+        label = 'Verband',
+        description = 'Medizinischer Verband zur Wundversorgung.',
+        maxStack = 10
+    },
+    lockpick = {
+        label = 'Dietrich',
+        description = 'Ein empfindliches Werkzeug für Schlösser.',
+        maxStack = 10
+    }
+}
 
 Config.Jobs = {
     unemployed = {

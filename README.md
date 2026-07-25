@@ -16,6 +16,7 @@ Ein schlankes, eigenständiges Roleplay-Framework für RedM.
 - persistenter Ingame-Mapeditor mit Objekt-Streaming
 - Admin-Logout zurück zur Charakterauswahl
 - Guarma-Onboarding mit Sturm-Cinematic und Bewegungstutorial
+- grafisches Adminmenü mit Wetter-, Spieler-, Geld- und Itemverwaltung
 
 ## Voraussetzungen
 
@@ -30,9 +31,9 @@ Ein schlankes, eigenständiges Roleplay-Framework für RedM.
 3. `server.cfg.example` nach `server.cfg` kopieren und Connection-String sowie
    Lizenzschlüssel anpassen.
 4. In der Konsole zuerst `ensure frontier_core` und danach
-   `ensure frontier_guarma_onboarding`, `ensure frontier_mapeditor`,
-   `ensure frontier_adminlogout` sowie `ensure frontier_example` ausführen
-   (oder den Server neu starten).
+   `ensure frontier_adminmenu`, `ensure frontier_guarma_onboarding`,
+   `ensure frontier_mapeditor`, `ensure frontier_adminlogout` sowie
+   `ensure frontier_example` ausführen (oder den Server neu starten).
 5. Zum Testen verbinden und `/characters` verwenden.
 
 Beim ersten Beitritt öffnet sich die Charaktererstellung. In
@@ -44,12 +45,16 @@ Platzhalter-Charakters aktiviert werden.
 ```lua
 local player = exports.frontier_core:GetPlayer(source)
 player:addMoney('cash', 10, 'mission_reward')
+player:addItem('water', 1, 'mission_reward')
 player:setJob('sheriff', 0)
 
 local player = exports.frontier_core:GetPlayerFromCharacterId(characterId)
 ```
 
 Weitere Beispiele stehen in `resources/[frontier]/frontier_example`.
+
+Items werden serverseitig anhand von `frontier_core/config.lua` validiert und
+im Charakter-Inventar innerhalb der persistenten Metadaten gespeichert.
 
 ## Mapeditor
 
@@ -84,6 +89,23 @@ Charakter, bevor sie den Spieler zur Charakterauswahl zurückbringt.
 
 Benötigt wird das ACE-Recht `frontier.admin.logout`. Ob Admins andere Spieler
 abmelden dürfen, kann in `frontier_adminlogout/config.lua` eingestellt werden.
+
+## Grafisches Adminmenü
+
+Die Resource `frontier_adminmenu` öffnet mit `F10` oder `/adminmenu` eine
+grafische Spieler- und Serververwaltung. Enthalten sind:
+
+- serverweit synchronisierter Wetterkonfigurator mit Übergangszeit
+- Bargeld- und Bankgutschriften mit konfigurierbarem Betragslimit
+- persistente Itemvergabe aus dem Core-Itemkatalog
+- Goto, Bring, Heilen, Wiederbeleben, Einfrieren und Kick
+- Noclip sowie Teleport zu frei eingegebenen Koordinaten
+- serverseitige Validierung und Konsolenprotokollierung aller Aktionen
+
+Benötigt wird das ACE-Recht `frontier.admin.menu`. Wettertypen,
+Betragsgrenzen, Standardtaste und weitere Einstellungen stehen in
+`frontier_adminmenu/config.lua`. Der Itemkatalog und die Stack-Limits befinden
+sich in `frontier_core/config.lua`.
 
 ## Guarma-Onboarding
 

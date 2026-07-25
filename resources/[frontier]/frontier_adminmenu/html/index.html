@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="style.css">
+    <title>Frontier Administration</title>
+</head>
+<body>
+    <main id="app" class="app hidden">
+        <div class="menu">
+            <header class="topbar">
+                <div class="brand">
+                    <span class="brand-mark">F</span>
+                    <div>
+                        <p class="eyebrow">FRONTIER FRAMEWORK</p>
+                        <h1>Administration</h1>
+                    </div>
+                </div>
+                <div class="topbar-actions">
+                    <span id="weather-status" class="status-pill">Wetter: –</span>
+                    <span id="online-status" class="status-pill">0 Spieler</span>
+                    <button id="noclip" class="button ghost" type="button">Noclip</button>
+                    <button id="refresh" class="icon-button" type="button" aria-label="Aktualisieren">↻</button>
+                    <button id="close" class="icon-button" type="button" aria-label="Schließen">×</button>
+                </div>
+            </header>
+
+            <div class="layout">
+                <aside class="roster">
+                    <div class="section-heading">
+                        <div>
+                            <p class="eyebrow">LIVE-ÜBERSICHT</p>
+                            <h2>Spieler</h2>
+                        </div>
+                        <span id="player-count">0</span>
+                    </div>
+                    <label class="search">
+                        <span>⌕</span>
+                        <input id="player-search" type="search" placeholder="Name oder ID suchen">
+                    </label>
+                    <div id="player-list" class="player-list"></div>
+                </aside>
+
+                <section class="workspace">
+                    <div id="empty-selection" class="empty-selection">
+                        <span class="compass">✦</span>
+                        <h2>Spieler auswählen</h2>
+                        <p>Wähle links einen aktiven Charakter für Support- und Verwaltungsaktionen.</p>
+                    </div>
+
+                    <div id="player-panel" class="player-panel hidden">
+                        <header class="player-header">
+                            <div>
+                                <p id="selected-server-name" class="eyebrow"></p>
+                                <h2 id="selected-name"></h2>
+                                <p id="selected-meta" class="muted"></p>
+                            </div>
+                            <span id="selected-id" class="id-badge"></span>
+                        </header>
+
+                        <div class="stats">
+                            <article>
+                                <span>BARGELD</span>
+                                <strong id="selected-cash">$0</strong>
+                            </article>
+                            <article>
+                                <span>BANK</span>
+                                <strong id="selected-bank">$0</strong>
+                            </article>
+                            <article>
+                                <span>GESUNDHEIT</span>
+                                <strong id="selected-health">0</strong>
+                            </article>
+                            <article>
+                                <span>INVENTAR</span>
+                                <strong id="selected-items">0</strong>
+                            </article>
+                        </div>
+
+                        <section class="panel-block">
+                            <div class="block-heading">
+                                <div>
+                                    <p class="eyebrow">SCHNELLAKTIONEN</p>
+                                    <h3>Spielerverwaltung</h3>
+                                </div>
+                            </div>
+                            <div class="action-grid">
+                                <button class="action" data-player-action="goto" type="button"><span>→</span>Goto</button>
+                                <button class="action" data-player-action="bring" type="button"><span>←</span>Bring</button>
+                                <button class="action" data-player-action="heal" type="button"><span>+</span>Heilen</button>
+                                <button class="action" data-player-action="revive" type="button"><span>✚</span>Wiederbeleben</button>
+                                <button id="freeze-action" class="action" data-player-action="freeze" type="button"><span>◆</span>Einfrieren</button>
+                            </div>
+                        </section>
+
+                        <div class="grant-grid">
+                            <form id="money-form" class="panel-block">
+                                <p class="eyebrow">WIRTSCHAFT</p>
+                                <h3>Geld hinzufügen</h3>
+                                <label>
+                                    <span>Konto</span>
+                                    <select id="money-account">
+                                        <option value="cash">Bargeld</option>
+                                        <option value="bank">Bankkonto</option>
+                                    </select>
+                                </label>
+                                <label>
+                                    <span>Betrag</span>
+                                    <input id="money-amount" type="number" min="1" value="100">
+                                </label>
+                                <button class="button primary" type="submit">Gutschreiben</button>
+                            </form>
+
+                            <form id="item-form" class="panel-block">
+                                <p class="eyebrow">INVENTAR</p>
+                                <h3>Item hinzufügen</h3>
+                                <label>
+                                    <span>Item</span>
+                                    <select id="item-name"></select>
+                                </label>
+                                <label>
+                                    <span>Anzahl</span>
+                                    <input id="item-amount" type="number" min="1" value="1">
+                                </label>
+                                <button class="button primary" type="submit">Item vergeben</button>
+                            </form>
+                        </div>
+
+                        <form id="kick-form" class="danger-row">
+                            <input id="kick-reason" type="text" maxlength="120" placeholder="Kick-Grund (optional)">
+                            <button id="kick-button" class="button danger" type="submit">Spieler kicken</button>
+                        </form>
+                    </div>
+
+                    <form id="coords-form" class="coordinate-tools">
+                        <div>
+                            <p class="eyebrow">ADMIN-WERKZEUGE</p>
+                            <h3>Koordinaten-Teleport</h3>
+                        </div>
+                        <input id="coord-x" type="number" step="0.01" placeholder="X">
+                        <input id="coord-y" type="number" step="0.01" placeholder="Y">
+                        <input id="coord-z" type="number" step="0.01" placeholder="Z">
+                        <input id="coord-w" type="number" step="0.01" placeholder="Heading">
+                        <button class="button secondary" type="submit">Teleport</button>
+                    </form>
+                </section>
+
+                <aside class="weather-panel">
+                    <div class="section-heading">
+                        <div>
+                            <p class="eyebrow">WELTSTEUERUNG</p>
+                            <h2>Wetter</h2>
+                        </div>
+                    </div>
+                    <p class="muted weather-copy">Die Auswahl wird serverweit synchronisiert und an neue Spieler übertragen.</p>
+                    <div id="weather-list" class="weather-list"></div>
+                    <label class="transition">
+                        <span>Übergang <strong id="transition-value">8s</strong></span>
+                        <input id="weather-transition" type="range" min="0" max="30" step="1" value="8">
+                    </label>
+                </aside>
+            </div>
+
+            <footer class="footer">
+                <span>F10 zum Öffnen und Schließen</span>
+                <span>Alle Aktionen werden serverseitig geprüft und protokolliert.</span>
+            </footer>
+        </div>
+
+        <div id="toast" class="toast hidden" role="status"></div>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>

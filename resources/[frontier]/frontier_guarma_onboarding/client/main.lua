@@ -295,6 +295,10 @@ bindTutorialKey('frontier_tutorial_sprint', 'Tutorial: sprinten', 'LSHIFT', 'spr
 bindTutorialKey('frontier_tutorial_jump', 'Tutorial: springen', 'SPACE', 'jump')
 bindTutorialKey('frontier_tutorial_crouch', 'Tutorial: ducken', 'LCONTROL', 'crouch')
 
+exports('IsOnboardingActive', function()
+    return OnboardingActive
+end)
+
 AddEventHandler('frontier:client:prepareLogout', function()
     OnboardingActive = false
     TutorialActive = false

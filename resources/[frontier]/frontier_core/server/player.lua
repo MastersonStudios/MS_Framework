@@ -64,6 +64,45 @@ function Player:removeMoney(account, amount, reason)
     return true
 end
 
+function Player:getInventory()
+    if type(self.metadata.inventory) ~= 'table' then
+        self.metadata.inventory = {}
+    end
+    return self.metadata.inventory
+end
+
+function Player:addItem(itemName, amount, reason)
+    local item = type(itemName) == 'string' and Config.Items[itemName]
+    if not item or not Frontier.IsInteger(amount) or amount < 1 then return false end
+
+    local inventory = self:getInventory()
+    local current = tonumber(inventory[itemName]) or 0
+    local maxStack = tonumber(item.maxStack) or Config.MaxItemStack
+    if current + amount > maxStack then return false end
+
+    inventory[itemName] = current + amount
+    self.dirty = true
+    self:sync()
+    TriggerEvent('frontier:server:itemChanged', self.source, itemName, amount, reason or 'unknown')
+    return true
+end
+
+function Player:removeItem(itemName, amount, reason)
+    local item = type(itemName) == 'string' and Config.Items[itemName]
+    if not item or not Frontier.IsInteger(amount) or amount < 1 then return false end
+
+    local inventory = self:getInventory()
+    local current = tonumber(inventory[itemName]) or 0
+    if current < amount then return false end
+
+    local remaining = current - amount
+    inventory[itemName] = remaining > 0 and remaining or nil
+    self.dirty = true
+    self:sync()
+    TriggerEvent('frontier:server:itemChanged', self.source, itemName, -amount, reason or 'unknown')
+    return true
+end
+
 function Player:setJob(job, grade)
     grade = tonumber(grade)
     if not Config.Jobs[job] or not grade or not Config.Jobs[job].grades[grade] then return false end

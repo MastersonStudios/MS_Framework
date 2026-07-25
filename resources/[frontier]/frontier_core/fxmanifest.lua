@@ -3,7 +3,7 @@ game 'rdr3'
 
 author 'Frontier Framework'
 description 'Standalone RedM roleplay core'
-version '1.2.0'
+version '1.3.0'
 
 lua54 'yes'
 
@@ -37,4 +37,5 @@ dependencies {
 server_export 'GetPlayer'
 server_export 'GetPlayerFromCharacterId'
 server_export 'GetPlayers'
+server_export 'GetItemCatalog'
 server_export 'LogoutPlayer'
