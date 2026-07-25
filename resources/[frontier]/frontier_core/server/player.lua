@@ -8,6 +8,7 @@ function Player:new(source, row)
     instance.userId = row.user_id
     instance.firstname = row.firstname
     instance.lastname = row.lastname
+    instance.dateOfBirth = row.date_of_birth
     instance.sex = row.sex
     instance.job = row.job
     instance.jobGrade = row.job_grade
@@ -30,6 +31,7 @@ function Player:getPublicData()
         firstname = self.firstname,
         lastname = self.lastname,
         name = self:getName(),
+        dateOfBirth = self.dateOfBirth,
         sex = self.sex,
         job = self.job,
         jobGrade = self.jobGrade,

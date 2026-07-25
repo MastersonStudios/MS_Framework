@@ -23,11 +23,25 @@ end
 
 local function characterRows(userId)
     return MySQL.query.await([[
-        SELECT id, firstname, lastname, sex, job, job_grade, cash, bank
+        SELECT id, firstname, lastname, date_of_birth, sex, job, job_grade, cash, bank, created_at
         FROM frontier_characters
         WHERE user_id = ? AND is_deleted = 0
         ORDER BY id ASC
     ]], { userId })
+end
+
+local function validBirthDate(value)
+    if value == nil or value == '' then return nil end
+    if type(value) ~= 'string' or not value:match('^%d%d%d%d%-%d%d%-%d%d$') then return false end
+    if value < Config.CharacterBirthDateMin or value > Config.CharacterBirthDateMax then return false end
+
+    local year, month, day = value:match('^(%d%d%d%d)%-(%d%d)%-(%d%d)$')
+    year, month, day = tonumber(year), tonumber(month), tonumber(day)
+    if not year or not month or not day or month < 1 or month > 12 or day < 1 then return false end
+    local daysInMonth = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 }
+    if year % 400 == 0 or (year % 4 == 0 and year % 100 ~= 0) then daysInMonth[2] = 29 end
+    if day > daysInMonth[month] then return false end
+    return value
 end
 
 local function createCharacter(userId, data)
@@ -35,14 +49,16 @@ local function createCharacter(userId, data)
         return nil, 'Ungültiger Name.'
     end
     if data.sex ~= 'male' and data.sex ~= 'female' then return nil, 'Ungültiges Geschlecht.' end
+    local birthDate = validBirthDate(data.dateOfBirth)
+    if birthDate == false then return nil, 'Ungültiges Geburtsdatum.' end
 
     local defaults = Config.DefaultCharacter
     return MySQL.insert.await([[
         INSERT INTO frontier_characters
-            (user_id, firstname, lastname, sex, job, job_grade, group_name, cash, bank, metadata)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (user_id, firstname, lastname, date_of_birth, sex, job, job_grade, group_name, cash, bank, metadata)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ]], {
-        userId, Frontier.Trim(data.firstname), Frontier.Trim(data.lastname), data.sex,
+        userId, Frontier.Trim(data.firstname), Frontier.Trim(data.lastname), birthDate, data.sex,
         defaults.job, defaults.jobGrade, defaults.group, defaults.cash, defaults.bank, '{}'
     })
 end
@@ -56,6 +72,10 @@ local function loadCharacter(source, characterId)
     ]], { characterId, userId })
     if not row then return false, 'Charakter nicht gefunden.' end
 
+    if Players[source] then
+        Players[source]:save()
+        TriggerEvent('frontier:server:playerUnloaded', source, Players[source])
+    end
     Players[source] = Frontier.Player:new(source, row)
     Players[source]:sync()
     TriggerClientEvent('frontier:client:spawn', source, Players[source].coords or Config.Spawn)
@@ -97,9 +117,8 @@ Frontier.RegisterCallback('frontier:getCharacters', function(source, reply)
     if not userId then return reply(nil, err) end
     local rows = characterRows(userId)
     if #rows == 0 and Config.AutoCreateCharacter then
-        local id = createCharacter(userId, Config.DefaultCharacter)
+        createCharacter(userId, Config.DefaultCharacter)
         rows = characterRows(userId)
-        if id then loadCharacter(source, id) end
     end
     reply(rows)
 end)
@@ -117,6 +136,24 @@ end)
 
 Frontier.RegisterCallback('frontier:selectCharacter', function(source, reply, characterId)
     reply(loadCharacter(source, tonumber(characterId)))
+end)
+
+Frontier.RegisterCallback('frontier:deleteCharacter', function(source, reply, characterId)
+    characterId = tonumber(characterId)
+    local userId, err = getOrCreateUser(source)
+    if not userId then return reply(false, err) end
+    if not characterId then return reply(false, 'Ungültiger Charakter.') end
+    if Players[source] and Players[source].characterId == characterId then
+        return reply(false, 'Der aktive Charakter kann nicht gelöscht werden.')
+    end
+
+    local affected = MySQL.update.await([[
+        UPDATE frontier_characters
+        SET is_deleted = 1
+        WHERE id = ? AND user_id = ? AND is_deleted = 0
+    ]], { characterId, userId })
+    if affected ~= 1 then return reply(false, 'Charakter nicht gefunden.') end
+    reply(true, characterRows(userId))
 end)
 
 RegisterNetEvent('frontier:server:updatePosition', function(coords, health)

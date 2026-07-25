@@ -3,9 +3,11 @@ game 'rdr3'
 
 author 'Frontier Framework'
 description 'Standalone RedM roleplay core'
-version '1.0.0'
+version '1.1.0'
 
 lua54 'yes'
+
+ui_page 'html/index.html'
 
 shared_scripts {
     'config.lua',
@@ -19,6 +21,12 @@ server_scripts {
 
 client_scripts {
     'client/*.lua'
+}
+
+files {
+    'html/index.html',
+    'html/style.css',
+    'html/app.js'
 }
 
 dependencies {

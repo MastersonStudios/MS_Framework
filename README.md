@@ -5,6 +5,7 @@ Ein schlankes, eigenständiges Roleplay-Framework für RedM.
 ## Enthalten
 
 - persistente Benutzer und mehrere Charaktere
+- grafische Charakterauswahl und Charaktererstellung
 - Geldkonten (`cash`, `bank`) mit serverseitiger Validierung
 - Jobs, Gruppen und Metadaten
 - server- und clientseitige Player-API
@@ -30,8 +31,9 @@ Ein schlankes, eigenständiges Roleplay-Framework für RedM.
    ausführen (oder den Server neu starten).
 5. Zum Testen verbinden und `/characters` verwenden.
 
-Beim ersten Beitritt wird automatisch ein Charakter erstellt. Das lässt sich in
-`frontier_core/config.lua` abschalten.
+Beim ersten Beitritt öffnet sich die Charaktererstellung. In
+`frontier_core/config.lua` kann optional die automatische Erstellung eines
+Platzhalter-Charakters aktiviert werden.
 
 ## Wichtige API
 

@@ -1,5 +1,6 @@
 local PlayerData = {}
 local Callbacks, NextRequest = {}, 0
+local SelectorOpen = false
 
 function Frontier.TriggerCallback(name, callback, ...)
     NextRequest = NextRequest + 1
@@ -10,6 +11,43 @@ exports('TriggerCallback', Frontier.TriggerCallback)
 
 function Frontier.GetPlayerData() return PlayerData end
 exports('GetPlayerData', Frontier.GetPlayerData)
+
+local function setSelectorVisible(visible)
+    SelectorOpen = visible
+    SetNuiFocus(visible, visible)
+    if not visible then
+        SendNUIMessage({ action = 'close' })
+        FreezeEntityPosition(PlayerPedId(), false)
+    end
+end
+
+local function openCharacterSelector()
+    if SelectorOpen then
+        SendNUIMessage({ action = 'loading' })
+    else
+        SelectorOpen = true
+        FreezeEntityPosition(PlayerPedId(), true)
+        if not PlayerData.characterId then SetEntityVisible(PlayerPedId(), false, false) end
+        SetNuiFocus(true, true)
+        SendNUIMessage({ action = 'loading' })
+    end
+
+    Frontier.TriggerCallback('frontier:getCharacters', function(characters, err)
+        if not characters then
+            SendNUIMessage({ action = 'error', message = err or 'Charaktere konnten nicht geladen werden.' })
+            return
+        end
+        SendNUIMessage({
+            action = 'open',
+            characters = characters,
+            maxCharacters = Config.MaxCharacters,
+            canClose = PlayerData.characterId ~= nil,
+            activeCharacterId = PlayerData.characterId,
+            minBirthDate = Config.CharacterBirthDateMin,
+            maxBirthDate = Config.CharacterBirthDateMax
+        })
+    end)
+end
 
 RegisterNetEvent('frontier:client:callback', function(requestId, ...)
     local callback = Callbacks[requestId]
@@ -36,31 +74,62 @@ RegisterNetEvent('frontier:client:spawn', function(coords)
     RequestCollisionAtCoord(x, y, z)
     SetEntityCoords(ped, x, y, z, false, false, false, false)
     SetEntityHeading(ped, tonumber(coords.w) or 0.0)
+    SetEntityVisible(ped, true, false)
     FreezeEntityPosition(ped, true)
     Wait(1000)
-    FreezeEntityPosition(ped, false)
+    setSelectorVisible(false)
     DoScreenFadeIn(500)
 end)
 
-RegisterNetEvent('frontier:client:showCharacters', function()
-    Frontier.TriggerCallback('frontier:getCharacters', function(characters, err)
-        if not characters then
-            return TriggerEvent('frontier:client:notify', err or 'Fehler beim Laden.')
-        end
-        TriggerEvent('chat:addMessage', { args = { 'Frontier', 'Charaktere:' } })
-        for _, character in ipairs(characters) do
-            TriggerEvent('chat:addMessage', {
-                args = { ('[%d]'):format(character.id), ('%s %s – /selectchar %d'):format(character.firstname, character.lastname, character.id) }
-            })
-        end
-    end)
+RegisterNetEvent('frontier:client:showCharacters', openCharacterSelector)
+
+RegisterNUICallback('selectCharacter', function(data, cb)
+    local id = tonumber(data and data.id)
+    if not id then return cb({ ok = false, error = 'Ungültiger Charakter.' }) end
+    Frontier.TriggerCallback('frontier:selectCharacter', function(success, err)
+        cb({ ok = success == true, error = err })
+        if success then setSelectorVisible(false) end
+    end, id)
+end)
+
+RegisterNUICallback('createCharacter', function(data, cb)
+    Frontier.TriggerCallback('frontier:createCharacter', function(success, err)
+        cb({ ok = success == true, error = err })
+        if success then setSelectorVisible(false) end
+    end, {
+        firstname = data and data.firstname,
+        lastname = data and data.lastname,
+        dateOfBirth = data and data.dateOfBirth,
+        sex = data and data.sex
+    })
+end)
+
+RegisterNUICallback('deleteCharacter', function(data, cb)
+    local id = tonumber(data and data.id)
+    if not id then return cb({ ok = false, error = 'Ungültiger Charakter.' }) end
+    Frontier.TriggerCallback('frontier:deleteCharacter', function(success, charactersOrError)
+        if not success then return cb({ ok = false, error = charactersOrError }) end
+        cb({ ok = true, characters = charactersOrError })
+    end, id)
+end)
+
+RegisterNUICallback('closeCharacters', function(_, cb)
+    if not PlayerData.characterId then
+        return cb({ ok = false, error = 'Wähle zuerst einen Charakter.' })
+    end
+    setSelectorVisible(false)
+    cb({ ok = true })
 end)
 
 RegisterCommand('selectchar', function(_, args)
     local id = tonumber(args[1])
     if not id then return end
     Frontier.TriggerCallback('frontier:selectCharacter', function(success, err)
-        if not success then TriggerEvent('frontier:client:notify', err or 'Auswahl fehlgeschlagen.') end
+        if not success then
+            TriggerEvent('frontier:client:notify', err or 'Auswahl fehlgeschlagen.')
+        else
+            setSelectorVisible(false)
+        end
     end, id)
 end)
 
@@ -70,14 +139,21 @@ RegisterCommand('newchar', function(_, args)
         return TriggerEvent('frontier:client:notify', 'Verwendung: /newchar Vorname Nachname male|female')
     end
     Frontier.TriggerCallback('frontier:createCharacter', function(success, err)
-        if not success then TriggerEvent('frontier:client:notify', err or 'Erstellung fehlgeschlagen.') end
+        if not success then
+            TriggerEvent('frontier:client:notify', err or 'Erstellung fehlgeschlagen.')
+        else
+            setSelectorVisible(false)
+        end
     end, { firstname = firstname, lastname = lastname, sex = sex })
 end)
 
 CreateThread(function()
     while not NetworkIsPlayerActive(PlayerId()) do Wait(250) end
     Wait(1000)
-    TriggerEvent('frontier:client:showCharacters')
+    openCharacterSelector()
+end)
+
+CreateThread(function()
     while true do
         Wait(30000)
         if PlayerData.characterId then
@@ -87,4 +163,11 @@ CreateThread(function()
             }, GetEntityHealth(ped))
         end
     end
+end)
+
+AddEventHandler('onResourceStop', function(resource)
+    if resource ~= GetCurrentResourceName() then return end
+    SetNuiFocus(false, false)
+    FreezeEntityPosition(PlayerPedId(), false)
+    SetEntityVisible(PlayerPedId(), true, false)
 end)
