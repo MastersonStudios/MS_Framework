@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>MS Trains</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <aside id="prompt" class="prompt" aria-hidden="true">
+        <span id="prompt-key" class="key">E</span>
+        <span>
+            <strong id="prompt-label">Bahnhof</strong>
+            <small>Zug bereitstellen</small>
+        </span>
+    </aside>
+
+    <aside id="driving-hud" class="driving-hud" aria-hidden="true">
+        <div class="driving-hud__header">
+            <span id="hud-train">Personenzug</span>
+            <b id="hud-direction">Vorwärts</b>
+        </div>
+        <div class="driving-hud__speed">
+            <strong id="hud-speed">0</strong>
+            <span>km/h</span>
+        </div>
+        <div class="driving-hud__bar"><i id="hud-speed-bar"></i></div>
+        <p id="hud-state">Du führst den Zug</p>
+        <div class="driving-hud__keys">
+            <span><kbd>W</kbd> Tempo</span>
+            <span><kbd>S</kbd> Bremse</span>
+            <span><kbd>R</kbd> Richtung</span>
+            <span><kbd>Leertaste</kbd> Notbremse</span>
+        </div>
+    </aside>
+
+    <main id="app" class="app" aria-hidden="true">
+        <section class="dispatch">
+            <header class="dispatch__header">
+                <div>
+                    <p class="eyebrow">Masterson Rail Company</p>
+                    <h1 id="station-label">Bahnhof</h1>
+                    <p id="station-region" class="region">New Hanover</p>
+                </div>
+                <div class="capacity">
+                    <span>Züge im Einsatz</span>
+                    <strong><b id="active-count">0</b> / <b id="active-limit">8</b></strong>
+                </div>
+                <button id="close-button" class="close-button" type="button" aria-label="Schließen">×</button>
+            </header>
+
+            <div class="dispatch__body">
+                <aside class="route-panel">
+                    <p class="eyebrow">Abfahrtsauftrag</p>
+                    <h2>Fahrtrichtung</h2>
+                    <div class="direction-picker" role="group" aria-label="Fahrtrichtung">
+                        <button type="button" data-direction="default" class="is-active">
+                            <span>01</span>
+                            <strong>Streckenrichtung</strong>
+                            <small>Voreinstellung des Bahnhofs</small>
+                        </button>
+                        <button type="button" data-direction="reverse">
+                            <span>02</span>
+                            <strong>Gegenrichtung</strong>
+                            <small>Umgekehrte Gleisrichtung</small>
+                        </button>
+                    </div>
+
+                    <div class="instructions">
+                        <p class="eyebrow">Steuerung</p>
+                        <dl>
+                            <div><dt>W</dt><dd>Geschwindigkeit erhöhen</dd></div>
+                            <div><dt>S</dt><dd>Bremsen</dd></div>
+                            <div><dt>R</dt><dd>Richtung im Stand wechseln</dd></div>
+                            <div><dt>Leertaste</dt><dd>Notbremse</dd></div>
+                        </dl>
+                    </div>
+                </aside>
+
+                <section class="catalog">
+                    <div class="section-title">
+                        <div>
+                            <p class="eyebrow">Lokschuppen</p>
+                            <h2>Verfügbare Züge</h2>
+                        </div>
+                        <span id="catalog-count">0 Modelle</span>
+                    </div>
+                    <div id="train-list" class="train-list"></div>
+                </section>
+
+                <aside class="active-panel">
+                    <p class="eyebrow">Eigener Zug</p>
+                    <div id="no-active" class="empty-active">
+                        <span class="rail-symbol">≋</span>
+                        <h3>Kein Zug aktiv</h3>
+                        <p>Wähle einen Zug aus dem Lokschuppen und gib die Abfahrt frei.</p>
+                    </div>
+                    <div id="active-train" class="active-train" hidden>
+                        <span class="status-dot">Im Einsatz</span>
+                        <h3 id="active-train-label">Personenzug</h3>
+                        <p id="active-station-label">Bereitgestellt in Valentine</p>
+                        <button id="return-button" type="button">Zug zurückgeben</button>
+                        <small>Alternativ: <b id="return-command">/trainreturn</b></small>
+                    </div>
+                </aside>
+            </div>
+
+            <div id="toast" class="toast" role="status" aria-live="polite"></div>
+        </section>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>

@@ -28,6 +28,7 @@ Aktuelle Framework-Version: `0.0.1`
 - `MS_Inventory` mit konfigurierbarer Kapazität, Kontextaktionen und Outfit-Drag-and-Drop
 - `MS_ClothingShop` mit Charaktervorschau und gemeinsamer Einkaufsliste
 - `MS_Stables` mit Pferde-, Ausrüstungs-, Fellfarben- und Kutschenhandel
+- `MS_Trains` mit fahrbaren Zügen und konfigurierbaren Bahnhof-NPCs
 - `MS_Telegrams` mit persönlichen Telegrammnummern und persistenten Nachrichten
 - `MS_LoadingScreen` mit Video-Cutscene, animierter Ersatzszene und Mute-Funktion
 
@@ -46,7 +47,8 @@ Aktuelle Framework-Version: `0.0.1`
 4. In der Konsole zuerst `ensure MS_LoadingScreen` und `ensure frontier_core`,
    danach
    `ensure frontier_playersync`, `ensure MS_WeaponDamage`, `ensure MS_Inventory`,
-   `ensure MS_ClothingShop`, `ensure MS_Stables`, `ensure MS_Telegrams`,
+   `ensure MS_ClothingShop`, `ensure MS_Stables`, `ensure MS_Trains`,
+   `ensure MS_Telegrams`,
    `ensure frontier_worldbuilder`,
    `ensure frontier_adminmenu`,
    `ensure frontier_guarma_onboarding`, `ensure frontier_mapeditor`,
@@ -214,6 +216,34 @@ Spieler öffnen den nächsten Stall standardmäßig mit `E` oder `/stables`.
 Es kann genau ein eigenes Stallobjekt – Pferd oder Kutsche – gleichzeitig
 aktiv sein. Fellwechsel und neu angelegte Ausrüstung werden beim nächsten
 Abholen des Pferdes sichtbar beziehungsweise wirksam.
+
+## MS Trains
+
+`MS_Trains` stellt an konfigurierbaren Bahnhof-NPCs fahrbare Züge auf den
+vorhandenen RedM-Gleisen bereit:
+
+- grafisches Zugmenü mit Zugkomposition und Fahrtrichtung
+- Personenzug, Pacific-Union-Zug und Industriezug als Beispielkonfigurationen
+- serverseitige Prüfung von Charakter, NPC-Entfernung, Cooldown, Zuglimit und
+  Netzwerk-Entity
+- ein aktiver Zug pro Spieler und konfigurierbares serverweites Zuglimit
+- synchronisierte Mission-Train-Entities über OneSync
+- Fahrer-HUD mit Geschwindigkeit und Fahrtrichtung
+- `W` zum Beschleunigen, `S` zum Bremsen, `R` zum Richtungswechsel im Stand
+  und `Leertaste` als Notbremse
+- sichere Zugrückgabe über das Menü oder `/trainreturn`
+
+NPC-Modelle, NPC-Koordinaten, Szenarien, Gleis-Spawnpunkte,
+Zugkompositionen, Geschwindigkeiten, Tasten und Limits befinden sich in
+`resources/[frontier]/MS_Trains/config.lua`. Ein Spawnpunkt muss direkt auf
+einem vorhandenen Gleis liegen; die Resource prüft dies vor dem Erzeugen mit
+der RedM-Gleisnative. Standardmäßig wird das Menü mit `E` beim Zugpersonal
+oder `/trains` geöffnet.
+
+Die Missionszug-Physik wird auf dem Client des anfordernden Spielers
+initialisiert und anschließend über OneSync synchronisiert. Eine zusätzliche
+Entity-Lockdown-Resource darf diese autorisierte clientseitige
+Entity-Erzeugung daher nicht blockieren.
 
 ## MS Telegrams
 

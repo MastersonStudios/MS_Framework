@@ -17,6 +17,7 @@ ensure MS_WeaponDamage
 ensure MS_Inventory
 ensure MS_ClothingShop
 ensure MS_Stables
+ensure MS_Trains
 ensure MS_Telegrams
 ensure frontier_worldbuilder
 ensure frontier_adminmenu
