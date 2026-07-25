@@ -25,6 +25,7 @@ Aktuelle Framework-Version: `0.0.1`
 - Data Admin mit Datenbank-Itemcreator und durchsuchbarem Prop-Katalog
 - serverautoritatives Spieler-Presence-Sync für bis zu 64 Slots
 - `MS_mechat` mit räumlichem `/me`-Chat und 3D-Text über dem Charakter
+- `MS_pointing` mit frei belegbarer Finger-Zeigegeste auf der Taste `B`
 - `MS_WeaponDamage` mit einzeln konfigurierbarem Schaden für sämtliche Waffen
 - `MS_Inventory` mit konfigurierbarer Kapazität, Kontextaktionen und Outfit-Drag-and-Drop
 - `MS_ClothingShop` mit Charaktervorschau und gemeinsamer Einkaufsliste
@@ -47,8 +48,8 @@ Aktuelle Framework-Version: `0.0.1`
    Lizenzschlüssel anpassen.
 4. In der Konsole zuerst `ensure MS_LoadingScreen` und `ensure frontier_core`,
    danach
-   `ensure frontier_playersync`, `ensure MS_mechat`, `ensure MS_WeaponDamage`,
-   `ensure MS_Inventory`,
+   `ensure frontier_playersync`, `ensure MS_mechat`, `ensure MS_pointing`,
+   `ensure MS_WeaponDamage`, `ensure MS_Inventory`,
    `ensure MS_ClothingShop`, `ensure MS_Stables`, `ensure MS_Trains`,
    `ensure MS_Telegrams`,
    `ensure frontier_worldbuilder`,
@@ -79,6 +80,7 @@ optionales Argument.
 | `/daily` | Holt einmal pro UTC-Tag den Beispielbonus von `$10` ab; benötigt `frontier_example`. |
 | `/frameworkversion` | Zeigt die installierte Framework-Version und den letzten Update-Status. |
 | `/me <Aktion>` | Zeigt eine Roleplay-Aktion im nahen Chat und als 3D-Text über dem Charakter. |
+| `/point` | Führt die Finger-Zeigegeste aus; alternativ kann `B` verwendet werden. |
 | `/inventory` | Öffnet `MS_Inventory`. |
 | `/clothingshop` | Öffnet den nächsten erreichbaren Bekleidungshändler. |
 | `/stables` | Öffnet den nächsten erreichbaren Stall. |
@@ -134,6 +136,7 @@ Alle Keymappings können Spieler in den RedM-Tastatureinstellungen ändern.
 | `F2` | ACP öffnen oder schließen. |
 | `F9` | World Builder öffnen oder schließen. |
 | `I` | Inventar öffnen oder schließen. |
+| `B` | Mit dem Finger nach vorne zeigen. |
 | `E` | Händler, Stall, Bahnhof, Telegrafenamt, Crafting-Punkt, Storage oder Tür benutzen. |
 | `W` / `S` | Zug beschleunigen oder bremsen. |
 | `R` / `Leertaste` | Zug im Stand wenden oder Notbremsung auslösen. |
@@ -294,6 +297,19 @@ Alle Einstellungen befinden sich in
 `resources/[frontier]/MS_mechat/config.lua`. Die Resource benötigt OneSync und
 `frontier_core`; `server.cfg.example` startet sie deshalb direkt nach
 `frontier_playersync`.
+
+## MS Pointing
+
+`MS_pointing` führt mit der Standardtaste `B` oder `/point` die native
+RedM-Zeigegeste `KIT_EMOTE_ACTION_POINT_1` aus. Die Animation des eigenen
+Netzwerk-Peds wird dadurch für andere Spieler synchronisiert.
+
+Vor dem Start prüft die Resource den aktiven Charakter, Tod, Ragdoll, NUI-Fokus,
+Fahrzeug, Pferd, ausgerüstete Waffe und Cooldown. Standardmäßig muss der Spieler
+zu Fuß, unbewaffnet und außerhalb eines Menüs sein. Command, Taste, Emote-Kit,
+Cooldown, geschätzte Gestendauer und sämtliche Sperren befinden sich in
+`resources/[frontier]/MS_pointing/config.lua`. Spieler können die Taste in den
+RedM-Tastatureinstellungen neu belegen.
 
 ## MS Stables
 
