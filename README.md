@@ -70,6 +70,9 @@ Chatbefehle werden ingame mit `/` eingegeben. In der Serverkonsole entfällt
 der Schrägstrich. `<Wert>` kennzeichnet ein Pflichtargument, `[Wert]` ein
 optionales Argument.
 
+Stand Framework `0.0.1`: 33 öffentliche Befehle. Interne Keymapping-Befehle
+werden hier nicht aufgeführt.
+
 ### Spielerbefehle
 
 | Befehl | Kurzbeschreibung |
@@ -116,6 +119,21 @@ optionales Argument.
 verwendet werden. Bei `logout`, `charlogout` und `guarmareset` ist dort eine
 Server-ID erforderlich. Beispielzuweisungen für alle ACE-Rechte stehen in
 `server.cfg.example`.
+
+### Medic-Befehlsbeispiele
+
+`/medicdisease` akzeptiert die Krankheitsschlüssel `influenza` (Grippe),
+`pneumonia` (Lungenentzündung), `food_poisoning`
+(Lebensmittelvergiftung) und `wound_infection` (Wundinfektion). Wird beim
+Hinzufügen kein Schweregrad angegeben, verwendet das System Stufe `1`.
+
+| Beispiel | Wirkung |
+| --- | --- |
+| `/setjob 12 medic 0` | Weist Spieler 12 den Medic-Job als Sanitäter zu. Die Grade `1` und `2` entsprechen Arzt und Chefarzt. |
+| `/medicdisease 12 list` | Listet alle aktiven Krankheiten des Spielers auf. |
+| `/medicdisease 12 add influenza 1` | Fügt Grippe mit Schweregrad 1 hinzu. |
+| `/medicdisease 12 remove influenza` | Entfernt Grippe. |
+| `/medicdisease 12 clear` | Entfernt alle Krankheiten des Spielers. |
 
 ### Mapeditor-Befehle
 
