@@ -8,6 +8,7 @@ const resourceName = typeof GetParentResourceName === 'function'
 const app = $('#app');
 const craftingUi = $('#crafting-ui');
 const toast = $('#toast');
+const announcement = $('#server-announcement');
 const state = {
     data: null,
     selectedPlayer: null,
@@ -27,6 +28,7 @@ const state = {
 };
 
 let toastTimer;
+let announcementTimer;
 
 async function post(endpoint, body = {}) {
     if (preview) return { ok: true };
@@ -47,6 +49,29 @@ function showToast(message, success = false) {
     toast.textContent = message || 'Aktion verarbeitet.';
     toast.className = `toast ${success ? 'success' : 'error'}`;
     toastTimer = setTimeout(() => toast.classList.add('hidden'), 4200);
+}
+
+function showAnnouncement(data) {
+    const message = typeof data?.message === 'string' ? data.message.trim() : '';
+    if (!message) return;
+    clearTimeout(announcementTimer);
+    $('#server-announcement-message').textContent = message;
+    announcement.classList.add('hidden');
+    void announcement.offsetWidth;
+    announcement.classList.remove('hidden');
+    const duration = Math.max(3000, Math.min(30000, Number(data.duration) || 8000));
+    announcementTimer = setTimeout(() => announcement.classList.add('hidden'), duration);
+    if (state.data?.selfId === Number(data.authorSource)) {
+        $('#announcement-message').value = '';
+        updateAnnouncementLength();
+    }
+}
+
+function updateAnnouncementLength() {
+    const input = $('#announcement-message');
+    const maximum = Number(state.data?.limits?.announcementLength) || 500;
+    input.maxLength = maximum;
+    $('#announcement-length').textContent = `${input.value.length} / ${maximum}`;
 }
 
 function text(tag, value, className) {
@@ -676,6 +701,7 @@ function applyData(data) {
     $('#transition-value').textContent = `${$('#weather-transition').value}s`;
     $('#money-amount').max = data.limits?.money || 100000;
     $('#item-amount').max = data.limits?.items || 50;
+    updateAnnouncementLength();
     $('#recipe-output-amount').max = data.limits?.craftingAmount || 100;
     $('#recipe-duration').max = data.limits?.craftingDuration || 30000;
     renderPlayers();
@@ -758,6 +784,7 @@ $('#support-log-search').addEventListener('input', renderSupportLogs);
 $('#support-log-type').addEventListener('change', renderSupportLogs);
 $('#data-item-search').addEventListener('input', renderDataItems);
 $('#prop-search').addEventListener('input', renderProps);
+$('#announcement-message').addEventListener('input', updateAnnouncementLength);
 $('#rights-player').addEventListener('change', fillRightsForPlayer);
 $('#weather-transition').addEventListener('input', () => {
     $('#transition-value').textContent = `${$('#weather-transition').value}s`;
@@ -769,6 +796,12 @@ $('#apply-weather').addEventListener('click', () => post('execute', {
 }));
 $('#noclip').addEventListener('click', () => post('execute', { action: 'noclip' }));
 $('#ghost-mode').addEventListener('click', () => post('execute', { action: 'ghost' }));
+$('#announcement-form').addEventListener('submit', (event) => {
+    event.preventDefault();
+    const message = $('#announcement-message').value.trim();
+    if (message.length < 2) return showToast('Gib mindestens zwei Zeichen ein.');
+    post('execute', { action: 'announcement', data: { message } });
+});
 $('#teleport-coords').addEventListener('click', () => post('execute', {
     action: 'teleportCoords',
     data: {
@@ -983,6 +1016,8 @@ window.addEventListener('message', ({ data }) => {
         state.ghost = data.enabled === true;
         $('#ghost-mode').classList.toggle('active', state.ghost);
         $('#ghost-mode').textContent = state.ghost ? 'Ghost Mode aktiv' : 'Ghost Mode';
+    } else if (data.action === 'announcement') {
+        showAnnouncement(data.data);
     } else if (data.action === 'openCrafting') {
         app.classList.add('hidden');
         craftingUi.classList.remove('hidden');
@@ -1011,10 +1046,11 @@ window.addEventListener('message', ({ data }) => {
 
 const mockData = {
     selfId: 4,
-    permissions: { access: true, players: true, economy: true, weather: true, world: true, crafting: true, data: true, support: true, rights: true },
+    permissions: { access: true, announcements: true, players: true, economy: true, weather: true, world: true, crafting: true, data: true, support: true, rights: true },
     permissionDefinitions: [
         { id: 'access', label: 'ACP-Zugriff', description: 'Darf das Administrations-Control-Panel öffnen.' },
         { id: 'players', label: 'Spielerverwaltung', description: 'Teleport, Heilen, Wiederbeleben, Einfrieren, Kick, Ghost Mode und Noclip.' },
+        { id: 'announcements', label: 'Server-Announcements', description: 'Darf serverweite Nachrichten über das ACP senden.' },
         { id: 'economy', label: 'Wirtschaft', description: 'Darf Geld und Items vergeben.' },
         { id: 'weather', label: 'Wetter', description: 'Darf das globale Wetter konfigurieren.' },
         { id: 'world', label: 'World Builder', description: 'Darf NPCs, Storages und Türen verwalten.' },
@@ -1081,7 +1117,7 @@ const mockData = {
             { id: 101, type: 'connection', actorSource: 12, actorIdentifier: 'license:victim', actorName: 'EliasM', details: { phase: 'playerConnecting' }, createdAt: '2026-07-25 21:39:43' }
         ]
     },
-    limits: { money: 100000, items: 50, weatherTransition: 30, craftingAmount: 100, craftingIngredients: 8, craftingDuration: 30000 }
+    limits: { money: 100000, items: 50, announcementLength: 500, weatherTransition: 30, craftingAmount: 100, craftingIngredients: 8, craftingDuration: 30000 }
 };
 
 if (preview) {

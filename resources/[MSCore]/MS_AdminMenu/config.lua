@@ -25,6 +25,9 @@ AdminMenuConfig.SupportLogFlushInterval = 500
 AdminMenuConfig.SupportLogQueueLimit = 5000
 AdminMenuConfig.SupportLogMinimumDamage = 1
 AdminMenuConfig.GhostRefreshIntervalMs = 100
+AdminMenuConfig.MaxAnnouncementLength = 500
+AdminMenuConfig.AnnouncementDurationMs = 8000
+AdminMenuConfig.AnnouncementCooldownMs = 5000
 
 AdminMenuConfig.Permissions = {
     {
@@ -36,6 +39,11 @@ AdminMenuConfig.Permissions = {
         id = 'players',
         label = 'Spielerverwaltung',
         description = 'Teleport, Heilen, Wiederbeleben, Einfrieren, Kick, Ghost Mode und Noclip.'
+    },
+    {
+        id = 'announcements',
+        label = 'Server-Announcements',
+        description = 'Darf serverweite Nachrichten über das ACP senden.'
     },
     {
         id = 'economy',

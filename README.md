@@ -20,6 +20,7 @@ Aktuelle Framework-Version: `0.0.2`
 - Guarma-Onboarding mit Sturm-Cinematic und Bewegungstutorial
 - grafisches ACP mit Rechte-, Wetter-, Spieler-, Geld- und Itemverwaltung
 - Support Admin mit persistenten Verbindungs-, Spawn-, Schadens- und Tötungslogs
+- Admin-Bereich für serverweite Announcements mit Banner- und Chat-Ausgabe
 - grafischer World Builder für NPCs, Storages und sperrbare Türen
 - persistente Crafting-Rezepte und frei platzierbare Crafting-Punkte
 - Data Admin mit Datenbank-Itemcreator und durchsuchbarem Prop-Katalog
@@ -605,6 +606,7 @@ Kompatibilitätsalias `/adminmenu` das zentrale Administration Control Panel.
 Enthalten sind:
 
 - serverweit synchronisierter Wetterkonfigurator mit Übergangszeit
+- Admin-Unterpunkt **Announcement** für serverweite Banner- und Chatnachrichten
 - Bargeld- und Bankgutschriften mit konfigurierbarem Betragslimit
 - persistente Itemvergabe aus dem Core-Itemkatalog
 - Goto, Bring, Heilen, Wiederbeleben, Einfrieren und Kick
@@ -639,6 +641,12 @@ Administrator für alle verbundenen Spieler unsichtbar, lässt die normale
 Laufbewegung aktiv und wird bei Rechteentzug, Charakter-Logout, Disconnect
 oder Resource-Stopp automatisch beendet. Das Aktualisierungsintervall ist über
 `AdminMenuConfig.GhostRefreshIntervalMs` konfigurierbar.
+
+Der Menüpunkt **Admin** enthält den Unterpunkt **Announcement**. Nachrichten
+werden nach serverseitiger Berechtigungs- und Längenprüfung an alle verbundenen
+Spieler gesendet, als Banner angezeigt, zusätzlich im Chat ausgegeben und in
+der Serverkonsole protokolliert. Die Berechtigung `announcements` sowie
+Maximallänge, Anzeigedauer und Sendepause sind konfigurierbar.
 
 Der Menüpunkt **Data Admin** konfiguriert technischen Namen, Anzeigenamen,
 Beschreibung, Kategorie, Seltenheit, Stack-Limit, Gewicht, Benutzbarkeit,

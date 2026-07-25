@@ -471,6 +471,7 @@ local function payload(source)
         limits = {
             money = AdminMenuConfig.MaxMoneyGrant,
             items = AdminMenuConfig.MaxItemGrant,
+            announcementLength = AdminMenuConfig.MaxAnnouncementLength,
             weatherTransition = AdminMenuConfig.MaxWeatherTransition,
             craftingAmount = AdminMenuConfig.MaxCraftingAmount,
             craftingIngredients = AdminMenuConfig.MaxCraftingIngredients,
@@ -1015,6 +1016,38 @@ RegisterNetEvent('ms_adminmenu:server:execute', function(action, data)
         local enabled = setGhostMode(source, not GhostPlayers[source])
         audit(source, 'Ghost Mode', source, enabled and 'aktiviert' or 'deaktiviert')
         return
+    end
+
+    if action == 'announcement' then
+        if not hasPermission(source, 'announcements') then
+            return result(source, false, 'Keine Berechtigung für Server-Announcements.')
+        end
+        local maximum = math.max(
+            2,
+            math.min(2000, math.floor(tonumber(AdminMenuConfig.MaxAnnouncementLength) or 500))
+        )
+        local cooldown = math.max(
+            1000,
+            math.min(60000, math.floor(tonumber(AdminMenuConfig.AnnouncementCooldownMs) or 5000))
+        )
+        local duration = math.max(
+            3000,
+            math.min(30000, math.floor(tonumber(AdminMenuConfig.AnnouncementDurationMs) or 8000))
+        )
+        local message = cleanText(data.message, maximum, false)
+        if not message then
+            return result(source, false, ('Die Nachricht muss 2 bis %d Zeichen enthalten.'):format(maximum))
+        end
+        if onCooldown(source, 'announcementBroadcast', cooldown) then
+            return result(source, false, 'Bitte warte vor dem nächsten Announcement.')
+        end
+        TriggerClientEvent('ms_adminmenu:client:announcement', -1, {
+            message = message,
+            duration = duration,
+            authorSource = source
+        })
+        audit(source, 'Server-Announcement', nil, message)
+        return result(source, true, 'Server-Announcement gesendet.')
     end
 
     local target, player = activeTarget(data)

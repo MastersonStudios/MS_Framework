@@ -283,6 +283,23 @@ RegisterNetEvent('ms_adminmenu:client:ghostChanged', function(playerSource, enab
     setGhostState(playerSource, enabled, playerSource == GetPlayerServerId(PlayerId()))
 end)
 
+RegisterNetEvent('ms_adminmenu:client:announcement', function(data)
+    if type(data) ~= 'table' or type(data.message) ~= 'string' then return end
+    SendNUIMessage({
+        action = 'announcement',
+        data = {
+            message = data.message,
+            duration = tonumber(data.duration) or 8000,
+            authorSource = tonumber(data.authorSource)
+        }
+    })
+    TriggerEvent('chat:addMessage', {
+        color = { 227, 190, 123 },
+        multiline = true,
+        args = { 'SERVER ANNOUNCEMENT', data.message }
+    })
+end)
+
 RegisterNetEvent('ms_adminmenu:client:craftingSync', function(points)
     CraftingPoints = {}
     for _, point in ipairs(type(points) == 'table' and points or {}) do

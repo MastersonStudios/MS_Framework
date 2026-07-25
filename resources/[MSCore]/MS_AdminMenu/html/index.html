@@ -32,6 +32,9 @@
                         <button class="nav-button active" data-tab="overview" data-permission="access" type="button">
                             <span>⌂</span><span>Übersicht</span>
                         </button>
+                        <button class="nav-button" data-tab="admin" data-permission="announcements" type="button">
+                            <span>!</span><span>Admin</span>
+                        </button>
                         <button class="nav-button" data-tab="players" data-permission="players,economy" type="button">
                             <span>♟</span><span>Spieler</span>
                         </button>
@@ -93,6 +96,40 @@
                                 <button id="teleport-coords" class="button primary full" type="button">Teleportieren</button>
                                 <div class="notice"><strong>Sicherheitsprüfung</strong><span>Alle Koordinaten und Aktionen werden serverseitig geprüft und protokolliert.</span></div>
                             </article>
+                        </div>
+                    </section>
+
+                    <section class="page" data-page="admin">
+                        <header class="page-header">
+                            <div><p class="eyebrow">SERVERKOMMUNIKATION</p><h2>Admin</h2></div>
+                            <div class="segmented">
+                                <button class="active" type="button">Announcement</button>
+                            </div>
+                        </header>
+                        <div class="announcement-layout">
+                            <form id="announcement-form" class="panel announcement-form">
+                                <div class="panel-heading">
+                                    <div><p class="eyebrow">SERVERWEITE NACHRICHT</p><h3>Announcement erstellen</h3></div>
+                                    <span class="status-pill">Alle Spieler</span>
+                                </div>
+                                <label>
+                                    <span>Nachricht</span>
+                                    <textarea id="announcement-message" minlength="2" maxlength="500" required placeholder="Nachricht an alle Spieler eingeben …"></textarea>
+                                </label>
+                                <div class="announcement-footer">
+                                    <small id="announcement-length">0 / 500</small>
+                                    <button class="button primary" type="submit">Announcement senden</button>
+                                </div>
+                            </form>
+                            <aside class="panel announcement-info">
+                                <p class="eyebrow">HINWEIS</p>
+                                <h3>Server Announcement</h3>
+                                <p>Die Nachricht erscheint bei allen verbundenen Spielern als Banner und zusätzlich im Chat.</p>
+                                <div class="notice">
+                                    <strong>Protokolliert und geschützt</strong>
+                                    <span>Nur Administratoren mit der Berechtigung „Server-Announcements“ können Nachrichten senden. Jede Nachricht wird serverseitig protokolliert.</span>
+                                </div>
+                            </aside>
                         </div>
                     </section>
 
@@ -448,6 +485,13 @@
         <kbd>E</kbd><div><strong>Crafting öffnen</strong><span id="craft-prompt-label"></span></div>
     </aside>
     <aside id="capture-hint" class="capture-hint hidden">Visiere jetzt die gewünschte Tür an …</aside>
+    <section id="server-announcement" class="server-announcement hidden" role="status" aria-live="assertive">
+        <div class="announcement-mark">M</div>
+        <div>
+            <p>SERVER ANNOUNCEMENT</p>
+            <strong id="server-announcement-message"></strong>
+        </div>
+    </section>
     <div id="toast" class="toast hidden"></div>
 
     <script src="app.js"></script>
