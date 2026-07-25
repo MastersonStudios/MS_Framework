@@ -71,14 +71,57 @@ function Player:getInventory()
     return self.metadata.inventory
 end
 
-function Player:addItem(itemName, amount, reason)
+local function inventoryLimits()
+    local config = type(Config.Inventory) == 'table' and Config.Inventory or {}
+    return {
+        slots = math.max(1, math.floor(tonumber(config.Slots) or 30)),
+        maxWeight = math.max(0, math.floor(tonumber(config.MaxWeight) or 30000))
+    }
+end
+
+function Player:getInventoryUsage(inventory)
+    inventory = type(inventory) == 'table' and inventory or self:getInventory()
+    local usage = { slots = 0, weight = 0, amount = 0 }
+
+    for itemName, rawAmount in pairs(inventory) do
+        local amount = math.max(0, math.floor(tonumber(rawAmount) or 0))
+        local item = amount > 0 and Frontier.GetItemDefinition(itemName)
+        if item then
+            local maxStack = math.max(1, math.floor(
+                tonumber(item.maxStack) or tonumber(Config.MaxItemStack) or 100
+            ))
+            usage.slots = usage.slots + math.ceil(amount / maxStack)
+            usage.weight = usage.weight + amount * math.max(0, tonumber(item.weight) or 0)
+            usage.amount = usage.amount + amount
+        end
+    end
+
+    local limits = inventoryLimits()
+    usage.maxSlots = limits.slots
+    usage.maxWeight = limits.maxWeight
+    usage.hasCapacity = usage.slots <= limits.slots and usage.weight <= limits.maxWeight
+    return usage
+end
+
+function Player:canCarryItem(itemName, amount, inventory)
     local item = type(itemName) == 'string' and Frontier.GetItemDefinition(itemName)
     if not item or not Frontier.IsInteger(amount) or amount < 1 then return false end
 
+    local simulated = {}
+    for name, current in pairs(type(inventory) == 'table' and inventory or self:getInventory()) do
+        simulated[name] = math.max(0, math.floor(tonumber(current) or 0))
+    end
+    simulated[itemName] = (simulated[itemName] or 0) + amount
+    return self:getInventoryUsage(simulated).hasCapacity
+end
+
+function Player:addItem(itemName, amount, reason)
+    local item = type(itemName) == 'string' and Frontier.GetItemDefinition(itemName)
+    if not item or not Frontier.IsInteger(amount) or amount < 1 then return false end
+    if not self:canCarryItem(itemName, amount) then return false end
+
     local inventory = self:getInventory()
     local current = tonumber(inventory[itemName]) or 0
-    local maxStack = tonumber(item.maxStack) or Config.MaxItemStack
-    if current + amount > maxStack then return false end
 
     inventory[itemName] = current + amount
     self.dirty = true
@@ -134,3 +177,9 @@ function Player:save(coords)
 end
 
 Frontier.Player = Player
+
+function GetInventoryLimits()
+    return inventoryLimits()
+end
+
+exports('GetInventoryLimits', GetInventoryLimits)

@@ -1027,7 +1027,7 @@ RegisterNetEvent('frontier_adminmenu:server:craft', function(pointId, recipeId)
     local output = catalog[recipe.outputItem]
     if not output then return craftFailure(source, point, player, 'Das Ausgabe-Item existiert nicht mehr.') end
     simulated[recipe.outputItem] = (simulated[recipe.outputItem] or 0) + recipe.outputAmount
-    if simulated[recipe.outputItem] > (tonumber(output.maxStack) or 100) then
+    if not player:getInventoryUsage(simulated).hasCapacity then
         return craftFailure(source, point, player, 'Dein Inventar kann das Ergebnis nicht aufnehmen.')
     end
 

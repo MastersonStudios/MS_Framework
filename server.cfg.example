@@ -12,6 +12,7 @@ set mysql_connection_string "mysql://redm:password@127.0.0.1/redm?charset=utf8mb
 ensure oxmysql
 ensure frontier_core
 ensure frontier_playersync
+ensure MS_Inventory
 ensure MS_Stables
 ensure frontier_worldbuilder
 ensure frontier_adminmenu

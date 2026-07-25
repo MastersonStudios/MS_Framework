@@ -21,6 +21,7 @@ Ein schlankes, eigenständiges Roleplay-Framework für RedM.
 - persistente Crafting-Rezepte und frei platzierbare Crafting-Punkte
 - Data Admin mit Datenbank-Itemcreator und durchsuchbarem Prop-Katalog
 - serverautoritatives Spieler-Presence-Sync für bis zu 64 Slots
+- `MS_Inventory` mit konfigurierbarer Kapazität, Kontextaktionen und Outfit-Drag-and-Drop
 - `MS_Stables` mit Pferde-, Ausrüstungs-, Fellfarben- und Kutschenhandel
 
 ## Voraussetzungen
@@ -36,7 +37,8 @@ Ein schlankes, eigenständiges Roleplay-Framework für RedM.
 3. `server.cfg.example` nach `server.cfg` kopieren und Connection-String sowie
    Lizenzschlüssel anpassen.
 4. In der Konsole zuerst `ensure frontier_core`, danach
-   `ensure frontier_playersync`, `ensure MS_Stables`, `ensure frontier_worldbuilder`,
+   `ensure frontier_playersync`, `ensure MS_Inventory`, `ensure MS_Stables`,
+   `ensure frontier_worldbuilder`,
    `ensure frontier_adminmenu`,
    `ensure frontier_guarma_onboarding`, `ensure frontier_mapeditor`,
    `ensure frontier_adminlogout` sowie `ensure frontier_example` ausführen
@@ -62,6 +64,37 @@ Weitere Beispiele stehen in `resources/[frontier]/frontier_example`.
 
 Items werden serverseitig anhand von `frontier_core/config.lua` validiert und
 im Charakter-Inventar innerhalb der persistenten Metadaten gespeichert.
+
+## MS Inventory
+
+Die Resource `MS_Inventory` ersetzt die reine Metadatenablage durch ein
+grafisches Slot- und Gewichtsinventar. Standardmäßig wird es mit `I` oder
+`/inventory` geöffnet.
+
+- Die Kapazität wird zentral über `Config.Inventory.Slots` und
+  `Config.Inventory.MaxWeight` in
+  `resources/[frontier]/frontier_core/config.lua` konfiguriert.
+- Ein Rechtsklick auf ein Item öffnet die Aktionen **Übergeben**,
+  **Wegwerfen** und **Benutzen**. Besitz, Menge, Entfernung, Handelbarkeit und
+  Zielkapazität werden auf dem Server geprüft.
+- Der Tab **Outfits** zeigt rechts das itembezogene Bekleidungsinventar.
+  Kleidungsstücke werden per Drag-and-Drop ausgerüstet und können zurück in
+  das Hauptinventar gezogen werden.
+- Outfit-Zustand und Inventar werden persistent in den Charaktermetadaten
+  gespeichert.
+
+Ein Bekleidungsitem benötigt in den Standard-Metadaten einen gültigen Slot,
+beispielsweise `{"clothingSlot":"hat"}`. Optional kann
+`componentHash` als numerischer Meta-Ped-Komponentenhash hinterlegt werden,
+damit das Kleidungsstück auch am Ped dargestellt wird:
+
+```json
+{"clothingSlot":"hat","componentHash":123456789}
+```
+
+Gültige Standardslots stehen in
+`resources/[frontier]/MS_Inventory/config.lua`. Neue Kleidungsitems lassen
+sich damit direkt über **ACP → Data Admin → Itemcreator** anlegen.
 
 ## Spielersynchronisation
 
