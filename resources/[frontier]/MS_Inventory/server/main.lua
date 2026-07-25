@@ -166,11 +166,13 @@ local function pushOutfit(playerSource, player)
     for slotKey, itemName in pairs(getOutfit(player)) do
         local item = OutfitSlots[slotKey] and exports.frontier_core:GetItem(itemName)
         local componentHash = item and item.metadata and tonumber(item.metadata.componentHash)
-        if componentHash then
+        local itemSex = item and item.metadata and item.metadata.sex
+        if componentHash and (not itemSex or itemSex == 'unisex' or itemSex == player.sex) then
             components[#components + 1] = {
                 slot = slotKey,
                 item = itemName,
-                componentHash = componentHash
+                componentHash = componentHash,
+                sex = (itemSex == 'male' or itemSex == 'female') and itemSex or player.sex
             }
         end
     end
@@ -309,8 +311,12 @@ RegisterNetEvent('ms_inventory:server:equip', function(itemName, slotKey)
         local item = type(itemName) == 'string' and exports.frontier_core:GetItem(itemName)
         slotKey = type(slotKey) == 'string' and slotKey or nil
         local itemSlot = item and item.metadata and item.metadata.clothingSlot
+        local itemSex = item and item.metadata and item.metadata.sex
         if not player or not item or not OutfitSlots[slotKey] or itemSlot ~= slotKey then
             return result(playerSource, false, 'Dieses Kleidungsstück passt nicht in den Slot.')
+        end
+        if itemSex and itemSex ~= 'unisex' and itemSex ~= player.sex then
+            return result(playerSource, false, 'Dieses Kleidungsstück passt nicht zu deinem Charaktermodell.')
         end
         if (tonumber(player:getInventory()[itemName]) or 0) < 1 then
             return result(playerSource, false, 'Das Kleidungsstück befindet sich nicht im Inventar.')

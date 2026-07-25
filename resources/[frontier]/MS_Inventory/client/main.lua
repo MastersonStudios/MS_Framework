@@ -5,6 +5,12 @@ local APPLY_SHOP_ITEM_TO_PED = 0xD3A7B003ED343FD9
 local REMOVE_SHOP_ITEM_FROM_PED = 0x0D7FFA1B2F69ED82
 local UPDATE_PED_VARIATION = 0xCC8CA3E88256E58F
 
+local function applyShopItem(ped, componentHash, sex)
+    local female = sex == 'female'
+    Citizen.InvokeNative(APPLY_SHOP_ITEM_TO_PED, ped, componentHash, true, false, female)
+    Citizen.InvokeNative(APPLY_SHOP_ITEM_TO_PED, ped, componentHash, true, true, female)
+end
+
 local function playerLoaded()
     if GetResourceState('frontier_core') ~= 'started' then return false end
     local success, data = pcall(function() return exports.frontier_core:GetPlayerData() end)
@@ -23,8 +29,17 @@ local function closeInventory(notifyServer)
     if notifyServer ~= false then TriggerServerEvent('ms_inventory:server:close') end
 end
 
+local function clothingShopOpen()
+    if GetResourceState('MS_ClothingShop') ~= 'started' then return false end
+    local success, shopOpen = pcall(function() return exports.MS_ClothingShop:IsShopOpen() end)
+    return success and shopOpen == true
+end
+
 local function toggleInventory()
     if InventoryOpen then return closeInventory(true) end
+    if clothingShopOpen() then
+        return TriggerEvent('frontier:client:notify', 'Schließe zuerst den Bekleidungsshop.')
+    end
     if playerLoaded() then TriggerServerEvent('ms_inventory:server:open') end
 end
 
@@ -36,10 +51,18 @@ RegisterKeyMapping(
     MSInventoryConfig.DefaultKey
 )
 
-exports('IsUiOpen', function() return InventoryOpen end)
+function IsUiOpen()
+    return InventoryOpen
+end
+
+exports('IsUiOpen', IsUiOpen)
 
 RegisterNetEvent('ms_inventory:client:open', function(data)
     if type(data) ~= 'table' then return end
+    if clothingShopOpen() then
+        TriggerServerEvent('ms_inventory:server:close')
+        return TriggerEvent('frontier:client:notify', 'Schließe zuerst den Bekleidungsshop.')
+    end
     InventoryOpen = true
     SetNuiFocus(true, true)
     SendNUIMessage({ action = 'open', data = data })
@@ -118,7 +141,7 @@ RegisterNetEvent('ms_inventory:client:applyOutfit', function(components)
     for _, component in ipairs(type(components) == 'table' and components or {}) do
         local componentHash = tonumber(component.componentHash)
         if componentHash and type(component.slot) == 'string' then
-            Citizen.InvokeNative(APPLY_SHOP_ITEM_TO_PED, ped, componentHash, true, true, true)
+            applyShopItem(ped, componentHash, component.sex)
             AppliedComponents[component.slot] = componentHash
         end
     end

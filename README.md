@@ -22,6 +22,7 @@ Ein schlankes, eigenständiges Roleplay-Framework für RedM.
 - Data Admin mit Datenbank-Itemcreator und durchsuchbarem Prop-Katalog
 - serverautoritatives Spieler-Presence-Sync für bis zu 64 Slots
 - `MS_Inventory` mit konfigurierbarer Kapazität, Kontextaktionen und Outfit-Drag-and-Drop
+- `MS_ClothingShop` mit Charaktervorschau und gemeinsamer Einkaufsliste
 - `MS_Stables` mit Pferde-, Ausrüstungs-, Fellfarben- und Kutschenhandel
 
 ## Voraussetzungen
@@ -37,8 +38,8 @@ Ein schlankes, eigenständiges Roleplay-Framework für RedM.
 3. `server.cfg.example` nach `server.cfg` kopieren und Connection-String sowie
    Lizenzschlüssel anpassen.
 4. In der Konsole zuerst `ensure frontier_core`, danach
-   `ensure frontier_playersync`, `ensure MS_Inventory`, `ensure MS_Stables`,
-   `ensure frontier_worldbuilder`,
+   `ensure frontier_playersync`, `ensure MS_Inventory`,
+   `ensure MS_ClothingShop`, `ensure MS_Stables`, `ensure frontier_worldbuilder`,
    `ensure frontier_adminmenu`,
    `ensure frontier_guarma_onboarding`, `ensure frontier_mapeditor`,
    `ensure frontier_adminlogout` sowie `ensure frontier_example` ausführen
@@ -95,6 +96,40 @@ damit das Kleidungsstück auch am Ped dargestellt wird:
 Gültige Standardslots stehen in
 `resources/[frontier]/MS_Inventory/config.lua`. Neue Kleidungsitems lassen
 sich damit direkt über **ACP → Data Admin → Itemcreator** anlegen.
+
+## MS Clothing Shop
+
+`MS_ClothingShop` ist ein grafischer Bekleidungsladen mit einer direkten
+Vorschau am eigenen Charakter:
+
+- Händler werden an konfigurierbaren Positionen gestreamt.
+- Ein Klick auf ein Kleidungsstück zeigt dessen Meta-Ped-Komponente am
+  Charakter. Drehung und Zoom der Vorschaukamera sind über das UI steuerbar.
+- Mehrere Kleidungsstücke können in einer Sammeleinkaufsliste kombiniert und
+  in einer Transaktion bezahlt werden.
+- Die gesamte Liste wird vor dem Kauf serverseitig gegen Händlerentfernung,
+  Geschlecht, Itemkatalog, Kontostand sowie Slot- und Gewichtskapazität geprüft.
+- Nach erfolgreicher Bezahlung wird jedes Kleidungsstück als handelbares,
+  persistentes Item in `MS_Inventory` ausgegeben.
+- Beim Schließen werden alle Vorschaukomponenten entfernt und das gespeicherte
+  Outfit wiederhergestellt.
+
+Die Händlerpositionen, Preise, das verwendete Konto, die maximale Listengröße
+und der Produktkatalog befinden sich in
+`resources/[frontier]/MS_ClothingShop/config.lua`. Standardmäßig wird der
+nächste Händler mit `E` oder `/clothingshop` geöffnet.
+
+Die zehn Beispielartikel für männliche und weibliche Charaktere liegen in
+`frontier_core/config.lua`. Für eigene Artikel sind mindestens diese
+Item-Metadaten notwendig:
+
+```json
+{"clothingSlot":"coat","componentHash":331167570,"sex":"male"}
+```
+
+Erlaubte Geschlechtswerte sind `male`, `female` und `unisex`. Der
+Bekleidungsshop zeigt nur passende Produkte, und `MS_Inventory` prüft diese
+Angabe erneut beim Ausrüsten.
 
 ## Spielersynchronisation
 

@@ -2,15 +2,14 @@ fx_version 'cerulean'
 game 'rdr3'
 
 author 'Masterson Studios'
-description 'Slot, weight, context action and item-based outfit inventory for Frontier Framework'
-version '1.1.0'
+description 'Preview clothing shop with cart purchases for Frontier Framework'
+version '1.0.0'
 
 lua54 'yes'
 
 ui_page 'html/index.html'
 
 shared_script 'config.lua'
-
 server_script 'server/main.lua'
 client_script 'client/main.lua'
 
@@ -22,12 +21,8 @@ files {
 
 dependencies {
     '/server:7290',
-    'frontier_core'
+    'frontier_core',
+    'MS_Inventory'
 }
 
-server_exports {
-    'GetOutfit',
-    'OpenInventory'
-}
-
-client_export 'IsUiOpen'
+client_export 'IsShopOpen'

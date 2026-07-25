@@ -3,7 +3,7 @@ game 'rdr3'
 
 author 'Frontier Framework'
 description 'Standalone RedM roleplay core'
-version '1.5.0'
+version '1.6.0'
 
 lua54 'yes'
 

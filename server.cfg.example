@@ -13,6 +13,7 @@ ensure oxmysql
 ensure frontier_core
 ensure frontier_playersync
 ensure MS_Inventory
+ensure MS_ClothingShop
 ensure MS_Stables
 ensure frontier_worldbuilder
 ensure frontier_adminmenu
