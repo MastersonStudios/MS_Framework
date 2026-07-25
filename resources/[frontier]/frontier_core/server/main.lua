@@ -91,9 +91,37 @@ function GetPlayerFromCharacterId(characterId)
 end
 function GetPlayers() return Players end
 
+function LogoutPlayer(source)
+    source = tonumber(source)
+    local player = source and Players[source]
+    if not player then return false, 'Kein aktiver Charakter.' end
+
+    local characterId = player.characterId
+    local ped = GetPlayerPed(source)
+    if ped and ped ~= 0 then
+        local coords = GetEntityCoords(ped)
+        player.coords = {
+            x = coords.x,
+            y = coords.y,
+            z = coords.z,
+            w = GetEntityHeading(ped)
+        }
+        player.metadata.health = GetEntityHealth(ped)
+    end
+    player:save()
+    TriggerEvent('frontier:server:playerUnloaded', source, player)
+    Players[source] = nil
+
+    TriggerClientEvent('frontier:client:prepareLogout', source)
+    TriggerClientEvent('frontier:client:clearPlayerData', source)
+    TriggerClientEvent('frontier:client:showCharacters', source)
+    return true, characterId
+end
+
 exports('GetPlayer', GetPlayer)
 exports('GetPlayerFromCharacterId', GetPlayerFromCharacterId)
 exports('GetPlayers', GetPlayers)
+exports('LogoutPlayer', LogoutPlayer)
 
 function Frontier.RegisterCallback(name, callback)
     Callbacks[name] = callback

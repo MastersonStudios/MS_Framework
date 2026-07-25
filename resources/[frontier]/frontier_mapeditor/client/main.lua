@@ -253,6 +253,10 @@ RegisterNetEvent('frontier_mapeditor:client:listNearby', function()
     notify(table.concat(parts, ', '))
 end)
 
+RegisterNetEvent('frontier:client:prepareLogout', function()
+    if Editor then cleanupEditor(true) end
+end)
+
 local function bindHold(name, description, defaultKey, field)
     RegisterCommand('+' .. name, function() Keys[field] = true end, false)
     RegisterCommand('-' .. name, function() Keys[field] = false end, false)

@@ -61,6 +61,14 @@ RegisterNetEvent('frontier:client:setPlayerData', function(data)
     TriggerEvent('frontier:client:playerDataChanged', data)
 end)
 
+RegisterNetEvent('frontier:client:clearPlayerData', function()
+    PlayerData = {}
+    local ped = PlayerPedId()
+    FreezeEntityPosition(ped, true)
+    SetEntityVisible(ped, false, false)
+    TriggerEvent('frontier:client:playerDataChanged', PlayerData)
+end)
+
 RegisterNetEvent('frontier:client:notify', function(message)
     TriggerEvent('chat:addMessage', { color = { 219, 176, 93 }, args = { 'Frontier', tostring(message) } })
 end)

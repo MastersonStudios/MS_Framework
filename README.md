@@ -14,6 +14,7 @@ Ein schlankes, eigenständiges Roleplay-Framework für RedM.
 - Spawn/Respawn-Grundablauf
 - SQL-Schema und Beispiel-Resource
 - persistenter Ingame-Mapeditor mit Objekt-Streaming
+- Admin-Logout zurück zur Charakterauswahl
 
 ## Voraussetzungen
 
@@ -66,6 +67,20 @@ die Höhe, `Q/E` drehen um Z, `R/F` kippen um X und `Z/X` kippen um Y. `Shift`
 beschleunigt, `G` setzt das Objekt auf den Boden, `Enter` speichert und
 `Backspace` bricht ab. Die vorkonfigurierten Modelle sowie Reichweiten stehen
 in `frontier_mapeditor/config.lua`.
+
+## Admin-Logout
+
+Die Resource `frontier_adminlogout` speichert und entlädt einen aktiven
+Charakter, bevor sie den Spieler zur Charakterauswahl zurückbringt.
+
+```text
+/logout             eigenen Charakter als Admin abmelden
+/logout [Server-ID] einen Spieler abmelden
+/charlogout [ID]    Alias
+```
+
+Benötigt wird das ACE-Recht `frontier.admin.logout`. Ob Admins andere Spieler
+abmelden dürfen, kann in `frontier_adminlogout/config.lua` eingestellt werden.
 
 ## Sicherheit
 

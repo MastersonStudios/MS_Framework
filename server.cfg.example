@@ -10,9 +10,11 @@ set mysql_connection_string "mysql://redm:password@127.0.0.1/redm?charset=utf8mb
 ensure oxmysql
 ensure frontier_core
 ensure frontier_mapeditor
+ensure frontier_adminlogout
 ensure frontier_example
 
 # Framework admins
 add_ace group.admin frontier.admin allow
 add_ace group.admin frontier.mapeditor allow
+add_ace group.admin frontier.admin.logout allow
 # add_principal identifier.license:YOUR_LICENSE group.admin
