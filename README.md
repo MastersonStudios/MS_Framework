@@ -60,6 +60,85 @@ Beim ersten Beitritt öffnet sich die Charaktererstellung. In
 `frontier_core/config.lua` kann optional die automatische Erstellung eines
 Platzhalter-Charakters aktiviert werden.
 
+## Befehlsübersicht
+
+Chatbefehle werden ingame mit `/` eingegeben. In der Serverkonsole entfällt
+der Schrägstrich. `<Wert>` kennzeichnet ein Pflichtargument, `[Wert]` ein
+optionales Argument.
+
+### Spielerbefehle
+
+| Befehl | Kurzbeschreibung |
+| --- | --- |
+| `/characters` | Öffnet die Charakterauswahl. |
+| `/selectchar <Charakter-ID>` | Wählt einen eigenen Charakter anhand seiner Datenbank-ID aus. |
+| `/newchar <Vorname> <Nachname> [male\|female]` | Erstellt einen Charakter; ohne Geschlechtsangabe wird `male` verwendet. |
+| `/cash` | Zeigt Bargeld und Bankguthaben des aktiven Charakters an. |
+| `/daily` | Holt einmal pro UTC-Tag den Beispielbonus von `$10` ab; benötigt `frontier_example`. |
+| `/frameworkversion` | Zeigt die installierte Framework-Version und den letzten Update-Status. |
+| `/inventory` | Öffnet `MS_Inventory`. |
+| `/clothingshop` | Öffnet den nächsten erreichbaren Bekleidungshändler. |
+| `/stables` | Öffnet den nächsten erreichbaren Stall. |
+| `/trains` | Öffnet das Menü des nächsten erreichbaren Bahnhof-NPCs. |
+| `/trainreturn` | Gibt den eigenen aktiven Zug zurück. |
+| `/telegrams` | Öffnet das nächste erreichbare Telegrafenamt. |
+
+### Administration
+
+| Befehl | ACE-Recht | Kurzbeschreibung |
+| --- | --- | --- |
+| `/setjob <Server-ID> <Job> [Grad]` | `frontier.admin` | Setzt Job und Grad eines Spielers; der Grad ist standardmäßig `0`. |
+| `/givemoney <Server-ID> <cash\|bank> <Betrag>` | `frontier.admin` | Schreibt einem Spieler einen positiven ganzzahligen Betrag gut. |
+| `/acp` | `frontier.admin.menu` | Öffnet oder schließt das Administration Control Panel. |
+| `/adminmenu` | `frontier.admin.menu` | Alias für `/acp`. |
+| `/worldbuilder` | `frontier.worldbuilder` | Öffnet oder schließt den World Builder. |
+| `/logout [Server-ID]` | `frontier.admin.logout` | Meldet den eigenen oder angegebenen Charakter ab und öffnet dessen Charakterauswahl. |
+| `/charlogout [Server-ID]` | `frontier.admin.logout` | Alias für `/logout`. |
+| `/guarmaadmin` | `frontier.admin.guarma` | Öffnet das Guarma-Teleport- und Neueinsteigermenü. |
+| `/guarmareset [Server-ID]` | `frontier.admin.guarma` | Setzt das Guarma-Tutorial zurück und startet es erneut; ohne ID für den eigenen Charakter. |
+| `/frameworkversion check` | `frontier.version.check` | Erzwingt unter Beachtung des konfigurierten Mindestintervalls eine neue Versionsabfrage. |
+| `/weapondamage status` | `frontier.weapon.damage` | Zeigt Waffenanzahl, Laufzeitänderungen und Revision. |
+| `/weapondamage set <WEAPON_NAME> <Multiplikator>` | `frontier.weapon.damage` | Setzt den Schaden einer Waffe bis zum nächsten Resource-Neustart. |
+| `/weapondamage reset <WEAPON_NAME>` | `frontier.weapon.damage` | Entfernt die Laufzeitänderung einer Waffe. |
+| `/weapondamage resetall` | `frontier.weapon.damage` | Entfernt alle Laufzeitänderungen am Waffenschaden. |
+
+`setjob`, `givemoney`, `logout`, `charlogout`, `guarmareset`,
+`frameworkversion` und `weapondamage` können auch in der Serverkonsole
+verwendet werden. Bei `logout`, `charlogout` und `guarmareset` ist dort eine
+Server-ID erforderlich. Beispielzuweisungen für alle ACE-Rechte stehen in
+`server.cfg.example`.
+
+### Mapeditor-Befehle
+
+Alle Mapeditor-Befehle sind nur ingame verfügbar und benötigen das ACE-Recht
+`frontier.mapeditor`.
+
+| Befehl | Kurzbeschreibung |
+| --- | --- |
+| `/mapeditor [Modell]` | Startet die Platzierung; ohne Modell wird das erste Modell aus dem Katalog verwendet. |
+| `/mapedit [Objekt-ID]` | Bearbeitet das angegebene oder nächste erreichbare Objekt. |
+| `/mapdelete [Objekt-ID]` | Löscht das angegebene oder nächste erreichbare Objekt. |
+| `/mapobjects` | Zeigt IDs und Entfernung der nächsten Map-Objekte. |
+| `/mapcatalog` | Zeigt alle vorkonfigurierten Objektmodelle. |
+| `/mapundo` | Macht die letzte eigene Mapeditor-Änderung rückgängig. |
+
+### Standardtasten
+
+Alle Keymappings können Spieler in den RedM-Tastatureinstellungen ändern.
+
+| Taste | Funktion |
+| --- | --- |
+| `F2` | ACP öffnen oder schließen. |
+| `F9` | World Builder öffnen oder schließen. |
+| `I` | Inventar öffnen oder schließen. |
+| `E` | Händler, Stall, Bahnhof, Telegrafenamt, Crafting-Punkt, Storage oder Tür benutzen. |
+| `W` / `S` | Zug beschleunigen oder bremsen. |
+| `R` / `Leertaste` | Zug im Stand wenden oder Notbremsung auslösen. |
+| `M` | Ton des Loading Screens stummschalten oder aktivieren. |
+
+Die vollständige Mapeditor-Steuerung steht im Abschnitt
+[Mapeditor](#mapeditor).
+
 ## Versionsabfrage
 
 `frontier_core` prüft nach dem Serverstart automatisch die zentrale
