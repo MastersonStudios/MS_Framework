@@ -24,6 +24,7 @@ Aktuelle Framework-Version: `0.0.1`
 - persistente Crafting-Rezepte und frei platzierbare Crafting-Punkte
 - Data Admin mit Datenbank-Itemcreator und durchsuchbarem Prop-Katalog
 - serverautoritatives Spieler-Presence-Sync für bis zu 64 Slots
+- `MS_mechat` mit räumlichem `/me`-Chat und 3D-Text über dem Charakter
 - `MS_WeaponDamage` mit einzeln konfigurierbarem Schaden für sämtliche Waffen
 - `MS_Inventory` mit konfigurierbarer Kapazität, Kontextaktionen und Outfit-Drag-and-Drop
 - `MS_ClothingShop` mit Charaktervorschau und gemeinsamer Einkaufsliste
@@ -46,7 +47,8 @@ Aktuelle Framework-Version: `0.0.1`
    Lizenzschlüssel anpassen.
 4. In der Konsole zuerst `ensure MS_LoadingScreen` und `ensure frontier_core`,
    danach
-   `ensure frontier_playersync`, `ensure MS_WeaponDamage`, `ensure MS_Inventory`,
+   `ensure frontier_playersync`, `ensure MS_mechat`, `ensure MS_WeaponDamage`,
+   `ensure MS_Inventory`,
    `ensure MS_ClothingShop`, `ensure MS_Stables`, `ensure MS_Trains`,
    `ensure MS_Telegrams`,
    `ensure frontier_worldbuilder`,
@@ -76,6 +78,7 @@ optionales Argument.
 | `/cash` | Zeigt Bargeld und Bankguthaben des aktiven Charakters an. |
 | `/daily` | Holt einmal pro UTC-Tag den Beispielbonus von `$10` ab; benötigt `frontier_example`. |
 | `/frameworkversion` | Zeigt die installierte Framework-Version und den letzten Update-Status. |
+| `/me <Aktion>` | Zeigt eine Roleplay-Aktion im nahen Chat und als 3D-Text über dem Charakter. |
 | `/inventory` | Öffnet `MS_Inventory`. |
 | `/clothingshop` | Öffnet den nächsten erreichbaren Bekleidungshändler. |
 | `/stables` | Öffnet den nächsten erreichbaren Stall. |
@@ -271,6 +274,26 @@ local player = exports.frontier_playersync:GetPlayerState(serverId)
 Die Beispielkonfiguration aktiviert OneSync, strikte serverseitige State Bags
 und `sv_maxclients 64`. Mehr als 48 Slots setzen einen passenden Tarif im
 Cfx.re-Portal voraus.
+
+## MS Me Chat
+
+Die Resource `MS_mechat` stellt den Roleplay-Befehl `/me <Aktion>` bereit. Die
+serverseitig geprüfte Aktion erscheint im normalen Chat und für eine begrenzte
+Zeit als 3D-Text über dem Charakter.
+
+- Nur geladene Charaktere im gleichen Routing-Bucket und innerhalb der
+  eingestellten Reichweite erhalten die Nachricht.
+- Textlänge, Spam-Cooldown, Reichweite und Anzeigedauer werden serverseitig
+  erzwungen.
+- Mehrere Aktionen werden über dem Charakter gestapelt und zum Ende weich
+  ausgeblendet.
+- Chat-Ausgabe, 3D-Text, Farbe, Schrift, Zeilenlänge, Sichtprüfung und
+  Konsolenprotokollierung sind einzeln konfigurierbar.
+
+Alle Einstellungen befinden sich in
+`resources/[frontier]/MS_mechat/config.lua`. Die Resource benötigt OneSync und
+`frontier_core`; `server.cfg.example` startet sie deshalb direkt nach
+`frontier_playersync`.
 
 ## MS Stables
 
