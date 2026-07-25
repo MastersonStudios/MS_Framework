@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="style.css">
+    <title>MSCore Mapeditor</title>
+</head>
+<body>
+    <aside id="editor" class="hidden">
+        <div class="eyebrow">MSCORE MAPEDITOR</div>
+        <h1 id="mode">Neues Objekt</h1>
+        <div class="model" id="model"></div>
+        <dl>
+            <div><dt>Position</dt><dd id="position"></dd></div>
+            <div><dt>Drehung</dt><dd id="rotation"></dd></div>
+        </dl>
+        <div class="keys">
+            <span><kbd>W A S D</kbd> bewegen</span>
+            <span><kbd>Bild ↑ ↓</kbd> Höhe</span>
+            <span><kbd>Q / E</kbd> Z drehen</span>
+            <span><kbd>R / F</kbd> X kippen</span>
+            <span><kbd>Z / X</kbd> Y kippen</span>
+            <span><kbd>Shift</kbd> schneller</span>
+            <span><kbd>G</kbd> Boden</span>
+            <span class="save"><kbd>Enter</kbd> speichern</span>
+            <span class="cancel"><kbd>Backspace</kbd> abbrechen</span>
+        </div>
+    </aside>
+    <script src="app.js"></script>
+</body>
+</html>

@@ -11,8 +11,8 @@ set mysql_connection_string "mysql://redm:password@127.0.0.1/redm?charset=utf8mb
 
 ensure MS_LoadingScreen
 ensure oxmysql
-ensure frontier_core
-ensure frontier_playersync
+ensure MSCore
+ensure MS_PlayerSync
 ensure MS_mechat
 ensure MS_pointing
 ensure MS_Medic
@@ -25,21 +25,21 @@ ensure MS_ClothingShop
 ensure MS_Stables
 ensure MS_Trains
 ensure MS_Telegrams
-ensure frontier_worldbuilder
-ensure frontier_adminmenu
-ensure frontier_guarma_onboarding
-ensure frontier_mapeditor
-ensure frontier_adminlogout
-ensure frontier_example
+ensure MS_WorldBuilder
+ensure MS_AdminMenu
+ensure MS_GuarmaOnboarding
+ensure MS_MapEditor
+ensure MS_AdminLogout
+ensure MS_Example
 
 # Framework admins
-add_ace group.admin frontier.admin allow
-add_ace group.admin frontier.admin.menu allow
-add_ace group.admin frontier.worldbuilder allow
-add_ace group.admin frontier.mapeditor allow
-add_ace group.admin frontier.admin.logout allow
-add_ace group.admin frontier.admin.guarma allow
-add_ace group.admin frontier.admin.jail allow
-add_ace group.admin frontier.weapon.damage allow
-add_ace group.admin frontier.version.check allow
+add_ace group.admin mscore.admin allow
+add_ace group.admin mscore.admin.menu allow
+add_ace group.admin mscore.worldbuilder allow
+add_ace group.admin mscore.mapeditor allow
+add_ace group.admin mscore.admin.logout allow
+add_ace group.admin mscore.admin.guarma allow
+add_ace group.admin mscore.admin.jail allow
+add_ace group.admin mscore.weapon.damage allow
+add_ace group.admin mscore.version.check allow
 # add_principal identifier.license:YOUR_LICENSE group.admin

@@ -1,13 +1,13 @@
-CREATE TABLE IF NOT EXISTS `frontier_users` (
+CREATE TABLE IF NOT EXISTS `mscore_users` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `license` VARCHAR(64) NOT NULL,
   `last_seen` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_frontier_users_license` (`license`)
+  UNIQUE KEY `uq_mscore_users_license` (`license`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `frontier_characters` (
+CREATE TABLE IF NOT EXISTS `mscore_characters` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `user_id` BIGINT UNSIGNED NOT NULL,
   `firstname` VARCHAR(32) NOT NULL,
@@ -26,12 +26,12 @@ CREATE TABLE IF NOT EXISTS `frontier_characters` (
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  KEY `idx_frontier_characters_user` (`user_id`),
-  CONSTRAINT `fk_frontier_characters_user`
-    FOREIGN KEY (`user_id`) REFERENCES `frontier_users` (`id`) ON DELETE CASCADE
+  KEY `idx_mscore_characters_user` (`user_id`),
+  CONSTRAINT `fk_mscore_characters_user`
+    FOREIGN KEY (`user_id`) REFERENCES `mscore_users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `frontier_map_objects` (
+CREATE TABLE IF NOT EXISTS `mscore_map_objects` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `model` VARCHAR(100) NOT NULL,
   `x` DOUBLE NOT NULL,
@@ -46,10 +46,10 @@ CREATE TABLE IF NOT EXISTS `frontier_map_objects` (
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  KEY `idx_frontier_map_objects_position` (`x`, `y`)
+  KEY `idx_mscore_map_objects_position` (`x`, `y`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `frontier_world_npcs` (
+CREATE TABLE IF NOT EXISTS `mscore_world_npcs` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `label` VARCHAR(64) NOT NULL,
   `model` VARCHAR(100) NOT NULL,
@@ -61,10 +61,10 @@ CREATE TABLE IF NOT EXISTS `frontier_world_npcs` (
   `created_by` VARCHAR(64) NULL,
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  KEY `idx_frontier_world_npcs_position` (`x`, `y`)
+  KEY `idx_mscore_world_npcs_position` (`x`, `y`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `frontier_storages` (
+CREATE TABLE IF NOT EXISTS `mscore_storages` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `label` VARCHAR(64) NOT NULL,
   `storage_type` ENUM('global','private') NOT NULL DEFAULT 'global',
@@ -78,20 +78,20 @@ CREATE TABLE IF NOT EXISTS `frontier_storages` (
   `created_by` VARCHAR(64) NULL,
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  KEY `idx_frontier_storages_position` (`x`, `y`)
+  KEY `idx_mscore_storages_position` (`x`, `y`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `frontier_storage_inventories` (
+CREATE TABLE IF NOT EXISTS `mscore_storage_inventories` (
   `storage_id` BIGINT UNSIGNED NOT NULL,
   `owner_key` VARCHAR(64) NOT NULL,
   `items` LONGTEXT NOT NULL,
   `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`storage_id`, `owner_key`),
-  CONSTRAINT `fk_frontier_storage_inventory_storage`
-    FOREIGN KEY (`storage_id`) REFERENCES `frontier_storages` (`id`) ON DELETE CASCADE
+  CONSTRAINT `fk_mscore_storage_inventory_storage`
+    FOREIGN KEY (`storage_id`) REFERENCES `mscore_storages` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `frontier_doors` (
+CREATE TABLE IF NOT EXISTS `mscore_doors` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `label` VARCHAR(64) NOT NULL,
   `model_hash` BIGINT NOT NULL,
@@ -105,10 +105,10 @@ CREATE TABLE IF NOT EXISTS `frontier_doors` (
   `created_by` VARCHAR(64) NULL,
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  KEY `idx_frontier_doors_position` (`x`, `y`)
+  KEY `idx_mscore_doors_position` (`x`, `y`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `frontier_admin_permissions` (
+CREATE TABLE IF NOT EXISTS `mscore_admin_permissions` (
   `identifier` VARCHAR(100) NOT NULL,
   `display_name` VARCHAR(80) NOT NULL,
   `permissions` LONGTEXT NOT NULL,
@@ -118,7 +118,7 @@ CREATE TABLE IF NOT EXISTS `frontier_admin_permissions` (
   PRIMARY KEY (`identifier`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `frontier_support_logs` (
+CREATE TABLE IF NOT EXISTS `mscore_support_logs` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `event_type` VARCHAR(32) NOT NULL,
   `actor_source` INT UNSIGNED NULL,
@@ -134,13 +134,13 @@ CREATE TABLE IF NOT EXISTS `frontier_support_logs` (
   `details` LONGTEXT NULL,
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  KEY `idx_frontier_support_logs_created` (`created_at`),
-  KEY `idx_frontier_support_logs_type_time` (`event_type`, `created_at`),
-  KEY `idx_frontier_support_logs_actor` (`actor_character_id`, `created_at`),
-  KEY `idx_frontier_support_logs_target` (`target_character_id`, `created_at`)
+  KEY `idx_mscore_support_logs_created` (`created_at`),
+  KEY `idx_mscore_support_logs_type_time` (`event_type`, `created_at`),
+  KEY `idx_mscore_support_logs_actor` (`actor_character_id`, `created_at`),
+  KEY `idx_mscore_support_logs_target` (`target_character_id`, `created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `frontier_items` (
+CREATE TABLE IF NOT EXISTS `mscore_items` (
   `name` VARCHAR(64) NOT NULL,
   `label` VARCHAR(64) NOT NULL,
   `description` VARCHAR(255) NULL,
@@ -160,10 +160,10 @@ CREATE TABLE IF NOT EXISTS `frontier_items` (
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`name`),
-  KEY `idx_frontier_items_category` (`category`)
+  KEY `idx_mscore_items_category` (`category`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `frontier_crafting_recipes` (
+CREATE TABLE IF NOT EXISTS `mscore_crafting_recipes` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `label` VARCHAR(64) NOT NULL,
   `description` VARCHAR(255) NULL,
@@ -178,7 +178,7 @@ CREATE TABLE IF NOT EXISTS `frontier_crafting_recipes` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `frontier_crafting_points` (
+CREATE TABLE IF NOT EXISTS `mscore_crafting_points` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `label` VARCHAR(64) NOT NULL,
   `x` DOUBLE NOT NULL,
@@ -193,7 +193,7 @@ CREATE TABLE IF NOT EXISTS `frontier_crafting_points` (
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  KEY `idx_frontier_crafting_points_position` (`x`, `y`)
+  KEY `idx_mscore_crafting_points_position` (`x`, `y`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `ms_stable_horses` (
@@ -211,7 +211,7 @@ CREATE TABLE IF NOT EXISTS `ms_stable_horses` (
   PRIMARY KEY (`id`),
   KEY `idx_ms_stable_horses_character` (`character_id`),
   CONSTRAINT `fk_ms_stable_horses_character`
-    FOREIGN KEY (`character_id`) REFERENCES `frontier_characters` (`id`) ON DELETE CASCADE
+    FOREIGN KEY (`character_id`) REFERENCES `mscore_characters` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `ms_stable_wagons` (
@@ -225,7 +225,7 @@ CREATE TABLE IF NOT EXISTS `ms_stable_wagons` (
   PRIMARY KEY (`id`),
   KEY `idx_ms_stable_wagons_character` (`character_id`),
   CONSTRAINT `fk_ms_stable_wagons_character`
-    FOREIGN KEY (`character_id`) REFERENCES `frontier_characters` (`id`) ON DELETE CASCADE
+    FOREIGN KEY (`character_id`) REFERENCES `mscore_characters` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `ms_telegram_accounts` (
@@ -235,7 +235,7 @@ CREATE TABLE IF NOT EXISTS `ms_telegram_accounts` (
   PRIMARY KEY (`character_id`),
   UNIQUE KEY `uq_ms_telegram_accounts_number` (`telegram_number`),
   CONSTRAINT `fk_ms_telegram_accounts_character`
-    FOREIGN KEY (`character_id`) REFERENCES `frontier_characters` (`id`) ON DELETE CASCADE
+    FOREIGN KEY (`character_id`) REFERENCES `mscore_characters` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `ms_telegrams` (
@@ -257,9 +257,9 @@ CREATE TABLE IF NOT EXISTS `ms_telegrams` (
   KEY `idx_ms_telegrams_recipient` (`recipient_character_id`, `sent_at`),
   KEY `idx_ms_telegrams_unread` (`recipient_character_id`, `read_at`),
   CONSTRAINT `fk_ms_telegrams_sender`
-    FOREIGN KEY (`sender_character_id`) REFERENCES `frontier_characters` (`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`sender_character_id`) REFERENCES `mscore_characters` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_ms_telegrams_recipient`
-    FOREIGN KEY (`recipient_character_id`) REFERENCES `frontier_characters` (`id`) ON DELETE CASCADE
+    FOREIGN KEY (`recipient_character_id`) REFERENCES `mscore_characters` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `ms_medic_diseases` (
@@ -271,7 +271,7 @@ CREATE TABLE IF NOT EXISTS `ms_medic_diseases` (
   PRIMARY KEY (`character_id`, `disease_key`),
   KEY `idx_ms_medic_diseases_key` (`disease_key`),
   CONSTRAINT `fk_ms_medic_diseases_character`
-    FOREIGN KEY (`character_id`) REFERENCES `frontier_characters` (`id`) ON DELETE CASCADE
+    FOREIGN KEY (`character_id`) REFERENCES `mscore_characters` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `ms_jail_sentences` (
@@ -286,5 +286,5 @@ CREATE TABLE IF NOT EXISTS `ms_jail_sentences` (
   PRIMARY KEY (`character_id`),
   KEY `idx_ms_jail_release` (`release_at`),
   CONSTRAINT `fk_ms_jail_character`
-    FOREIGN KEY (`character_id`) REFERENCES `frontier_characters` (`id`) ON DELETE CASCADE
+    FOREIGN KEY (`character_id`) REFERENCES `mscore_characters` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

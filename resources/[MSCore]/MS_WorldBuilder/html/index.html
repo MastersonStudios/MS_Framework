@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="style.css">
+    <title>MSCore World Builder</title>
+</head>
+<body>
+    <main id="builder" class="overlay hidden">
+        <section class="builder-shell">
+            <header class="topbar">
+                <div class="brand">
+                    <span class="brand-mark">W</span>
+                    <div>
+                        <p class="eyebrow">MSCORE ADMINISTRATION</p>
+                        <h1>World Builder</h1>
+                    </div>
+                </div>
+                <div class="top-actions">
+                    <span id="definition-count" class="count-pill">0 Einträge</span>
+                    <button id="close-builder" class="icon-button" type="button" aria-label="Schließen">×</button>
+                </div>
+            </header>
+
+            <nav class="tabs" aria-label="World-Builder-Bereiche">
+                <button class="tab active" data-tab="npc" type="button"><span>01</span>NPCs</button>
+                <button class="tab" data-tab="storage" type="button"><span>02</span>Storages</button>
+                <button class="tab" data-tab="door" type="button"><span>03</span>Türen</button>
+            </nav>
+
+            <div class="builder-content">
+                <section class="editor-column">
+                    <div class="tab-panel" data-panel="npc">
+                        <div class="section-title">
+                            <div>
+                                <p class="eyebrow">CHARAKTERE</p>
+                                <h2>NPC platzieren</h2>
+                            </div>
+                            <button class="button secondary capture-position" data-kind="npc" type="button">Position übernehmen</button>
+                        </div>
+                        <form id="npc-form" class="editor-form">
+                            <label>
+                                <span>Bezeichnung</span>
+                                <input id="npc-label" maxlength="64" placeholder="z. B. Bahnhofsvorsteher" required>
+                            </label>
+                            <label>
+                                <span>Ped-Modell</span>
+                                <input id="npc-model" list="npc-models" maxlength="100" placeholder="u_m_m_..." required>
+                                <datalist id="npc-models"></datalist>
+                            </label>
+                            <label>
+                                <span>Szenario</span>
+                                <input id="npc-scenario" list="npc-scenarios" maxlength="100" placeholder="Optional">
+                                <datalist id="npc-scenarios"></datalist>
+                            </label>
+                            <div id="npc-position" class="position-box">Noch keine Position übernommen.</div>
+                            <button class="button primary" type="submit">NPC dauerhaft erstellen</button>
+                        </form>
+                    </div>
+
+                    <div class="tab-panel hidden" data-panel="storage">
+                        <div class="section-title">
+                            <div>
+                                <p class="eyebrow">INVENTARORTE</p>
+                                <h2>Storage erstellen</h2>
+                            </div>
+                            <button class="button secondary capture-position" data-kind="storage" type="button">Position übernehmen</button>
+                        </div>
+                        <form id="storage-form" class="editor-form">
+                            <label>
+                                <span>Bezeichnung</span>
+                                <input id="storage-label" maxlength="64" placeholder="z. B. Sheriff-Waffenkammer" required>
+                            </label>
+                            <div class="form-grid">
+                                <label>
+                                    <span>Typ</span>
+                                    <select id="storage-type">
+                                        <option value="global">Global geteilt</option>
+                                        <option value="private">Privat pro Charakter</option>
+                                    </select>
+                                </label>
+                                <label>
+                                    <span>Kapazität</span>
+                                    <input id="storage-capacity" type="number" min="1" value="100" required>
+                                </label>
+                            </div>
+                            <div class="form-grid">
+                                <label>
+                                    <span>Zugriffsjob</span>
+                                    <input id="storage-job" maxlength="32" placeholder="Leer = alle">
+                                </label>
+                                <label>
+                                    <span>Radius</span>
+                                    <input id="storage-radius" type="number" min="1" max="5" step=".1" value="2">
+                                </label>
+                            </div>
+                            <div id="storage-position" class="position-box">Noch keine Position übernommen.</div>
+                            <button class="button primary" type="submit">Storage dauerhaft erstellen</button>
+                        </form>
+                    </div>
+
+                    <div class="tab-panel hidden" data-panel="door">
+                        <div class="section-title">
+                            <div>
+                                <p class="eyebrow">ZUGANGSKONTROLLE</p>
+                                <h2>Tür erfassen</h2>
+                            </div>
+                            <button id="capture-door" class="button secondary" type="button">Tür anvisieren</button>
+                        </div>
+                        <form id="door-form" class="editor-form">
+                            <label>
+                                <span>Bezeichnung</span>
+                                <input id="door-label" maxlength="64" placeholder="z. B. Sheriff-Haupteingang" required>
+                            </label>
+                            <div class="form-grid">
+                                <label>
+                                    <span>Zugriffsjob</span>
+                                    <input id="door-job" maxlength="32" placeholder="Leer = alle">
+                                </label>
+                                <label>
+                                    <span>Radius</span>
+                                    <input id="door-radius" type="number" min="1" max="5" step=".1" value="2">
+                                </label>
+                            </div>
+                            <label class="checkbox">
+                                <input id="door-locked" type="checkbox" checked>
+                                <span>Tür zunächst abschließen</span>
+                            </label>
+                            <div id="door-position" class="position-box">Blicke auf eine Tür und wähle „Tür anvisieren“.</div>
+                            <button class="button primary" type="submit">Tür dauerhaft erstellen</button>
+                        </form>
+                    </div>
+                </section>
+
+                <aside class="list-column">
+                    <div class="list-heading">
+                        <div>
+                            <p class="eyebrow">PERSISTENTE EINTRÄGE</p>
+                            <h2 id="list-title">NPCs</h2>
+                        </div>
+                        <span id="active-count">0</span>
+                    </div>
+                    <label class="search">
+                        <span>⌕</span>
+                        <input id="definition-search" type="search" placeholder="Name oder ID suchen">
+                    </label>
+                    <div id="definition-list" class="definition-list"></div>
+                </aside>
+            </div>
+
+            <footer>
+                <span>F9 oder ESC zum Schließen</span>
+                <span>Alle Einträge werden in der Datenbank gespeichert.</span>
+            </footer>
+        </section>
+    </main>
+
+    <main id="storage" class="overlay hidden">
+        <section class="storage-shell">
+            <header class="storage-header">
+                <div>
+                    <p id="storage-type-label" class="eyebrow">STORAGE</p>
+                    <h1 id="storage-title">Lager</h1>
+                    <p id="storage-capacity-label" class="muted"></p>
+                </div>
+                <button id="close-storage" class="icon-button" type="button" aria-label="Schließen">×</button>
+            </header>
+            <div class="capacity-track"><span id="capacity-bar"></span></div>
+            <div class="inventory-head">
+                <span>DEIN INVENTAR</span>
+                <span>TRANSFER</span>
+                <span>STORAGE</span>
+            </div>
+            <div id="storage-items" class="storage-items"></div>
+            <footer>
+                <span>Items werden sofort gespeichert.</span>
+                <span>ESC zum Schließen</span>
+            </footer>
+        </section>
+    </main>
+
+    <aside id="interaction-prompt" class="interaction-prompt hidden">
+        <kbd id="prompt-key">E</kbd>
+        <div>
+            <strong id="prompt-label"></strong>
+            <span id="prompt-detail"></span>
+        </div>
+    </aside>
+
+    <div id="capture-hint" class="capture-hint hidden">
+        <span class="crosshair"></span>
+        <strong>Tür anvisieren</strong>
+        <p>Richte die Kamera auf das gewünschte Türblatt.</p>
+    </div>
+
+    <div id="toast" class="toast hidden" role="status"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>

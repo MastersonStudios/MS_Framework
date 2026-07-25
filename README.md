@@ -1,4 +1,4 @@
-# Frontier Framework
+# MSCore Framework
 
 Ein schlankes, eigenständiges Roleplay-Framework für RedM.
 
@@ -50,23 +50,37 @@ Aktuelle Framework-Version: `0.0.1`
 2. Die Ordner aus `resources/` in den `resources`-Ordner des Servers kopieren.
 3. `server.cfg.example` nach `server.cfg` kopieren und Connection-String sowie
    Lizenzschlüssel anpassen.
-4. In der Konsole zuerst `ensure MS_LoadingScreen` und `ensure frontier_core`,
+4. In der Konsole zuerst `ensure MS_LoadingScreen` und `ensure MSCore`,
    danach
-   `ensure frontier_playersync`, `ensure MS_mechat`, `ensure MS_pointing`,
+   `ensure MS_PlayerSync`, `ensure MS_mechat`, `ensure MS_pointing`,
    `ensure MS_Medic`, `ensure MS_WeaponDamage`, `ensure MS_Inventory`,
    `ensure MS_BasicNeeds`, `ensure MS_HUD`, `ensure MS_Jail`,
    `ensure MS_ClothingShop`, `ensure MS_Stables`, `ensure MS_Trains`,
    `ensure MS_Telegrams`,
-   `ensure frontier_worldbuilder`,
-   `ensure frontier_adminmenu`,
-   `ensure frontier_guarma_onboarding`, `ensure frontier_mapeditor`,
-   `ensure frontier_adminlogout` sowie `ensure frontier_example` ausführen
+   `ensure MS_WorldBuilder`,
+   `ensure MS_AdminMenu`,
+   `ensure MS_GuarmaOnboarding`, `ensure MS_MapEditor`,
+   `ensure MS_AdminLogout` sowie `ensure MS_Example` ausführen
    (oder den Server neu starten).
 5. Zum Testen verbinden und `/characters` verwenden.
 
 Beim ersten Beitritt öffnet sich die Charaktererstellung. In
-`frontier_core/config.lua` kann optional die automatische Erstellung eines
+`MSCore/config.lua` kann optional die automatische Erstellung eines
 Platzhalter-Charakters aktiviert werden.
+
+### Aktualisierung einer bestehenden Frontier-Installation
+
+Vor der Umstellung den Server stoppen und die Datenbank sichern. Danach
+`database/migrate_frontier_to_mscore.sql` einmalig auf der bestehenden
+Datenbank ausführen. Das Skript benennt die bisherigen Tabellen verlustfrei
+in den `mscore_*`-Namensraum um und bricht ab, falls alte und neue Tabellen
+gleichzeitig vorhanden sind. Bei einer bestehenden Installation darf
+`database/schema.sql` nicht vorher erneut importiert werden.
+
+Anschließend die Resource-Namen und ACE-Rechte in der eigenen `server.cfg`
+anhand von `server.cfg.example` aktualisieren. Eigene Resources müssen ihre
+Exporte auf `exports.MSCore`, Core-Events auf `mscore:*` und die umbenannten
+Komponenten auf deren neue `MS_*`-Resource-Namen umstellen.
 
 ## Befehlsübersicht
 
@@ -85,7 +99,7 @@ werden hier nicht aufgeführt.
 | `/selectchar <Charakter-ID>` | Wählt einen eigenen Charakter anhand seiner Datenbank-ID aus. |
 | `/newchar <Vorname> <Nachname> [male\|female]` | Erstellt einen Charakter; ohne Geschlechtsangabe wird `male` verwendet. |
 | `/cash` | Zeigt Bargeld und Bankguthaben des aktiven Charakters an. |
-| `/daily` | Holt einmal pro UTC-Tag den Beispielbonus von `$10` ab; benötigt `frontier_example`. |
+| `/daily` | Holt einmal pro UTC-Tag den Beispielbonus von `$10` ab; benötigt `MS_Example`. |
 | `/frameworkversion` | Zeigt die installierte Framework-Version und den letzten Update-Status. |
 | `/me <Aktion>` | Zeigt eine Roleplay-Aktion im nahen Chat und als 3D-Text über dem Charakter. |
 | `/point` | Führt die Finger-Zeigegeste aus; alternativ kann `B` verwendet werden. |
@@ -103,24 +117,24 @@ werden hier nicht aufgeführt.
 
 | Befehl | ACE-Recht | Kurzbeschreibung |
 | --- | --- | --- |
-| `/setjob <Server-ID> <Job> [Grad]` | `frontier.admin` | Setzt Job und Grad eines Spielers; der Grad ist standardmäßig `0`. |
-| `/givemoney <Server-ID> <cash\|bank> <Betrag>` | `frontier.admin` | Schreibt einem Spieler einen positiven ganzzahligen Betrag gut. |
-| `/acp` | `frontier.admin.menu` | Öffnet oder schließt das Administration Control Panel. |
-| `/adminmenu` | `frontier.admin.menu` | Alias für `/acp`. |
-| `/worldbuilder` | `frontier.worldbuilder` | Öffnet oder schließt den World Builder. |
-| `/logout [Server-ID]` | `frontier.admin.logout` | Meldet den eigenen oder angegebenen Charakter ab und öffnet dessen Charakterauswahl. |
-| `/charlogout [Server-ID]` | `frontier.admin.logout` | Alias für `/logout`. |
-| `/guarmaadmin` | `frontier.admin.guarma` | Öffnet das Guarma-Teleport- und Neueinsteigermenü. |
-| `/guarmareset [Server-ID]` | `frontier.admin.guarma` | Setzt das Guarma-Tutorial zurück und startet es erneut; ohne ID für den eigenen Charakter. |
-| `/frameworkversion check` | `frontier.version.check` | Erzwingt unter Beachtung des konfigurierten Mindestintervalls eine neue Versionsabfrage. |
-| `/medicdisease <Server-ID> <add\|remove\|clear\|list> [Krankheit] [Schweregrad]` | `frontier.admin` | Verwaltet Krankheiten eines aktiven Charakters. |
-| `/jail <Server-ID> <Minuten> [Grund]` | `frontier.admin.jail` oder Job `sheriff` | Inhaftiert einen aktiven Charakter persistent in Sisika. |
-| `/unjail <Server-ID> [Grund]` | `frontier.admin.jail` oder Job `sheriff` | Entlässt einen Gefangenen vorzeitig. |
-| `/jailstatus <Server-ID>` | `frontier.admin.jail` oder Job `sheriff` | Zeigt den Haftstatus eines anderen Spielers. |
-| `/weapondamage status` | `frontier.weapon.damage` | Zeigt Waffenanzahl, Laufzeitänderungen und Revision. |
-| `/weapondamage set <WEAPON_NAME> <Multiplikator>` | `frontier.weapon.damage` | Setzt den Schaden einer Waffe bis zum nächsten Resource-Neustart. |
-| `/weapondamage reset <WEAPON_NAME>` | `frontier.weapon.damage` | Entfernt die Laufzeitänderung einer Waffe. |
-| `/weapondamage resetall` | `frontier.weapon.damage` | Entfernt alle Laufzeitänderungen am Waffenschaden. |
+| `/setjob <Server-ID> <Job> [Grad]` | `mscore.admin` | Setzt Job und Grad eines Spielers; der Grad ist standardmäßig `0`. |
+| `/givemoney <Server-ID> <cash\|bank> <Betrag>` | `mscore.admin` | Schreibt einem Spieler einen positiven ganzzahligen Betrag gut. |
+| `/acp` | `mscore.admin.menu` | Öffnet oder schließt das Administration Control Panel. |
+| `/adminmenu` | `mscore.admin.menu` | Alias für `/acp`. |
+| `/worldbuilder` | `mscore.worldbuilder` | Öffnet oder schließt den World Builder. |
+| `/logout [Server-ID]` | `mscore.admin.logout` | Meldet den eigenen oder angegebenen Charakter ab und öffnet dessen Charakterauswahl. |
+| `/charlogout [Server-ID]` | `mscore.admin.logout` | Alias für `/logout`. |
+| `/guarmaadmin` | `mscore.admin.guarma` | Öffnet das Guarma-Teleport- und Neueinsteigermenü. |
+| `/guarmareset [Server-ID]` | `mscore.admin.guarma` | Setzt das Guarma-Tutorial zurück und startet es erneut; ohne ID für den eigenen Charakter. |
+| `/frameworkversion check` | `mscore.version.check` | Erzwingt unter Beachtung des konfigurierten Mindestintervalls eine neue Versionsabfrage. |
+| `/medicdisease <Server-ID> <add\|remove\|clear\|list> [Krankheit] [Schweregrad]` | `mscore.admin` | Verwaltet Krankheiten eines aktiven Charakters. |
+| `/jail <Server-ID> <Minuten> [Grund]` | `mscore.admin.jail` oder Job `sheriff` | Inhaftiert einen aktiven Charakter persistent in Sisika. |
+| `/unjail <Server-ID> [Grund]` | `mscore.admin.jail` oder Job `sheriff` | Entlässt einen Gefangenen vorzeitig. |
+| `/jailstatus <Server-ID>` | `mscore.admin.jail` oder Job `sheriff` | Zeigt den Haftstatus eines anderen Spielers. |
+| `/weapondamage status` | `mscore.weapon.damage` | Zeigt Waffenanzahl, Laufzeitänderungen und Revision. |
+| `/weapondamage set <WEAPON_NAME> <Multiplikator>` | `mscore.weapon.damage` | Setzt den Schaden einer Waffe bis zum nächsten Resource-Neustart. |
+| `/weapondamage reset <WEAPON_NAME>` | `mscore.weapon.damage` | Entfernt die Laufzeitänderung einer Waffe. |
+| `/weapondamage resetall` | `mscore.weapon.damage` | Entfernt alle Laufzeitänderungen am Waffenschaden. |
 
 `setjob`, `givemoney`, `logout`, `charlogout`, `guarmareset`,
 `frameworkversion`, `medicdisease`, `jail`, `unjail`, `jailstatus` und
@@ -147,7 +161,7 @@ Hinzufügen kein Schweregrad angegeben, verwendet das System Stufe `1`.
 ### Mapeditor-Befehle
 
 Alle Mapeditor-Befehle sind nur ingame verfügbar und benötigen das ACE-Recht
-`frontier.mapeditor`.
+`mscore.mapeditor`.
 
 | Befehl | Kurzbeschreibung |
 | --- | --- |
@@ -179,7 +193,7 @@ Die vollständige Mapeditor-Steuerung steht im Abschnitt
 
 ## Versionsabfrage
 
-`frontier_core` prüft nach dem Serverstart automatisch die zentrale
+`MSCore` prüft nach dem Serverstart automatisch die zentrale
 `version.json` auf GitHub. Die lokale Version stammt aus dem
 Resource-Manifest und ist aktuell auf `0.0.1` gesetzt. Netzwerk- oder
 GitHub-Fehler werden nur protokolliert und blockieren den Serverstart nicht.
@@ -190,35 +204,35 @@ GitHub-Fehler werden nur protokolliert und blockieren den Serverstart nicht.
 ```
 
 Die einfache Abfrage ist für alle Spieler verfügbar. Eine neue GitHub-Abfrage
-benötigt das ACE-Recht `frontier.version.check`. URL, Verzögerung,
+benötigt das ACE-Recht `mscore.version.check`. URL, Verzögerung,
 Mindestintervall und Aktivierung befinden sich in
-`resources/[frontier]/frontier_core/config.lua`.
+`resources/[MSCore]/MSCore/config.lua`.
 
 Andere Server-Resources können Version und Prüfstatus abfragen:
 
 ```lua
-local version = exports.frontier_core:GetFrameworkVersion()
-local state = exports.frontier_core:GetFrameworkVersionState()
-exports.frontier_core:CheckFrameworkVersion()
+local version = exports.MSCore:GetFrameworkVersion()
+local state = exports.MSCore:GetFrameworkVersionState()
+exports.MSCore:CheckFrameworkVersion()
 ```
 
 Nach jeder abgeschlossenen Prüfung wird zusätzlich das Serverevent
-`frontier:server:versionChecked` mit dem aktuellen Status ausgelöst.
+`mscore:server:versionChecked` mit dem aktuellen Status ausgelöst.
 
 ## Wichtige API
 
 ```lua
-local player = exports.frontier_core:GetPlayer(source)
+local player = exports.MSCore:GetPlayer(source)
 player:addMoney('cash', 10, 'mission_reward')
 player:addItem('water', 1, 'mission_reward')
 player:setJob('sheriff', 0)
 
-local player = exports.frontier_core:GetPlayerFromCharacterId(characterId)
+local player = exports.MSCore:GetPlayerFromCharacterId(characterId)
 ```
 
-Weitere Beispiele stehen in `resources/[frontier]/frontier_example`.
+Weitere Beispiele stehen in `resources/[MSCore]/MS_Example`.
 
-Items werden serverseitig anhand von `frontier_core/config.lua` validiert und
+Items werden serverseitig anhand von `MSCore/config.lua` validiert und
 im Charakter-Inventar innerhalb der persistenten Metadaten gespeichert.
 
 ## MS Inventory
@@ -229,7 +243,7 @@ grafisches Slot- und Gewichtsinventar. Standardmäßig wird es mit `I` oder
 
 - Die Kapazität wird zentral über `Config.Inventory.Slots` und
   `Config.Inventory.MaxWeight` in
-  `resources/[frontier]/frontier_core/config.lua` konfiguriert.
+  `resources/[MSCore]/MSCore/config.lua` konfiguriert.
 - Ein Rechtsklick auf ein Item öffnet die Aktionen **Übergeben**,
   **Wegwerfen** und **Benutzen**. Besitz, Menge, Entfernung, Handelbarkeit und
   Zielkapazität werden auf dem Server geprüft.
@@ -249,7 +263,7 @@ damit das Kleidungsstück auch am Ped dargestellt wird:
 ```
 
 Gültige Standardslots stehen in
-`resources/[frontier]/MS_Inventory/config.lua`. Neue Kleidungsitems lassen
+`resources/[MSCore]/MS_Inventory/config.lua`. Neue Kleidungsitems lassen
 sich damit direkt über **ACP → Data Admin → Itemcreator** anlegen.
 
 ## MS Basic Needs
@@ -268,7 +282,7 @@ werden konfigurierbare Warnungen ausgegeben.
   nutzbare Items können mit eigenen Hunger- und Dursteffekten ergänzt werden.
 
 Alle Einstellungen befinden sich in
-`resources/[frontier]/MS_BasicNeeds/config.lua`. Die Resource wird nach
+`resources/[MSCore]/MS_BasicNeeds/config.lua`. Die Resource wird nach
 `MS_Inventory` gestartet. Andere Server-Resources können die Werte über
 `GetNeeds`, `SetNeeds` und `AddNeed` lesen oder ändern.
 
@@ -286,7 +300,7 @@ Alle Einstellungen befinden sich in
 Position, Skalierung, horizontale oder vertikale Ausrichtung, Beschriftungen,
 Aktualisierungsintervalle, Celsius/Fahrenheit, Temperaturzonen und sämtliche
 Temperaturkorrekturen befinden sich in
-`resources/[frontier]/MS_HUD/config.lua`. Das HUD wird ohne aktiven Charakter
+`resources/[MSCore]/MS_HUD/config.lua`. Das HUD wird ohne aktiven Charakter
 und optional im Pausenmenü ausgeblendet.
 
 ## MS Jail
@@ -294,7 +308,7 @@ und optional im Pausenmenü ausgeblendet.
 `MS_Jail` inhaftiert aktive Charaktere persistent im Sisika Penitentiary.
 Admins verwenden `/jail <Server-ID> <Minuten> [Grund]` und
 `/unjail <Server-ID> [Grund]`; das benötigte ACE-Recht lautet
-`frontier.admin.jail`. Alternativ dürfen konfigurierbare Grade des Jobs
+`mscore.admin.jail`. Alternativ dürfen konfigurierbare Grade des Jobs
 `sheriff` diese Befehle verwenden. Standardmäßig sind Deputy und Sheriff
 freigeschaltet; inhaftierte Sheriffs verlieren ihre Jobrechte bis zur
 Entlassung.
@@ -308,7 +322,7 @@ Grenzprüfung zurück in seine Zelle.
 
 Zellen, Entlassungsposition, Gefängnismittelpunkt, Radius, erlaubte Strafzeiten,
 HUD, Sheriff-Jobgrade, Offline-Faktor und Rechte befinden sich in
-`resources/[frontier]/MS_Jail/config.lua`. Das reduzierte HUD zeigt
+`resources/[MSCore]/MS_Jail/config.lua`. Das reduzierte HUD zeigt
 ausschließlich Restzeit und Haftgrund; der Status kann zusätzlich mit
 `/jailstatus` abgefragt werden.
 
@@ -331,11 +345,11 @@ Vorschau am eigenen Charakter:
 
 Die Händlerpositionen, Preise, das verwendete Konto, die maximale Listengröße
 und der Produktkatalog befinden sich in
-`resources/[frontier]/MS_ClothingShop/config.lua`. Standardmäßig wird der
+`resources/[MSCore]/MS_ClothingShop/config.lua`. Standardmäßig wird der
 nächste Händler mit `E` oder `/clothingshop` geöffnet.
 
 Die zehn Beispielartikel für männliche und weibliche Charaktere liegen in
-`frontier_core/config.lua`. Für eigene Artikel sind mindestens diese
+`MSCore/config.lua`. Für eigene Artikel sind mindestens diese
 Item-Metadaten notwendig:
 
 ```json
@@ -348,7 +362,7 @@ Angabe erneut beim Ausrüsten.
 
 ## Spielersynchronisation
 
-Die Resource `frontier_playersync` ergänzt OneSync um einen serverautoritativ
+Die Resource `MS_PlayerSync` ergänzt OneSync um einen serverautoritativ
 verwalteten Presence- und Charakterdaten-Cache für bis zu 64 Spieler. OneSync
 bleibt für Peds, Bewegung und andere Netzwerk-Entities zuständig; die Resource
 verteilt nur Änderungen an öffentlichen Framework-Daten und Routing-Buckets.
@@ -357,13 +371,13 @@ Geld, Inventar, Geburtsdatum und Metadaten werden nicht an andere Spieler
 
 ```lua
 -- Client: alle geladenen Charaktere
-local players = exports.frontier_playersync:GetPlayers()
+local players = exports.MS_PlayerSync:GetPlayers()
 
 -- Client: aktuell gestreamte Spieler im Umkreis von 25 Metern
-local nearby = exports.frontier_playersync:GetNearbyPlayers(25.0, false)
+local nearby = exports.MS_PlayerSync:GetNearbyPlayers(25.0, false)
 
 -- Server oder Client: öffentliche Daten anhand der Server-ID
-local player = exports.frontier_playersync:GetPlayerState(serverId)
+local player = exports.MS_PlayerSync:GetPlayerState(serverId)
 ```
 
 Die Beispielkonfiguration aktiviert OneSync, strikte serverseitige State Bags
@@ -386,9 +400,9 @@ Zeit als 3D-Text über dem Charakter.
   Konsolenprotokollierung sind einzeln konfigurierbar.
 
 Alle Einstellungen befinden sich in
-`resources/[frontier]/MS_mechat/config.lua`. Die Resource benötigt OneSync und
-`frontier_core`; `server.cfg.example` startet sie deshalb direkt nach
-`frontier_playersync`.
+`resources/[MSCore]/MS_mechat/config.lua`. Die Resource benötigt OneSync und
+`MSCore`; `server.cfg.example` startet sie deshalb direkt nach
+`MS_PlayerSync`.
 
 ## MS Pointing
 
@@ -400,7 +414,7 @@ Vor dem Start prüft die Resource den aktiven Charakter, Tod, Ragdoll, NUI-Fokus
 Fahrzeug, Pferd, ausgerüstete Waffe und Cooldown. Standardmäßig muss der Spieler
 zu Fuß, unbewaffnet und außerhalb eines Menüs sein. Command, Taste, Emote-Kit,
 Cooldown, geschätzte Gestendauer und sämtliche Sperren befinden sich in
-`resources/[frontier]/MS_pointing/config.lua`. Spieler können die Taste in den
+`resources/[MSCore]/MS_pointing/config.lua`. Spieler können die Taste in den
 RedM-Tastatureinstellungen neu belegen.
 
 ## MS Medic
@@ -427,8 +441,8 @@ kann ihn beispielsweise mit `/setjob 12 medic 0` vergeben.
 
 Sämtliche Krankheiten, Wahrscheinlichkeiten, Intervalle, Mindestgesundheit,
 Medic-Jobs, Reichweiten, Items und Behandlungswerte befinden sich in
-`resources/[frontier]/MS_Medic/config.lua`. Der Test- und Supportbefehl
-`/medicdisease` benötigt `frontier.admin`.
+`resources/[MSCore]/MS_Medic/config.lua`. Der Test- und Supportbefehl
+`/medicdisease` benötigt `mscore.admin`.
 
 ## MS Stables
 
@@ -444,7 +458,7 @@ bereit:
 - automatische Tabellenanlage sowie Löschung des Besitzes mit dem Charakter
 
 Alle Verkäuferpositionen sowie Pferde- und Kutschen-Spawnpunkte befinden sich
-in `resources/[frontier]/MS_Stables/config.lua`. Jeder Stall besitzt getrennte
+in `resources/[MSCore]/MS_Stables/config.lua`. Jeder Stall besitzt getrennte
 Blöcke für `seller`, `horseSpawn` und `wagonSpawn`. Dort können außerdem
 Modelle, Preise, Fellvarianten, Ausrüstung, Limits, Konto und Interaktionstaste
 angepasst werden.
@@ -472,7 +486,7 @@ vorhandenen RedM-Gleisen bereit:
 
 NPC-Modelle, NPC-Koordinaten, Szenarien, Gleis-Spawnpunkte,
 Zugkompositionen, Geschwindigkeiten, Tasten und Limits befinden sich in
-`resources/[frontier]/MS_Trains/config.lua`. Ein Spawnpunkt muss direkt auf
+`resources/[MSCore]/MS_Trains/config.lua`. Ein Spawnpunkt muss direkt auf
 einem vorhandenen Gleis liegen; die Resource prüft dies vor dem Erzeugen mit
 der RedM-Gleisnative. Standardmäßig wird das Menü mit `E` beim Zugpersonal
 oder `/trains` geöffnet.
@@ -500,7 +514,7 @@ Entity-Erzeugung daher nicht blockieren.
 
 Die NPC-Positionen, Ped-Modelle, Szenarien, Versandkosten, Nummernlänge,
 Textlimits, Konto und Interaktionstaste befinden sich in
-`resources/[frontier]/MS_Telegrams/config.lua`. Standardmäßig wird das nächste
+`resources/[MSCore]/MS_Telegrams/config.lua`. Standardmäßig wird das nächste
 Telegrafenamt mit `E` oder `/telegrams` geöffnet. Die benötigten Tabellen
 werden beim Resource-Start automatisch erstellt und sind zusätzlich in
 `database/schema.sql` enthalten.
@@ -514,13 +528,13 @@ RedM-Ladefortschritt, wechselnde Hinweise und eine Mute-Funktion. Der Ton wird
 Die Original-Cutscene und Musik aus Red Dead Redemption 2 werden nicht
 mitgeliefert. Eine rechtmäßig verwendbare, browserkompatible Videodatei kann
 als
-`resources/[frontier]/MS_LoadingScreen/html/media/ring_dang_doo.mp4`
+`resources/[MSCore]/MS_LoadingScreen/html/media/ring_dang_doo.mp4`
 hinterlegt werden. Ohne diese Datei startet automatisch die integrierte
 animierte Sturm- und Schiffszene, sodass die Resource trotzdem vollständig
 funktioniert.
 
 Titel, Servername, Untertitel, Videopfad, Lautstärke, Start-Mute und Hinweise
-werden in `resources/[frontier]/MS_LoadingScreen/html/config.js` konfiguriert.
+werden in `resources/[MSCore]/MS_LoadingScreen/html/config.js` konfiguriert.
 Die Resource muss vor den Framework-Resources mit `ensure MS_LoadingScreen`
 gestartet werden; `server.cfg.example` enthält die passende Reihenfolge.
 
@@ -529,14 +543,14 @@ gestartet werden; `server.cfg.example` enthält die passende Reihenfolge.
 `MS_WeaponDamage` konfiguriert den ausgeteilten Schaden für jede RedM-Waffe
 einzeln. Basiswaffen, Story-Varianten und die später hinzugefügten
 Red-Dead-Online-Waffen sind in
-`resources/[frontier]/MS_WeaponDamage/config.lua` eingetragen.
+`resources/[MSCore]/MS_WeaponDamage/config.lua` eingetragen.
 
 Der Wert `1.00` verwendet den originalen Waffenschaden, `0.50` halbiert ihn
 und `2.00` verdoppelt ihn. Die serverseitig geprüfte Konfiguration wird an alle
 Spieler verteilt und beim Waffenwechsel erneut angewendet. Verschiedene
 Munitionstypen derselben Waffe verwenden denselben Waffenmultiplikator.
 
-Admins mit dem ACE-Recht `frontier.weapon.damage` können Werte bis zum nächsten
+Admins mit dem ACE-Recht `mscore.weapon.damage` können Werte bis zum nächsten
 Resource-Neustart ändern:
 
 ```text
@@ -552,7 +566,7 @@ Debug-Ausgabe und Laufzeitänderungen sind dort ebenfalls konfigurierbar.
 
 ## Mapeditor
 
-Administratoren mit dem ACE-Recht `frontier.mapeditor` können persistente
+Administratoren mit dem ACE-Recht `mscore.mapeditor` können persistente
 Map-Objekte direkt im Spiel bearbeiten:
 
 ```text
@@ -568,11 +582,11 @@ Während der Bearbeitung bewegen `W/A/S/D` das Objekt, `Bild hoch/runter` änder
 die Höhe, `Q/E` drehen um Z, `R/F` kippen um X und `Z/X` kippen um Y. `Shift`
 beschleunigt, `G` setzt das Objekt auf den Boden, `Enter` speichert und
 `Backspace` bricht ab. Die vorkonfigurierten Modelle sowie Reichweiten stehen
-in `frontier_mapeditor/config.lua`.
+in `MS_MapEditor/config.lua`.
 
 ## Admin-Logout
 
-Die Resource `frontier_adminlogout` speichert und entlädt einen aktiven
+Die Resource `MS_AdminLogout` speichert und entlädt einen aktiven
 Charakter, bevor sie den Spieler zur Charakterauswahl zurückbringt.
 
 ```text
@@ -581,12 +595,12 @@ Charakter, bevor sie den Spieler zur Charakterauswahl zurückbringt.
 /charlogout [ID]    Alias
 ```
 
-Benötigt wird das ACE-Recht `frontier.admin.logout`. Ob Admins andere Spieler
-abmelden dürfen, kann in `frontier_adminlogout/config.lua` eingestellt werden.
+Benötigt wird das ACE-Recht `mscore.admin.logout`. Ob Admins andere Spieler
+abmelden dürfen, kann in `MS_AdminLogout/config.lua` eingestellt werden.
 
 ## Administration Control Panel
 
-Die Resource `frontier_adminmenu` öffnet mit `F2`, `/acp` oder dem
+Die Resource `MS_AdminMenu` öffnet mit `F2`, `/acp` oder dem
 Kompatibilitätsalias `/adminmenu` das zentrale Administration Control Panel.
 Enthalten sind:
 
@@ -608,15 +622,15 @@ Enthalten sind:
 - separate **Getötet von**-Einträge für tödliche Spielertreffer
 - serverseitige Validierung und Konsolenprotokollierung aller Aktionen
 
-Das ACE-Recht `frontier.admin.menu` dient als Root-Zugriff und kann im ACP
+Das ACE-Recht `mscore.admin.menu` dient als Root-Zugriff und kann im ACP
 weitere Administratoren freischalten. Vergebene Rechte werden anhand der
-Rockstar-Lizenz in `frontier_admin_permissions` gespeichert und bleiben nach
+Rockstar-Lizenz in `mscore_admin_permissions` gespeichert und bleiben nach
 einem Neustart erhalten. Ein Root-Admin besitzt immer alle Rechte. Wettertypen,
 Betragsgrenzen, Standardtaste, Crafting-Limits, Log-Aufbewahrungsdauer und
 weitere Einstellungen stehen
-in `frontier_adminmenu/config.lua`. Der Itemkatalog und die Stack-Limits befinden
-sich in der Tabelle `frontier_items`. Die Einträge aus
-`frontier_core/config.lua` werden beim ersten Start als geschützte Systemitems
+in `MS_AdminMenu/config.lua`. Der Itemkatalog und die Stack-Limits befinden
+sich in der Tabelle `mscore_items`. Die Einträge aus
+`MSCore/config.lua` werden beim ersten Start als geschützte Systemitems
 in die Tabelle übernommen.
 
 Der Menüpunkt **Data Admin** konfiguriert technischen Namen, Anzeigenamen,
@@ -626,10 +640,10 @@ Standard-Metadaten. Neue Items stehen ohne Resource-Neustart unmittelbar für
 Adminvergabe, Storages und Crafting zur Verfügung. Benutzerdefinierte Items
 können gelöscht werden, wenn sie nicht mehr in Inventaren, Storages oder
 Crafting-Rezepten referenziert sind. Systemitems bleiben geschützt. Der
-Prop-Katalog ist in `frontier_adminmenu/config.lua` erweiterbar; zusätzlich
+Prop-Katalog ist in `MS_AdminMenu/config.lua` erweiterbar; zusätzlich
 können gültige eigene RedM-Modellnamen eingegeben werden.
 
-Support-Logs werden in `frontier_support_logs` gespeichert. Die Berechtigung
+Support-Logs werden in `mscore_support_logs` gespeichert. Die Berechtigung
 `support` kann wie alle anderen ACP-Rechte über **Adminrechte** verteilt werden.
 Anzahl der angezeigten Einträge, Aufbewahrungsdauer, Mindestschaden,
 Batchgröße und Warteschlangenlimit sind konfigurierbar. Lizenzkennungen und
@@ -644,7 +658,7 @@ Crafting-Punkte werden automatisch erstellt und sind zusätzlich in
 
 ## World Builder
 
-Mit `F9` oder `/worldbuilder` öffnet die Resource `frontier_worldbuilder` ein
+Mit `F9` oder `/worldbuilder` öffnet die Resource `MS_WorldBuilder` ein
 grafisches Verwaltungsinterface für persistente Weltfunktionen:
 
 - NPCs mit frei wählbarem Ped-Modell, Position, Ausrichtung und Szenario
@@ -657,8 +671,8 @@ grafisches Verwaltungsinterface für persistente Weltfunktionen:
 
 Spieler öffnen nahe Storages und berechtigte Türen mit `E`. Itemtransfers
 werden serverseitig validiert und unmittelbar gespeichert. Das benötigte
-ACE-Recht lautet `frontier.worldbuilder`; Limits, Tasten, NPC-Vorlagen und
-Streamingdistanzen stehen in `frontier_worldbuilder/config.lua`. Die Resource
+ACE-Recht lautet `mscore.worldbuilder`; Limits, Tasten, NPC-Vorlagen und
+Streamingdistanzen stehen in `MS_WorldBuilder/config.lua`. Die Resource
 erstellt ihre Tabellen bei Bedarf selbst; sie sind zusätzlich in
 `database/schema.sql` enthalten.
 
@@ -669,9 +683,9 @@ Schiffbruch-Cinematic. Danach beginnt am Strand von Bahia de la Paz ein
 Bewegungstutorial für Laufen, Sprinten, Springen und Ducken, das am Hafen endet.
 Der Abschluss wird in den Charakter-Metadaten gespeichert.
 
-Admins mit dem ACE-Recht `frontier.admin.guarma` werden bei der Strandankunft
+Admins mit dem ACE-Recht `mscore.admin.guarma` werden bei der Strandankunft
 benachrichtigt. `/guarmaadmin` öffnet das Teleportmenü, dessen Ziele vollständig
-in `frontier_guarma_onboarding/config.lua` konfiguriert werden. Mit
+in `MS_GuarmaOnboarding/config.lua` konfiguriert werden. Mit
 `/guarmareset [Server-ID]` kann das Tutorial für Support oder Tests neu gestartet
 werden. Strand, Hafen, Kamerafahrten, Tutorialpunkte, Inselgrenzen und sämtliche
 Admin-Teleportziele lassen sich in derselben Konfigurationsdatei ändern.

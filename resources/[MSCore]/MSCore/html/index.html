@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="style.css">
+    <title>MSCore – Charakterauswahl</title>
+</head>
+<body>
+    <main id="app" class="hidden" aria-live="polite">
+        <div class="grain"></div>
+        <button id="close" class="close hidden" type="button" aria-label="Schließen">×</button>
+
+        <header>
+            <div class="brand-mark">M</div>
+            <div>
+                <p class="eyebrow">MSCORE FRAMEWORK</p>
+                <h1>Wähle dein Schicksal</h1>
+                <p class="subtitle">Jede Geschichte beginnt mit einem Namen.</p>
+            </div>
+        </header>
+
+        <section id="loading" class="loading">
+            <span></span>
+            <p>Charaktere werden geladen …</p>
+        </section>
+
+        <section id="characters" class="character-grid hidden"></section>
+        <div id="toast" class="toast hidden" role="alert"></div>
+
+        <footer>
+            <span id="slot-count">0 / 0 Charaktere</span>
+            <span>MSCore Framework · RedM</span>
+        </footer>
+    </main>
+
+    <div id="creator" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="creator-title">
+        <form id="creator-form">
+            <p class="eyebrow">NEUER ANFANG</p>
+            <h2 id="creator-title">Charakter erstellen</h2>
+            <p class="form-intro">Gib deiner neuen Geschichte ein Gesicht.</p>
+
+            <div class="field-row">
+                <label>
+                    <span>Vorname</span>
+                    <input id="firstname" name="firstname" minlength="2" maxlength="32" autocomplete="off" required>
+                </label>
+                <label>
+                    <span>Nachname</span>
+                    <input id="lastname" name="lastname" minlength="2" maxlength="32" autocomplete="off" required>
+                </label>
+            </div>
+
+            <label>
+                <span>Geburtsdatum</span>
+                <input id="birthdate" name="dateOfBirth" type="date" required>
+            </label>
+
+            <fieldset>
+                <legend>Geschlecht</legend>
+                <label class="choice"><input type="radio" name="sex" value="male" checked><span>Männlich</span></label>
+                <label class="choice"><input type="radio" name="sex" value="female"><span>Weiblich</span></label>
+            </fieldset>
+
+            <div class="form-actions">
+                <button id="cancel-create" class="button secondary" type="button">Zurück</button>
+                <button id="submit-create" class="button primary" type="submit">Geschichte beginnen</button>
+            </div>
+        </form>
+    </div>
+
+    <div id="confirmation" class="modal hidden" role="dialog" aria-modal="true">
+        <div class="confirm-box">
+            <p class="eyebrow">ENDGÜLTIGE ENTSCHEIDUNG</p>
+            <h2>Charakter löschen?</h2>
+            <p id="confirmation-text"></p>
+            <div class="form-actions">
+                <button id="cancel-delete" class="button secondary" type="button">Abbrechen</button>
+                <button id="confirm-delete" class="button danger" type="button">Endgültig löschen</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
