@@ -21,6 +21,7 @@ Ein schlankes, eigenständiges Roleplay-Framework für RedM.
 - persistente Crafting-Rezepte und frei platzierbare Crafting-Punkte
 - Data Admin mit Datenbank-Itemcreator und durchsuchbarem Prop-Katalog
 - serverautoritatives Spieler-Presence-Sync für bis zu 64 Slots
+- `MS_Stables` mit Pferde-, Ausrüstungs-, Fellfarben- und Kutschenhandel
 
 ## Voraussetzungen
 
@@ -35,7 +36,8 @@ Ein schlankes, eigenständiges Roleplay-Framework für RedM.
 3. `server.cfg.example` nach `server.cfg` kopieren und Connection-String sowie
    Lizenzschlüssel anpassen.
 4. In der Konsole zuerst `ensure frontier_core`, danach
-   `ensure frontier_playersync`, `ensure frontier_worldbuilder`, `ensure frontier_adminmenu`,
+   `ensure frontier_playersync`, `ensure MS_Stables`, `ensure frontier_worldbuilder`,
+   `ensure frontier_adminmenu`,
    `ensure frontier_guarma_onboarding`, `ensure frontier_mapeditor`,
    `ensure frontier_adminlogout` sowie `ensure frontier_example` ausführen
    (oder den Server neu starten).
@@ -84,6 +86,30 @@ local player = exports.frontier_playersync:GetPlayerState(serverId)
 Die Beispielkonfiguration aktiviert OneSync, strikte serverseitige State Bags
 und `sv_maxclients 64`. Mehr als 48 Slots setzen einen passenden Tarif im
 Cfx.re-Portal voraus.
+
+## MS Stables
+
+Die Resource `MS_Stables` stellt ein grafisches und persistentes Stallsystem
+bereit:
+
+- Pferde mit eigenem Namen kaufen und am Stall abholen
+- rassenspezifische Fellfarben kaufen und jederzeit wieder auswählen
+- Sättel, Decken und Steigbügel pro Pferd kaufen und ausrüsten
+- konfigurierbare Ausrüstungsboni und optionale Meta-Ped-Komponenten
+- Kutschen kaufen, abholen und wieder einstellen
+- serverseitige Prüfung von Besitz, Preis, Kontostand und Entfernung
+- automatische Tabellenanlage sowie Löschung des Besitzes mit dem Charakter
+
+Alle Verkäuferpositionen sowie Pferde- und Kutschen-Spawnpunkte befinden sich
+in `resources/[frontier]/MS_Stables/config.lua`. Jeder Stall besitzt getrennte
+Blöcke für `seller`, `horseSpawn` und `wagonSpawn`. Dort können außerdem
+Modelle, Preise, Fellvarianten, Ausrüstung, Limits, Konto und Interaktionstaste
+angepasst werden.
+
+Spieler öffnen den nächsten Stall standardmäßig mit `E` oder `/stables`.
+Es kann genau ein eigenes Stallobjekt – Pferd oder Kutsche – gleichzeitig
+aktiv sein. Fellwechsel und neu angelegte Ausrüstung werden beim nächsten
+Abholen des Pferdes sichtbar beziehungsweise wirksam.
 
 ## Mapeditor
 

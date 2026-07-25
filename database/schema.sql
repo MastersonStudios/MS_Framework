@@ -173,3 +173,35 @@ CREATE TABLE IF NOT EXISTS `frontier_crafting_points` (
   PRIMARY KEY (`id`),
   KEY `idx_frontier_crafting_points_position` (`x`, `y`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `ms_stable_horses` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `character_id` BIGINT UNSIGNED NOT NULL,
+  `name` VARCHAR(32) NOT NULL,
+  `horse_key` VARCHAR(64) NOT NULL,
+  `coat_key` VARCHAR(64) NOT NULL,
+  `model` VARCHAR(100) NOT NULL,
+  `owned_equipment` LONGTEXT NOT NULL,
+  `equipped` LONGTEXT NOT NULL,
+  `owned_coats` LONGTEXT NOT NULL,
+  `purchased_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_ms_stable_horses_character` (`character_id`),
+  CONSTRAINT `fk_ms_stable_horses_character`
+    FOREIGN KEY (`character_id`) REFERENCES `frontier_characters` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `ms_stable_wagons` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `character_id` BIGINT UNSIGNED NOT NULL,
+  `wagon_key` VARCHAR(64) NOT NULL,
+  `label` VARCHAR(64) NOT NULL,
+  `model` VARCHAR(100) NOT NULL,
+  `purchased_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_ms_stable_wagons_character` (`character_id`),
+  CONSTRAINT `fk_ms_stable_wagons_character`
+    FOREIGN KEY (`character_id`) REFERENCES `frontier_characters` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
