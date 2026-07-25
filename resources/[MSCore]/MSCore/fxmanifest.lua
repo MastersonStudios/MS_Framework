@@ -3,7 +3,7 @@ game 'rdr3'
 
 author 'MSCore Framework'
 description 'Standalone RedM roleplay core'
-version '0.0.1'
+version '0.0.2'
 
 lua54 'yes'
 

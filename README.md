@@ -2,7 +2,7 @@
 
 Ein schlankes, eigenständiges Roleplay-Framework für RedM.
 
-Aktuelle Framework-Version: `0.0.1`
+Aktuelle Framework-Version: `0.0.2`
 
 ## Enthalten
 
@@ -88,7 +88,7 @@ Chatbefehle werden ingame mit `/` eingegeben. In der Serverkonsole entfällt
 der Schrägstrich. `<Wert>` kennzeichnet ein Pflichtargument, `[Wert]` ein
 optionales Argument.
 
-Stand Framework `0.0.1`: 36 öffentliche Befehle. Interne Keymapping-Befehle
+Stand Framework `0.0.2`: 36 öffentliche Befehle. Interne Keymapping-Befehle
 werden hier nicht aufgeführt.
 
 ### Spielerbefehle
@@ -195,7 +195,7 @@ Die vollständige Mapeditor-Steuerung steht im Abschnitt
 
 `MSCore` prüft nach dem Serverstart automatisch die zentrale
 `version.json` auf GitHub. Die lokale Version stammt aus dem
-Resource-Manifest und ist aktuell auf `0.0.1` gesetzt. Netzwerk- oder
+Resource-Manifest und ist aktuell auf `0.0.2` gesetzt. Netzwerk- oder
 GitHub-Fehler werden nur protokolliert und blockieren den Serverstart nicht.
 
 ```text
