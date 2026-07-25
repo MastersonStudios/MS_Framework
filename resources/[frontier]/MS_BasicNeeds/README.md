@@ -2,7 +2,7 @@
 
 `MS_BasicNeeds` ergänzt das Frontier Framework um charaktergebundenen Hunger
 und Durst. Beide Werte werden in den vorhandenen Charaktermetadaten gespeichert,
-serverseitig reduziert und in einem kompakten HUD dargestellt.
+serverseitig reduziert und an `MS_HUD` übergeben.
 
 ## Funktionen
 
@@ -10,7 +10,7 @@ serverseitig reduziert und in einem kompakten HUD dargestellt.
 - getrennt konfigurierbarer Hunger- und Durstabbau
 - konfigurierbares Tick- und Speicherintervall
 - kritische Warnungen und optionaler, wahlweise nicht tödlicher Gesundheitsschaden
-- frei positionierbares HUD mit Skalierung
+- optionales eigenständiges Needs-HUD mit Positionierung und Skalierung
 - Essen und Getränke über die Itembenutzung von `MS_Inventory`
 - serverseitige Exporte für andere Resources
 
@@ -26,6 +26,10 @@ Alle Einstellungen stehen in `config.lua`. Die Standarditems sind:
 Weitere Items können unter `MSBasicNeedsConfig.Consumables` ergänzt werden.
 Das Item muss zusätzlich im Core-Itemkatalog als `usable = true` und für einen
 einmaligen Verbrauch als `consumable = true` konfiguriert sein.
+
+Im vollständigen Framework ist `MSBasicNeedsConfig.Hud.Enabled` deaktiviert,
+weil `MS_HUD` die zentrale Anzeige übernimmt. Für einen eigenständigen Betrieb
+ohne `MS_HUD` kann das kleine Needs-HUD wieder aktiviert werden.
 
 ## Server-Exporte
 

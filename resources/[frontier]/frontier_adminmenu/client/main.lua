@@ -157,6 +157,7 @@ RegisterNetEvent('frontier_adminmenu:client:applyWeather', function(data)
         tonumber(data.transition) or AdminMenuConfig.DefaultTransition,
         false
     )
+    TriggerEvent('frontier:client:weatherChanged', tostring(data.id or 'custom'), tonumber(data.hash))
 end)
 
 RegisterNetEvent('frontier_adminmenu:client:teleport', teleport)

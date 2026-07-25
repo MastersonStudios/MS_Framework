@@ -20,6 +20,9 @@ end
 
 local function setLocalWeather(hash, transition)
     Citizen.InvokeNative(0x59174F1AFE095B5A, hash, false, true, true, transition or 5.0, false)
+    local weatherId = hash == WEATHER_THUNDERSTORM and 'thunderstorm'
+        or (hash == WEATHER_SUNNY and 'sunny' or 'custom')
+    TriggerEvent('frontier:client:weatherChanged', weatherId, hash)
 end
 
 local function stopCinematic()

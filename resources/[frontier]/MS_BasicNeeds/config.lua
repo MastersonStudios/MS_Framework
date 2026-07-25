@@ -41,7 +41,9 @@ MSBasicNeedsConfig.Damage = {
 }
 
 MSBasicNeedsConfig.Hud = {
-    Enabled = true,
+    -- Im vollständigen Framework übernimmt MS_HUD die zentrale Anzeige.
+    -- Auf true setzen, wenn nur das eigenständige Basic-Needs-HUD gewünscht ist.
+    Enabled = false,
     Position = 'bottom-right', -- bottom-right, bottom-left, top-right, top-left
     OffsetX = 32,
     OffsetY = 36,

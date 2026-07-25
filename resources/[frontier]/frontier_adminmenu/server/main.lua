@@ -13,6 +13,11 @@ local CurrentWeather = AdminMenuConfig.DefaultWeather
 local CurrentTransition = AdminMenuConfig.DefaultTransition
 local Ready = false
 
+GlobalState.frontierWeather = {
+    id = CurrentWeather,
+    transition = CurrentTransition
+}
+
 local function notify(source, message)
     if source == 0 then
         print(('[Frontier ACP] %s'):format(message))
@@ -927,6 +932,10 @@ RegisterNetEvent('frontier_adminmenu:server:execute', function(action, data)
         if not weather or not transition then return result(source, false, 'Wetterauswahl ungültig.') end
         transition = math.max(0.0, math.min(transition, AdminMenuConfig.MaxWeatherTransition))
         CurrentWeather, CurrentTransition = weather.id, transition
+        GlobalState.frontierWeather = {
+            id = CurrentWeather,
+            transition = CurrentTransition
+        }
         TriggerClientEvent('frontier_adminmenu:client:applyWeather', -1, {
             id = weather.id,
             hash = weather.hash,
