@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>MS Medic</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <main id="app" class="hidden" aria-hidden="true">
+        <section class="panel">
+            <header class="panel-header">
+                <div>
+                    <p class="eyebrow">Masterson Medical Service</p>
+                    <h1 id="title">Medic-Zentrale</h1>
+                    <p id="subtitle">Patienten untersuchen und behandeln</p>
+                </div>
+                <div class="header-actions">
+                    <button id="refresh" class="icon-button" title="Aktualisieren">↻</button>
+                    <button id="close" class="icon-button danger" title="Schließen">×</button>
+                </div>
+            </header>
+
+            <div id="medic-layout" class="layout">
+                <aside class="patients-column">
+                    <div class="section-heading">
+                        <h2>Patienten in der Nähe</h2>
+                        <span id="patient-count" class="badge">0</span>
+                    </div>
+                    <div id="patients" class="patient-list"></div>
+                </aside>
+
+                <section class="details-column">
+                    <div id="empty-state" class="empty-state">
+                        <span class="medical-mark">✚</span>
+                        <h2>Patient auswählen</h2>
+                        <p>Wähle eine Person in der Nähe aus, um mit der Untersuchung zu beginnen.</p>
+                    </div>
+                    <div id="patient-details" class="hidden"></div>
+                </section>
+            </div>
+
+            <section id="health-layout" class="health-layout hidden"></section>
+            <footer>ESC zum Schließen · Behandlungen werden serverseitig geprüft</footer>
+        </section>
+    </main>
+
+    <section id="progress" class="progress-card hidden" aria-live="polite">
+        <div class="progress-icon">✚</div>
+        <div class="progress-copy">
+            <strong id="progress-title">Behandlung läuft</strong>
+            <span id="progress-patient"></span>
+            <div class="progress-track"><i id="progress-bar"></i></div>
+        </div>
+    </section>
+
+    <script src="app.js"></script>
+</body>
+</html>

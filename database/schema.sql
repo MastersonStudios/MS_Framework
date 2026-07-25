@@ -261,3 +261,15 @@ CREATE TABLE IF NOT EXISTS `ms_telegrams` (
   CONSTRAINT `fk_ms_telegrams_recipient`
     FOREIGN KEY (`recipient_character_id`) REFERENCES `frontier_characters` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `ms_medic_diseases` (
+  `character_id` BIGINT UNSIGNED NOT NULL,
+  `disease_key` VARCHAR(64) NOT NULL,
+  `severity` TINYINT UNSIGNED NOT NULL DEFAULT 1,
+  `contracted_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`character_id`, `disease_key`),
+  KEY `idx_ms_medic_diseases_key` (`disease_key`),
+  CONSTRAINT `fk_ms_medic_diseases_character`
+    FOREIGN KEY (`character_id`) REFERENCES `frontier_characters` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

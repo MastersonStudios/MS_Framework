@@ -26,6 +26,7 @@ Aktuelle Framework-Version: `0.0.1`
 - serverautoritatives Spieler-Presence-Sync für bis zu 64 Slots
 - `MS_mechat` mit räumlichem `/me`-Chat und 3D-Text über dem Charakter
 - `MS_pointing` mit frei belegbarer Finger-Zeigegeste auf der Taste `B`
+- `MS_Medic` mit Krankheiten, Behandlungen und Wiederbelebung
 - `MS_WeaponDamage` mit einzeln konfigurierbarem Schaden für sämtliche Waffen
 - `MS_Inventory` mit konfigurierbarer Kapazität, Kontextaktionen und Outfit-Drag-and-Drop
 - `MS_ClothingShop` mit Charaktervorschau und gemeinsamer Einkaufsliste
@@ -49,7 +50,7 @@ Aktuelle Framework-Version: `0.0.1`
 4. In der Konsole zuerst `ensure MS_LoadingScreen` und `ensure frontier_core`,
    danach
    `ensure frontier_playersync`, `ensure MS_mechat`, `ensure MS_pointing`,
-   `ensure MS_WeaponDamage`, `ensure MS_Inventory`,
+   `ensure MS_Medic`, `ensure MS_WeaponDamage`, `ensure MS_Inventory`,
    `ensure MS_ClothingShop`, `ensure MS_Stables`, `ensure MS_Trains`,
    `ensure MS_Telegrams`,
    `ensure frontier_worldbuilder`,
@@ -81,6 +82,8 @@ optionales Argument.
 | `/frameworkversion` | Zeigt die installierte Framework-Version und den letzten Update-Status. |
 | `/me <Aktion>` | Zeigt eine Roleplay-Aktion im nahen Chat und als 3D-Text über dem Charakter. |
 | `/point` | Führt die Finger-Zeigegeste aus; alternativ kann `B` verwendet werden. |
+| `/healthstatus` | Öffnet die eigene Gesundheitsakte mit aktiven Krankheiten. |
+| `/medic` | Öffnet mit dem Job `medic` das Behandlungsmenü. |
 | `/inventory` | Öffnet `MS_Inventory`. |
 | `/clothingshop` | Öffnet den nächsten erreichbaren Bekleidungshändler. |
 | `/stables` | Öffnet den nächsten erreichbaren Stall. |
@@ -102,13 +105,14 @@ optionales Argument.
 | `/guarmaadmin` | `frontier.admin.guarma` | Öffnet das Guarma-Teleport- und Neueinsteigermenü. |
 | `/guarmareset [Server-ID]` | `frontier.admin.guarma` | Setzt das Guarma-Tutorial zurück und startet es erneut; ohne ID für den eigenen Charakter. |
 | `/frameworkversion check` | `frontier.version.check` | Erzwingt unter Beachtung des konfigurierten Mindestintervalls eine neue Versionsabfrage. |
+| `/medicdisease <Server-ID> <add\|remove\|clear\|list> [Krankheit] [Schweregrad]` | `frontier.admin` | Verwaltet Krankheiten eines aktiven Charakters. |
 | `/weapondamage status` | `frontier.weapon.damage` | Zeigt Waffenanzahl, Laufzeitänderungen und Revision. |
 | `/weapondamage set <WEAPON_NAME> <Multiplikator>` | `frontier.weapon.damage` | Setzt den Schaden einer Waffe bis zum nächsten Resource-Neustart. |
 | `/weapondamage reset <WEAPON_NAME>` | `frontier.weapon.damage` | Entfernt die Laufzeitänderung einer Waffe. |
 | `/weapondamage resetall` | `frontier.weapon.damage` | Entfernt alle Laufzeitänderungen am Waffenschaden. |
 
 `setjob`, `givemoney`, `logout`, `charlogout`, `guarmareset`,
-`frameworkversion` und `weapondamage` können auch in der Serverkonsole
+`frameworkversion`, `medicdisease` und `weapondamage` können auch in der Serverkonsole
 verwendet werden. Bei `logout`, `charlogout` und `guarmareset` ist dort eine
 Server-ID erforderlich. Beispielzuweisungen für alle ACE-Rechte stehen in
 `server.cfg.example`.
@@ -134,6 +138,7 @@ Alle Keymappings können Spieler in den RedM-Tastatureinstellungen ändern.
 | Taste | Funktion |
 | --- | --- |
 | `F2` | ACP öffnen oder schließen. |
+| `F6` | Medic-Behandlungsmenü öffnen. |
 | `F9` | World Builder öffnen oder schließen. |
 | `I` | Inventar öffnen oder schließen. |
 | `B` | Mit dem Finger nach vorne zeigen. |
@@ -310,6 +315,33 @@ zu Fuß, unbewaffnet und außerhalb eines Menüs sein. Command, Taste, Emote-Kit
 Cooldown, geschätzte Gestendauer und sämtliche Sperren befinden sich in
 `resources/[frontier]/MS_pointing/config.lua`. Spieler können die Taste in den
 RedM-Tastatureinstellungen neu belegen.
+
+## MS Medic
+
+`MS_Medic` ergänzt persistente Krankheiten, Symptome und ein grafisches
+Behandlungsmenü. Jeder Charakter kann mit `/healthstatus` seine Gesundheitsakte
+öffnen. Spieler mit dem Job `medic` verwenden `F6` oder `/medic`, um nahe
+Patienten zu untersuchen, Wunden zu versorgen, Krankheiten zu behandeln oder
+verstorbene Spieler wiederzubeleben.
+
+Die vorkonfigurierten Krankheiten Grippe, Lungenentzündung,
+Lebensmittelvergiftung und Wundinfektion besitzen jeweils eine eigene
+Ansteckungswahrscheinlichkeit, Verschlimmerungswahrscheinlichkeit,
+Schweregrade, Symptome, Gesundheitsschaden und Behandlung. Ein Wert von `0.01`
+entspricht einem Prozent pro konfiguriertem Prüfintervall. Krankheiten bleiben
+in `ms_medic_diseases` charaktergebunden gespeichert.
+
+Behandlungen prüfen Medic-Job und -Grad, Routing-Bucket, Entfernung,
+Patientenzustand, benötigte Items, Behandlungsdauer und Heilungschance
+serverseitig. Enthalten sind die zusätzlichen Items `medicine`,
+`herbal_tonic` und `revive_kit`; der bestehende `bandage` wird ebenfalls
+verwendet. Der Job besitzt die Grade Sanitäter, Arzt und Chefarzt. Ein Admin
+kann ihn beispielsweise mit `/setjob 12 medic 0` vergeben.
+
+Sämtliche Krankheiten, Wahrscheinlichkeiten, Intervalle, Mindestgesundheit,
+Medic-Jobs, Reichweiten, Items und Behandlungswerte befinden sich in
+`resources/[frontier]/MS_Medic/config.lua`. Der Test- und Supportbefehl
+`/medicdisease` benötigt `frontier.admin`.
 
 ## MS Stables
 

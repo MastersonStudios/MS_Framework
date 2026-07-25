@@ -15,6 +15,7 @@ ensure frontier_core
 ensure frontier_playersync
 ensure MS_mechat
 ensure MS_pointing
+ensure MS_Medic
 ensure MS_WeaponDamage
 ensure MS_Inventory
 ensure MS_ClothingShop

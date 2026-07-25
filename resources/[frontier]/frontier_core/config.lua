@@ -72,6 +72,42 @@ Config.Items = {
         tradable = true,
         prop = 'p_cs_bandage01x'
     },
+    medicine = {
+        label = 'Arznei',
+        description = 'Eine medizinische Arznei zur Behandlung von Krankheiten.',
+        category = 'medical',
+        rarity = 'uncommon',
+        maxStack = 10,
+        weight = 150,
+        usable = false,
+        consumable = false,
+        tradable = true,
+        prop = 'p_bottlemedicine01x'
+    },
+    herbal_tonic = {
+        label = 'Kräutertonikum',
+        description = 'Ein kräftigendes Tonikum aus Heilkräutern.',
+        category = 'medical',
+        rarity = 'uncommon',
+        maxStack = 10,
+        weight = 300,
+        usable = false,
+        consumable = false,
+        tradable = true,
+        prop = 'p_bottlemedicine01x'
+    },
+    revive_kit = {
+        label = 'Wiederbelebungsset',
+        description = 'Medizinisches Material für eine Wiederbelebung.',
+        category = 'medical',
+        rarity = 'rare',
+        maxStack = 5,
+        weight = 1200,
+        usable = false,
+        consumable = false,
+        tradable = true,
+        prop = 'p_cs_bandage01x'
+    },
     lockpick = {
         label = 'Dietrich',
         description = 'Ein empfindliches Werkzeug für Schlösser.',
@@ -293,6 +329,14 @@ Config.Jobs = {
         grades = {
             [0] = { label = 'Deputy', salary = 5 },
             [1] = { label = 'Sheriff', salary = 10 }
+        }
+    },
+    medic = {
+        label = 'Medic',
+        grades = {
+            [0] = { label = 'Sanitäter', salary = 5 },
+            [1] = { label = 'Arzt', salary = 10 },
+            [2] = { label = 'Chefarzt', salary = 15 }
         }
     }
 }
