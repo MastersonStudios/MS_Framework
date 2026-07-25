@@ -273,3 +273,16 @@ CREATE TABLE IF NOT EXISTS `ms_medic_diseases` (
   CONSTRAINT `fk_ms_medic_diseases_character`
     FOREIGN KEY (`character_id`) REFERENCES `frontier_characters` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `ms_jail_sentences` (
+  `character_id` BIGINT UNSIGNED NOT NULL,
+  `jailed_by` VARCHAR(100) NOT NULL,
+  `reason` VARCHAR(180) NOT NULL,
+  `started_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `release_at` TIMESTAMP NOT NULL,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`character_id`),
+  KEY `idx_ms_jail_release` (`release_at`),
+  CONSTRAINT `fk_ms_jail_character`
+    FOREIGN KEY (`character_id`) REFERENCES `frontier_characters` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

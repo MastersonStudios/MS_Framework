@@ -20,6 +20,7 @@ ensure MS_WeaponDamage
 ensure MS_Inventory
 ensure MS_BasicNeeds
 ensure MS_HUD
+ensure MS_Jail
 ensure MS_ClothingShop
 ensure MS_Stables
 ensure MS_Trains
@@ -38,6 +39,7 @@ add_ace group.admin frontier.worldbuilder allow
 add_ace group.admin frontier.mapeditor allow
 add_ace group.admin frontier.admin.logout allow
 add_ace group.admin frontier.admin.guarma allow
+add_ace group.admin frontier.admin.jail allow
 add_ace group.admin frontier.weapon.damage allow
 add_ace group.admin frontier.version.check allow
 # add_principal identifier.license:YOUR_LICENSE group.admin

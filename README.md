@@ -31,6 +31,7 @@ Aktuelle Framework-Version: `0.0.1`
 - `MS_Inventory` mit konfigurierbarer Kapazität, Kontextaktionen und Outfit-Drag-and-Drop
 - `MS_BasicNeeds` mit konfigurierbarem Hunger und Durst
 - `MS_HUD` mit Gesundheit, Hunger, Durst und berechneter Umgebungstemperatur
+- `MS_Jail` mit persistenter Inhaftierung im Sisika Penitentiary
 - `MS_ClothingShop` mit Charaktervorschau und gemeinsamer Einkaufsliste
 - `MS_Stables` mit Pferde-, Ausrüstungs-, Fellfarben- und Kutschenhandel
 - `MS_Trains` mit fahrbaren Zügen und konfigurierbaren Bahnhof-NPCs
@@ -53,7 +54,7 @@ Aktuelle Framework-Version: `0.0.1`
    danach
    `ensure frontier_playersync`, `ensure MS_mechat`, `ensure MS_pointing`,
    `ensure MS_Medic`, `ensure MS_WeaponDamage`, `ensure MS_Inventory`,
-   `ensure MS_BasicNeeds`, `ensure MS_HUD`,
+   `ensure MS_BasicNeeds`, `ensure MS_HUD`, `ensure MS_Jail`,
    `ensure MS_ClothingShop`, `ensure MS_Stables`, `ensure MS_Trains`,
    `ensure MS_Telegrams`,
    `ensure frontier_worldbuilder`,
@@ -73,7 +74,7 @@ Chatbefehle werden ingame mit `/` eingegeben. In der Serverkonsole entfällt
 der Schrägstrich. `<Wert>` kennzeichnet ein Pflichtargument, `[Wert]` ein
 optionales Argument.
 
-Stand Framework `0.0.1`: 33 öffentliche Befehle. Interne Keymapping-Befehle
+Stand Framework `0.0.1`: 36 öffentliche Befehle. Interne Keymapping-Befehle
 werden hier nicht aufgeführt.
 
 ### Spielerbefehle
@@ -90,6 +91,7 @@ werden hier nicht aufgeführt.
 | `/point` | Führt die Finger-Zeigegeste aus; alternativ kann `B` verwendet werden. |
 | `/healthstatus` | Öffnet die eigene Gesundheitsakte mit aktiven Krankheiten. |
 | `/medic` | Öffnet mit dem Job `medic` das Behandlungsmenü. |
+| `/jailstatus` | Zeigt die eigene verbleibende Haftzeit und den Haftgrund. |
 | `/inventory` | Öffnet `MS_Inventory`. |
 | `/clothingshop` | Öffnet den nächsten erreichbaren Bekleidungshändler. |
 | `/stables` | Öffnet den nächsten erreichbaren Stall. |
@@ -112,16 +114,20 @@ werden hier nicht aufgeführt.
 | `/guarmareset [Server-ID]` | `frontier.admin.guarma` | Setzt das Guarma-Tutorial zurück und startet es erneut; ohne ID für den eigenen Charakter. |
 | `/frameworkversion check` | `frontier.version.check` | Erzwingt unter Beachtung des konfigurierten Mindestintervalls eine neue Versionsabfrage. |
 | `/medicdisease <Server-ID> <add\|remove\|clear\|list> [Krankheit] [Schweregrad]` | `frontier.admin` | Verwaltet Krankheiten eines aktiven Charakters. |
+| `/jail <Server-ID> <Minuten> [Grund]` | `frontier.admin.jail` | Inhaftiert einen aktiven Charakter persistent in Sisika. |
+| `/unjail <Server-ID> [Grund]` | `frontier.admin.jail` | Entlässt einen Gefangenen vorzeitig. |
+| `/jailstatus <Server-ID>` | `frontier.admin.jail` | Zeigt den Haftstatus eines anderen Spielers. |
 | `/weapondamage status` | `frontier.weapon.damage` | Zeigt Waffenanzahl, Laufzeitänderungen und Revision. |
 | `/weapondamage set <WEAPON_NAME> <Multiplikator>` | `frontier.weapon.damage` | Setzt den Schaden einer Waffe bis zum nächsten Resource-Neustart. |
 | `/weapondamage reset <WEAPON_NAME>` | `frontier.weapon.damage` | Entfernt die Laufzeitänderung einer Waffe. |
 | `/weapondamage resetall` | `frontier.weapon.damage` | Entfernt alle Laufzeitänderungen am Waffenschaden. |
 
 `setjob`, `givemoney`, `logout`, `charlogout`, `guarmareset`,
-`frameworkversion`, `medicdisease` und `weapondamage` können auch in der Serverkonsole
+`frameworkversion`, `medicdisease`, `jail`, `unjail`, `jailstatus` und
+`weapondamage` können auch in der Serverkonsole
 verwendet werden. Bei `logout`, `charlogout` und `guarmareset` ist dort eine
-Server-ID erforderlich. Beispielzuweisungen für alle ACE-Rechte stehen in
-`server.cfg.example`.
+Server-ID erforderlich; bei `jailstatus` ebenfalls. Beispielzuweisungen für
+alle ACE-Rechte stehen in `server.cfg.example`.
 
 ### Medic-Befehlsbeispiele
 
@@ -282,6 +288,24 @@ Aktualisierungsintervalle, Celsius/Fahrenheit, Temperaturzonen und sämtliche
 Temperaturkorrekturen befinden sich in
 `resources/[frontier]/MS_HUD/config.lua`. Das HUD wird ohne aktiven Charakter
 und optional im Pausenmenü ausgeblendet.
+
+## MS Jail
+
+`MS_Jail` inhaftiert aktive Charaktere persistent im Sisika Penitentiary.
+Admins verwenden `/jail <Server-ID> <Minuten> [Grund]` und
+`/unjail <Server-ID> [Grund]`; das benötigte ACE-Recht lautet
+`frontier.admin.jail`.
+
+Haftzeit, Begründung und verantwortlicher Admin werden in
+`ms_jail_sentences` gespeichert. Die Restzeit läuft auch bei einem Reconnect
+weiter. Nach Ablauf wird der Charakter automatisch entlassen. Verlässt ein
+Gefangener den konfigurierten Sisika-Bereich, bringt ihn die serverseitige
+Grenzprüfung zurück in seine Zelle.
+
+Zellen, Entlassungsposition, Gefängnismittelpunkt, Radius, erlaubte Strafzeiten,
+HUD und Rechte befinden sich in `resources/[frontier]/MS_Jail/config.lua`.
+Gefangene sehen Restzeit und Haftgrund im oberen Bildschirmbereich und können
+den Status zusätzlich mit `/jailstatus` abfragen.
 
 ## MS Clothing Shop
 
