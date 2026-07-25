@@ -22,7 +22,8 @@ const state = {
     craftPointPosition: null,
     craftSession: null,
     craftingBusy: false,
-    noclip: false
+    noclip: false,
+    ghost: false
 };
 
 let toastTimer;
@@ -767,6 +768,7 @@ $('#apply-weather').addEventListener('click', () => post('execute', {
     data: { weather: state.selectedWeather, transition: Number($('#weather-transition').value) }
 }));
 $('#noclip').addEventListener('click', () => post('execute', { action: 'noclip' }));
+$('#ghost-mode').addEventListener('click', () => post('execute', { action: 'ghost' }));
 $('#teleport-coords').addEventListener('click', () => post('execute', {
     action: 'teleportCoords',
     data: {
@@ -977,6 +979,10 @@ window.addEventListener('message', ({ data }) => {
         state.noclip = data.enabled === true;
         $('#noclip').classList.toggle('active', state.noclip);
         $('#noclip').textContent = state.noclip ? 'Noclip aktiv' : 'Noclip';
+    } else if (data.action === 'ghostState') {
+        state.ghost = data.enabled === true;
+        $('#ghost-mode').classList.toggle('active', state.ghost);
+        $('#ghost-mode').textContent = state.ghost ? 'Ghost Mode aktiv' : 'Ghost Mode';
     } else if (data.action === 'openCrafting') {
         app.classList.add('hidden');
         craftingUi.classList.remove('hidden');
@@ -1008,7 +1014,7 @@ const mockData = {
     permissions: { access: true, players: true, economy: true, weather: true, world: true, crafting: true, data: true, support: true, rights: true },
     permissionDefinitions: [
         { id: 'access', label: 'ACP-Zugriff', description: 'Darf das Administrations-Control-Panel öffnen.' },
-        { id: 'players', label: 'Spielerverwaltung', description: 'Teleport, Heilen, Wiederbeleben, Einfrieren, Kick und Noclip.' },
+        { id: 'players', label: 'Spielerverwaltung', description: 'Teleport, Heilen, Wiederbeleben, Einfrieren, Kick, Ghost Mode und Noclip.' },
         { id: 'economy', label: 'Wirtschaft', description: 'Darf Geld und Items vergeben.' },
         { id: 'weather', label: 'Wetter', description: 'Darf das globale Wetter konfigurieren.' },
         { id: 'world', label: 'World Builder', description: 'Darf NPCs, Storages und Türen verwalten.' },

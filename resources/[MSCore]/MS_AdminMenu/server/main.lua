@@ -1,4 +1,5 @@
 local FrozenPlayers = {}
+local GhostPlayers = {}
 local OpenMenus = {}
 local AdminGrants = {}
 local CraftingRecipes = {}
@@ -34,6 +35,28 @@ local function audit(source, action, target, detail)
         target and tostring(target) or '-',
         detail or '-'
     ))
+end
+
+local function ghostSnapshot()
+    local snapshot = {}
+    for playerSource in pairs(GhostPlayers) do
+        snapshot[#snapshot + 1] = playerSource
+    end
+    table.sort(snapshot)
+    return snapshot
+end
+
+local function sendGhostSnapshot(target)
+    TriggerClientEvent('ms_adminmenu:client:ghostSnapshot', target, ghostSnapshot())
+end
+
+local function setGhostMode(playerSource, enabled)
+    playerSource = tonumber(playerSource)
+    if not playerSource then return false end
+    enabled = enabled == true
+    GhostPlayers[playerSource] = enabled and true or nil
+    TriggerClientEvent('ms_adminmenu:client:ghostChanged', -1, playerSource, enabled)
+    return enabled
 end
 
 local function getLicense(source)
@@ -618,6 +641,7 @@ local function setPermissions(source, data)
         AdminGrants[identifier] = nil
         MySQL.update.await('DELETE FROM mscore_admin_permissions WHERE identifier = ?', { identifier })
         OpenMenus[target] = nil
+        setGhostMode(target, false)
         TriggerClientEvent('ms_adminmenu:client:forceClose', target)
         TriggerClientEvent('mscore:client:notify', target, 'Deine ACP-Rechte wurden entzogen.')
         audit(source, 'ACP-Rechte entzogen', target)
@@ -642,6 +666,7 @@ local function setPermissions(source, data)
         permissions = permissions,
         assignedBy = assignedBy
     }
+    if permissions.players ~= true then setGhostMode(target, false) end
     audit(source, 'ACP-Rechte gespeichert', target, json.encode(permissions))
     refreshAllMenus()
     TriggerClientEvent('mscore:client:notify', target, 'Deine ACP-Rechte wurden aktualisiert.')
@@ -669,7 +694,10 @@ local function revokePermissions(source, data)
     audit(source, 'ACP-Rechte entzogen', target, displayName)
     if target then
         TriggerClientEvent('mscore:client:notify', target, 'Deine ACP-Rechte wurden entzogen.')
-        if not isAdmin(target) then TriggerClientEvent('ms_adminmenu:client:forceClose', target) end
+        if not isAdmin(target) then
+            setGhostMode(target, false)
+            TriggerClientEvent('ms_adminmenu:client:forceClose', target)
+        end
     end
     refreshAllMenus()
     return result(source, true, ('Rechteprofil %s entfernt.'):format(displayName))
@@ -891,6 +919,13 @@ RegisterNetEvent('ms_adminmenu:server:open', function()
     if not isAdmin(source) then return notify(source, 'Keine Berechtigung für das ACP.') end
     OpenMenus[source] = true
     TriggerClientEvent('ms_adminmenu:client:open', source, payload(source))
+    sendGhostSnapshot(source)
+end)
+
+RegisterNetEvent('ms_adminmenu:server:requestGhostSnapshot', function()
+    local source = source
+    if onCooldown(source, 'ghostSnapshot', 1000) then return end
+    sendGhostSnapshot(source)
 end)
 
 RegisterNetEvent('ms_adminmenu:server:close', function()
@@ -970,6 +1005,15 @@ RegisterNetEvent('ms_adminmenu:server:execute', function(action, data)
         end
         TriggerClientEvent('ms_adminmenu:client:toggleNoclip', source)
         audit(source, 'Noclip umgeschaltet', source)
+        return
+    end
+
+    if action == 'ghost' then
+        if not hasPermission(source, 'players') then
+            return result(source, false, 'Keine Berechtigung für den Ghost Mode.')
+        end
+        local enabled = setGhostMode(source, not GhostPlayers[source])
+        audit(source, 'Ghost Mode', source, enabled and 'aktiviert' or 'deaktiviert')
         return
     end
 
@@ -1309,6 +1353,7 @@ AddEventHandler('mscore:server:playerLoaded', function(source, player)
     end
     SetTimeout(1200, function()
         if not GetPlayerName(source) then return end
+        sendGhostSnapshot(source)
         syncCraftingPoints(source)
         local weather = weatherById(CurrentWeather)
         if weather then
@@ -1339,6 +1384,7 @@ AddEventHandler('mscore:server:playerUnloaded', function(source)
     local player = exports.MSCore:GetPlayer(source)
     if player then RecentKills[player.characterId] = nil end
     FrozenPlayers[source] = nil
+    if GhostPlayers[source] then setGhostMode(source, false) end
     CraftingLocks[source] = nil
     TriggerClientEvent('ms_adminmenu:client:setFrozen', source, false)
     refreshAllMenus()
@@ -1348,6 +1394,7 @@ AddEventHandler('playerDropped', function()
     local player = exports.MSCore:GetPlayer(source)
     if player then RecentKills[player.characterId] = nil end
     FrozenPlayers[source] = nil
+    if GhostPlayers[source] then setGhostMode(source, false) end
     OpenMenus[source] = nil
     CraftingLocks[source] = nil
     local prefix = ('%d:'):format(source)

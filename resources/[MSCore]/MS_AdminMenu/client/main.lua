@@ -1,7 +1,10 @@
 local MenuOpen = false
 local CraftingOpen = false
 local NoClip = false
+local GhostMode = false
 local Frozen = false
+local GhostPlayers = {}
+local GhostEntities = {}
 local CraftingPoints = {}
 local NearestCraftingPoint = nil
 local NoclipInput = {
@@ -29,6 +32,8 @@ local function openAcp(data)
     CraftingOpen = false
     SetNuiFocus(true, true)
     SendNUIMessage({ action = 'open', data = data })
+    SendNUIMessage({ action = 'noclipState', enabled = NoClip })
+    SendNUIMessage({ action = 'ghostState', enabled = GhostMode })
 end
 
 local function distance(coords, point)
@@ -85,6 +90,92 @@ local function setNoclip(enabled)
     end
     SendNUIMessage({ action = 'noclipState', enabled = NoClip })
     TriggerEvent('mscore:client:notify', NoClip and 'Noclip aktiviert.' or 'Noclip deaktiviert.')
+end
+
+local function playerPedFromServerId(playerSource)
+    if playerSource == GetPlayerServerId(PlayerId()) then return PlayerPedId() end
+    local playerId = GetPlayerFromServerId(playerSource)
+    if playerId == -1 or not NetworkIsPlayerActive(playerId) then return nil end
+    local ped = GetPlayerPed(playerId)
+    return ped and ped ~= 0 and ped or nil
+end
+
+local function restoreGhostEntity(entity)
+    if not entity or entity == 0 or not DoesEntityExist(entity) then return end
+    SetEntityVisible(entity, true, false)
+    if ResetEntityAlpha then
+        ResetEntityAlpha(entity)
+    elseif SetEntityAlpha then
+        SetEntityAlpha(entity, 255, false)
+    end
+    if SetPedCanBeTargetted then SetPedCanBeTargetted(entity, true) end
+end
+
+local function applyGhostVisual(playerSource)
+    local ped = playerPedFromServerId(playerSource)
+    if not ped then return end
+
+    local previous = GhostEntities[playerSource]
+    if previous and previous ~= ped then restoreGhostEntity(previous) end
+    GhostEntities[playerSource] = ped
+
+    SetEntityVisible(ped, false, false)
+    if SetEntityAlpha then SetEntityAlpha(ped, 0, false) end
+    if SetPedCanBeTargetted then SetPedCanBeTargetted(ped, false) end
+    if playerSource == GetPlayerServerId(PlayerId())
+        and NetworkSetEntityInvisibleToNetwork then
+        NetworkSetEntityInvisibleToNetwork(ped, true)
+    end
+end
+
+local function setGhostState(playerSource, enabled, notifySelf)
+    playerSource = tonumber(playerSource)
+    if not playerSource then return end
+    enabled = enabled == true
+
+    if enabled then
+        GhostPlayers[playerSource] = true
+        applyGhostVisual(playerSource)
+    else
+        local current = playerPedFromServerId(playerSource)
+        restoreGhostEntity(GhostEntities[playerSource])
+        if current ~= GhostEntities[playerSource] then restoreGhostEntity(current) end
+        GhostPlayers[playerSource] = nil
+        GhostEntities[playerSource] = nil
+    end
+
+    if playerSource == GetPlayerServerId(PlayerId()) then
+        GhostMode = enabled
+        local ped = PlayerPedId()
+        if not enabled and NetworkSetEntityInvisibleToNetwork then
+            NetworkSetEntityInvisibleToNetwork(ped, false)
+        end
+        SendNUIMessage({ action = 'ghostState', enabled = GhostMode })
+        if notifySelf == true then
+            TriggerEvent(
+                'mscore:client:notify',
+                GhostMode and 'Ghost Mode aktiviert.' or 'Ghost Mode deaktiviert.'
+            )
+        end
+    end
+end
+
+local function applyGhostSnapshot(snapshot)
+    local replacement = {}
+    local removals = {}
+    for _, rawSource in ipairs(type(snapshot) == 'table' and snapshot or {}) do
+        local playerSource = tonumber(rawSource)
+        if playerSource then replacement[playerSource] = true end
+    end
+    for playerSource in pairs(GhostPlayers) do
+        if not replacement[playerSource] then removals[#removals + 1] = playerSource end
+    end
+    for _, playerSource in ipairs(removals) do
+        setGhostState(playerSource, false, false)
+    end
+    for playerSource in pairs(replacement) do
+        setGhostState(playerSource, true, false)
+    end
 end
 
 local function guarmaOnboardingActive()
@@ -184,6 +275,12 @@ end)
 
 RegisterNetEvent('ms_adminmenu:client:toggleNoclip', function()
     setNoclip(not NoClip)
+end)
+
+RegisterNetEvent('ms_adminmenu:client:ghostSnapshot', applyGhostSnapshot)
+
+RegisterNetEvent('ms_adminmenu:client:ghostChanged', function(playerSource, enabled)
+    setGhostState(playerSource, enabled, playerSource == GetPlayerServerId(PlayerId()))
 end)
 
 RegisterNetEvent('ms_adminmenu:client:craftingSync', function(points)
@@ -395,6 +492,22 @@ CreateThread(function()
 end)
 
 CreateThread(function()
+    Wait(500)
+    TriggerServerEvent('ms_adminmenu:server:requestGhostSnapshot')
+    while true do
+        if next(GhostPlayers) == nil then
+            Wait(500)
+        else
+            for playerSource in pairs(GhostPlayers) do applyGhostVisual(playerSource) end
+            Wait(math.max(
+                25,
+                math.floor(tonumber(AdminMenuConfig.GhostRefreshIntervalMs) or 100)
+            ))
+        end
+    end
+end)
+
+CreateThread(function()
     while true do
         if MenuOpen or CraftingOpen or worldInteractionNearby() then
             NearestCraftingPoint = nil
@@ -426,6 +539,7 @@ RegisterNetEvent('mscore:client:prepareLogout', function()
     if MenuOpen then TriggerServerEvent('ms_adminmenu:server:close') end
     closeUi()
     if NoClip then setNoclip(false) end
+    setGhostState(GetPlayerServerId(PlayerId()), false, false)
     Frozen = false
 end)
 
@@ -433,6 +547,13 @@ AddEventHandler('onResourceStop', function(resource)
     if resource ~= GetCurrentResourceName() then return end
     closeUi()
     if NoClip then setNoclip(false) end
+    local ghostSources = {}
+    for playerSource in pairs(GhostPlayers) do
+        ghostSources[#ghostSources + 1] = playerSource
+    end
+    for _, playerSource in ipairs(ghostSources) do
+        setGhostState(playerSource, false, false)
+    end
     Frozen = false
     FreezeEntityPosition(PlayerPedId(), false)
     SetEntityInvincible(PlayerPedId(), false)

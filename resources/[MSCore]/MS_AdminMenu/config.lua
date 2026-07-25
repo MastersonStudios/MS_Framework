@@ -24,6 +24,7 @@ AdminMenuConfig.SupportLogBatchSize = 50
 AdminMenuConfig.SupportLogFlushInterval = 500
 AdminMenuConfig.SupportLogQueueLimit = 5000
 AdminMenuConfig.SupportLogMinimumDamage = 1
+AdminMenuConfig.GhostRefreshIntervalMs = 100
 
 AdminMenuConfig.Permissions = {
     {
@@ -34,7 +35,7 @@ AdminMenuConfig.Permissions = {
     {
         id = 'players',
         label = 'Spielerverwaltung',
-        description = 'Teleport, Heilen, Wiederbeleben, Einfrieren, Kick und Noclip.'
+        description = 'Teleport, Heilen, Wiederbeleben, Einfrieren, Kick, Ghost Mode und Noclip.'
     },
     {
         id = 'economy',

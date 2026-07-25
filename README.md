@@ -608,6 +608,7 @@ Enthalten sind:
 - Bargeld- und Bankgutschriften mit konfigurierbarem Betragslimit
 - persistente Itemvergabe aus dem Core-Itemkatalog
 - Goto, Bring, Heilen, Wiederbeleben, Einfrieren und Kick
+- serverweit synchronisierter Ghost Mode für unsichtbares Herumlaufen
 - Noclip sowie Teleport zu frei eingegebenen Koordinaten
 - vollständig integrierter World Builder für NPCs, Storages und Türen
 - persistente, lizenzgebundene ACP-Rechte mit getrennten Funktionsbereichen
@@ -632,6 +633,12 @@ in `MS_AdminMenu/config.lua`. Der Itemkatalog und die Stack-Limits befinden
 sich in der Tabelle `mscore_items`. Die Einträge aus
 `MSCore/config.lua` werden beim ersten Start als geschützte Systemitems
 in die Tabelle übernommen.
+
+Der Ghost Mode benötigt die ACP-Berechtigung `players`. Er macht den
+Administrator für alle verbundenen Spieler unsichtbar, lässt die normale
+Laufbewegung aktiv und wird bei Rechteentzug, Charakter-Logout, Disconnect
+oder Resource-Stopp automatisch beendet. Das Aktualisierungsintervall ist über
+`AdminMenuConfig.GhostRefreshIntervalMs` konfigurierbar.
 
 Der Menüpunkt **Data Admin** konfiguriert technischen Namen, Anzeigenamen,
 Beschreibung, Kategorie, Seltenheit, Stack-Limit, Gewicht, Benutzbarkeit,

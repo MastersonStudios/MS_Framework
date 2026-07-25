@@ -91,6 +91,12 @@ h4 { color: var(--gold-bright); font: 700 10px/1 Arial, sans-serif; letter-spaci
 .muted { color: var(--muted); font-size: 12px; }
 
 .topbar-actions { justify-content: flex-end; }
+.page-header-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+}
 .status-pill, .count-badge {
     padding: 7px 10px;
     border: 1px solid var(--line);
