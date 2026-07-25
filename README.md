@@ -17,6 +17,7 @@ Ein schlankes, eigenständiges Roleplay-Framework für RedM.
 - Admin-Logout zurück zur Charakterauswahl
 - Guarma-Onboarding mit Sturm-Cinematic und Bewegungstutorial
 - grafisches Adminmenü mit Wetter-, Spieler-, Geld- und Itemverwaltung
+- grafischer World Builder für NPCs, Storages und sperrbare Türen
 
 ## Voraussetzungen
 
@@ -31,9 +32,10 @@ Ein schlankes, eigenständiges Roleplay-Framework für RedM.
 3. `server.cfg.example` nach `server.cfg` kopieren und Connection-String sowie
    Lizenzschlüssel anpassen.
 4. In der Konsole zuerst `ensure frontier_core` und danach
-   `ensure frontier_adminmenu`, `ensure frontier_guarma_onboarding`,
-   `ensure frontier_mapeditor`, `ensure frontier_adminlogout` sowie
-   `ensure frontier_example` ausführen (oder den Server neu starten).
+   `ensure frontier_adminmenu`, `ensure frontier_worldbuilder`,
+   `ensure frontier_guarma_onboarding`, `ensure frontier_mapeditor`,
+   `ensure frontier_adminlogout` sowie `ensure frontier_example` ausführen
+   (oder den Server neu starten).
 5. Zum Testen verbinden und `/characters` verwenden.
 
 Beim ersten Beitritt öffnet sich die Charaktererstellung. In
@@ -106,6 +108,26 @@ Benötigt wird das ACE-Recht `frontier.admin.menu`. Wettertypen,
 Betragsgrenzen, Standardtaste und weitere Einstellungen stehen in
 `frontier_adminmenu/config.lua`. Der Itemkatalog und die Stack-Limits befinden
 sich in `frontier_core/config.lua`.
+
+## World Builder
+
+Mit `F9` oder `/worldbuilder` öffnet die Resource `frontier_worldbuilder` ein
+grafisches Verwaltungsinterface für persistente Weltfunktionen:
+
+- NPCs mit frei wählbarem Ped-Modell, Position, Ausrichtung und Szenario
+- globale Storages mit einem von allen berechtigten Spielern geteilten Bestand
+- private Storages mit einem automatisch getrennten Bestand pro Charakter
+- Kapazitätsgrenzen und optionaler Jobzugriff für Storages
+- Erfassung vorhandener Türmodelle direkt über die Blickrichtung
+- sperrbare Türen mit optionaler Jobberechtigung
+- Erstellen, Anzeigen, Umschalten und Löschen über die grafische Oberfläche
+
+Spieler öffnen nahe Storages und berechtigte Türen mit `E`. Itemtransfers
+werden serverseitig validiert und unmittelbar gespeichert. Das benötigte
+ACE-Recht lautet `frontier.worldbuilder`; Limits, Tasten, NPC-Vorlagen und
+Streamingdistanzen stehen in `frontier_worldbuilder/config.lua`. Die Resource
+erstellt ihre Tabellen bei Bedarf selbst; sie sind zusätzlich in
+`database/schema.sql` enthalten.
 
 ## Guarma-Onboarding
 

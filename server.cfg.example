@@ -11,6 +11,7 @@ set mysql_connection_string "mysql://redm:password@127.0.0.1/redm?charset=utf8mb
 ensure oxmysql
 ensure frontier_core
 ensure frontier_adminmenu
+ensure frontier_worldbuilder
 ensure frontier_guarma_onboarding
 ensure frontier_mapeditor
 ensure frontier_adminlogout
@@ -19,6 +20,7 @@ ensure frontier_example
 # Framework admins
 add_ace group.admin frontier.admin allow
 add_ace group.admin frontier.admin.menu allow
+add_ace group.admin frontier.worldbuilder allow
 add_ace group.admin frontier.mapeditor allow
 add_ace group.admin frontier.admin.logout allow
 add_ace group.admin frontier.admin.guarma allow
