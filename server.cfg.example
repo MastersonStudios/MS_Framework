@@ -2,7 +2,8 @@
 set gamename rdr3
 set sv_enforceGameBuild 1491
 set onesync on
-sv_maxclients 32
+set sv_stateBagStrictMode true
+sv_maxclients 64
 sv_licenseKey "CHANGE_ME"
 
 # Database
@@ -10,6 +11,7 @@ set mysql_connection_string "mysql://redm:password@127.0.0.1/redm?charset=utf8mb
 
 ensure oxmysql
 ensure frontier_core
+ensure frontier_playersync
 ensure frontier_worldbuilder
 ensure frontier_adminmenu
 ensure frontier_guarma_onboarding

@@ -20,6 +20,7 @@ Ein schlankes, eigenständiges Roleplay-Framework für RedM.
 - grafischer World Builder für NPCs, Storages und sperrbare Türen
 - persistente Crafting-Rezepte und frei platzierbare Crafting-Punkte
 - Data Admin mit Datenbank-Itemcreator und durchsuchbarem Prop-Katalog
+- serverautoritatives Spieler-Presence-Sync für bis zu 64 Slots
 
 ## Voraussetzungen
 
@@ -33,8 +34,8 @@ Ein schlankes, eigenständiges Roleplay-Framework für RedM.
 2. Die Ordner aus `resources/` in den `resources`-Ordner des Servers kopieren.
 3. `server.cfg.example` nach `server.cfg` kopieren und Connection-String sowie
    Lizenzschlüssel anpassen.
-4. In der Konsole zuerst `ensure frontier_core` und danach
-   `ensure frontier_worldbuilder`, `ensure frontier_adminmenu`,
+4. In der Konsole zuerst `ensure frontier_core`, danach
+   `ensure frontier_playersync`, `ensure frontier_worldbuilder`, `ensure frontier_adminmenu`,
    `ensure frontier_guarma_onboarding`, `ensure frontier_mapeditor`,
    `ensure frontier_adminlogout` sowie `ensure frontier_example` ausführen
    (oder den Server neu starten).
@@ -59,6 +60,30 @@ Weitere Beispiele stehen in `resources/[frontier]/frontier_example`.
 
 Items werden serverseitig anhand von `frontier_core/config.lua` validiert und
 im Charakter-Inventar innerhalb der persistenten Metadaten gespeichert.
+
+## Spielersynchronisation
+
+Die Resource `frontier_playersync` ergänzt OneSync um einen serverautoritativ
+verwalteten Presence- und Charakterdaten-Cache für bis zu 64 Spieler. OneSync
+bleibt für Peds, Bewegung und andere Netzwerk-Entities zuständig; die Resource
+verteilt nur Änderungen an öffentlichen Framework-Daten und Routing-Buckets.
+Geld, Inventar, Geburtsdatum und Metadaten werden nicht an andere Spieler
+übertragen.
+
+```lua
+-- Client: alle geladenen Charaktere
+local players = exports.frontier_playersync:GetPlayers()
+
+-- Client: aktuell gestreamte Spieler im Umkreis von 25 Metern
+local nearby = exports.frontier_playersync:GetNearbyPlayers(25.0, false)
+
+-- Server oder Client: öffentliche Daten anhand der Server-ID
+local player = exports.frontier_playersync:GetPlayerState(serverId)
+```
+
+Die Beispielkonfiguration aktiviert OneSync, strikte serverseitige State Bags
+und `sv_maxclients 64`. Mehr als 48 Slots setzen einen passenden Tarif im
+Cfx.re-Portal voraus.
 
 ## Mapeditor
 
