@@ -2,8 +2,8 @@ fx_version 'cerulean'
 game 'rdr3'
 
 author 'Frontier Framework'
-description 'Graphical and server-secured administration menu'
-version '1.0.0'
+description 'Administration Control Panel with permissions, world builder and crafting'
+version '2.0.0'
 
 lua54 'yes'
 
@@ -11,7 +11,10 @@ ui_page 'html/index.html'
 
 shared_script 'config.lua'
 client_script 'client/main.lua'
-server_script 'server/main.lua'
+server_scripts {
+    '@oxmysql/lib/MySQL.lua',
+    'server/main.lua'
+}
 
 files {
     'html/index.html',
@@ -21,5 +24,7 @@ files {
 
 dependencies {
     '/onesync',
-    'frontier_core'
+    'oxmysql',
+    'frontier_core',
+    'frontier_worldbuilder'
 }

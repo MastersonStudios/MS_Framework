@@ -4,172 +4,292 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="style.css">
-    <title>Frontier Administration</title>
+    <title>Frontier ACP</title>
 </head>
 <body>
     <main id="app" class="app hidden">
-        <div class="menu">
+        <div class="acp-shell">
             <header class="topbar">
                 <div class="brand">
                     <span class="brand-mark">F</span>
                     <div>
                         <p class="eyebrow">FRONTIER FRAMEWORK</p>
-                        <h1>Administration</h1>
+                        <h1>Administration Control Panel</h1>
                     </div>
                 </div>
                 <div class="topbar-actions">
                     <span id="weather-status" class="status-pill">Wetter: –</span>
                     <span id="online-status" class="status-pill">0 Spieler</span>
-                    <button id="noclip" class="button ghost" type="button">Noclip</button>
-                    <button id="refresh" class="icon-button" type="button" aria-label="Aktualisieren">↻</button>
-                    <button id="close" class="icon-button" type="button" aria-label="Schließen">×</button>
+                    <button id="refresh" class="icon-button" type="button" title="Aktualisieren">↻</button>
+                    <button id="close" class="icon-button" type="button" title="Schließen">×</button>
                 </div>
             </header>
 
-            <div class="layout">
-                <aside class="roster">
-                    <div class="section-heading">
-                        <div>
-                            <p class="eyebrow">LIVE-ÜBERSICHT</p>
-                            <h2>Spieler</h2>
-                        </div>
-                        <span id="player-count">0</span>
+            <div class="acp-layout">
+                <aside class="sidebar">
+                    <div class="sidebar-label">CONTROL CENTER</div>
+                    <nav id="main-nav" class="main-nav">
+                        <button class="nav-button active" data-tab="overview" data-permission="access" type="button">
+                            <span>⌂</span><span>Übersicht</span>
+                        </button>
+                        <button class="nav-button" data-tab="players" data-permission="players,economy" type="button">
+                            <span>♟</span><span>Spieler</span>
+                        </button>
+                        <button class="nav-button" data-tab="world" data-permission="world" type="button">
+                            <span>◇</span><span>World Builder</span>
+                        </button>
+                        <button class="nav-button" data-tab="crafting" data-permission="crafting" type="button">
+                            <span>⚒</span><span>Crafting</span>
+                        </button>
+                        <button class="nav-button" data-tab="rights" data-permission="rights" type="button">
+                            <span>⚿</span><span>Adminrechte</span>
+                        </button>
+                    </nav>
+                    <div class="sidebar-footer">
+                        <span class="online-dot"></span>
+                        <div><strong>ACP verbunden</strong><small>Öffnen mit F2</small></div>
                     </div>
-                    <label class="search">
-                        <span>⌕</span>
-                        <input id="player-search" type="search" placeholder="Name oder ID suchen">
-                    </label>
-                    <div id="player-list" class="player-list"></div>
                 </aside>
 
-                <section class="workspace">
-                    <div id="empty-selection" class="empty-selection">
-                        <span class="compass">✦</span>
-                        <h2>Spieler auswählen</h2>
-                        <p>Wähle links einen aktiven Charakter für Support- und Verwaltungsaktionen.</p>
-                    </div>
-
-                    <div id="player-panel" class="player-panel hidden">
-                        <header class="player-header">
-                            <div>
-                                <p id="selected-server-name" class="eyebrow"></p>
-                                <h2 id="selected-name"></h2>
-                                <p id="selected-meta" class="muted"></p>
-                            </div>
-                            <span id="selected-id" class="id-badge"></span>
+                <section class="content">
+                    <section class="page active" data-page="overview">
+                        <header class="page-header">
+                            <div><p class="eyebrow">SERVERZENTRALE</p><h2>Übersicht</h2></div>
+                            <button id="noclip" class="button ghost permission-players" type="button">Noclip</button>
                         </header>
-
-                        <div class="stats">
-                            <article>
-                                <span>BARGELD</span>
-                                <strong id="selected-cash">$0</strong>
+                        <div class="metric-grid">
+                            <article class="metric"><span>SPIELER ONLINE</span><strong id="metric-players">0</strong><small>aktive Charaktere</small></article>
+                            <article class="metric"><span>ACP-ADMINS</span><strong id="metric-admins">0</strong><small>persistente Profile</small></article>
+                            <article class="metric"><span>WORLD-EINTRÄGE</span><strong id="metric-world">0</strong><small>NPCs, Lager und Türen</small></article>
+                            <article class="metric"><span>CRAFTING</span><strong id="metric-crafting">0</strong><small>Rezepte und Punkte</small></article>
+                        </div>
+                        <div class="two-column">
+                            <article class="panel permission-weather">
+                                <div class="panel-heading"><div><p class="eyebrow">UMGEBUNG</p><h3>Wetterkonfigurator</h3></div></div>
+                                <div id="weather-list" class="weather-list"></div>
+                                <label class="range-label">
+                                    <span>Übergangszeit</span><strong id="transition-value">8s</strong>
+                                    <input id="weather-transition" type="range" min="0" max="30" step="1" value="8">
+                                </label>
+                                <button id="apply-weather" class="button primary full" type="button">Wetter anwenden</button>
                             </article>
-                            <article>
-                                <span>BANK</span>
-                                <strong id="selected-bank">$0</strong>
-                            </article>
-                            <article>
-                                <span>GESUNDHEIT</span>
-                                <strong id="selected-health">0</strong>
-                            </article>
-                            <article>
-                                <span>INVENTAR</span>
-                                <strong id="selected-items">0</strong>
+                            <article class="panel permission-players">
+                                <div class="panel-heading"><div><p class="eyebrow">SCHNELLREISE</p><h3>Koordinaten-Teleport</h3></div></div>
+                                <div class="coord-grid">
+                                    <label><span>X</span><input id="coord-x" type="number" step="0.01" placeholder="0.00"></label>
+                                    <label><span>Y</span><input id="coord-y" type="number" step="0.01" placeholder="0.00"></label>
+                                    <label><span>Z</span><input id="coord-z" type="number" step="0.01" placeholder="0.00"></label>
+                                    <label><span>Heading</span><input id="coord-w" type="number" step="0.01" placeholder="0.00"></label>
+                                </div>
+                                <button id="teleport-coords" class="button primary full" type="button">Teleportieren</button>
+                                <div class="notice"><strong>Sicherheitsprüfung</strong><span>Alle Koordinaten und Aktionen werden serverseitig geprüft und protokolliert.</span></div>
                             </article>
                         </div>
+                    </section>
 
-                        <section class="panel-block">
-                            <div class="block-heading">
-                                <div>
-                                    <p class="eyebrow">SCHNELLAKTIONEN</p>
-                                    <h3>Spielerverwaltung</h3>
+                    <section class="page" data-page="players">
+                        <header class="page-header">
+                            <div><p class="eyebrow">LIVE-VERWALTUNG</p><h2>Spieler</h2></div>
+                            <span id="player-count" class="count-badge">0</span>
+                        </header>
+                        <div class="split-view">
+                            <aside class="list-panel">
+                                <label class="search"><span>⌕</span><input id="player-search" type="search" placeholder="Name oder ID suchen"></label>
+                                <div id="player-list" class="record-list"></div>
+                            </aside>
+                            <div id="player-empty" class="empty-state"><span>♟</span><h3>Spieler auswählen</h3><p>Wähle einen aktiven Charakter für Verwaltungsaktionen.</p></div>
+                            <div id="player-detail" class="detail-panel hidden">
+                                <header class="detail-header">
+                                    <div><p id="selected-server-name" class="eyebrow"></p><h3 id="selected-name"></h3><p id="selected-meta" class="muted"></p></div>
+                                    <span id="selected-id" class="count-badge"></span>
+                                </header>
+                                <div class="stat-row">
+                                    <div><span>BARGELD</span><strong id="selected-cash">$0</strong></div>
+                                    <div><span>BANK</span><strong id="selected-bank">$0</strong></div>
+                                    <div><span>LEBEN</span><strong id="selected-health">0</strong></div>
+                                    <div><span>ITEMS</span><strong id="selected-items">0</strong></div>
+                                </div>
+                                <section class="action-block permission-economy">
+                                    <h4>Wirtschaft</h4>
+                                    <div class="inline-form">
+                                        <select id="money-account"><option value="cash">Bargeld</option><option value="bank">Bank</option></select>
+                                        <input id="money-amount" type="number" min="1" value="100" placeholder="Betrag">
+                                        <button id="give-money" class="button primary" type="button">Geld geben</button>
+                                    </div>
+                                    <div class="inline-form">
+                                        <select id="item-name"></select>
+                                        <input id="item-amount" type="number" min="1" value="1" placeholder="Anzahl">
+                                        <button id="give-item" class="button primary" type="button">Item geben</button>
+                                    </div>
+                                </section>
+                                <section class="action-block permission-players">
+                                    <h4>Grundfunktionen</h4>
+                                    <div class="button-grid">
+                                        <button data-player-action="goto" class="button ghost" type="button">Goto</button>
+                                        <button data-player-action="bring" class="button ghost" type="button">Bring</button>
+                                        <button data-player-action="heal" class="button ghost" type="button">Heilen</button>
+                                        <button data-player-action="revive" class="button ghost" type="button">Wiederbeleben</button>
+                                        <button data-player-action="freeze" id="freeze-player" class="button ghost" type="button">Einfrieren</button>
+                                    </div>
+                                </section>
+                                <section class="action-block danger-zone permission-players">
+                                    <h4>Moderation</h4>
+                                    <div class="inline-form">
+                                        <input id="kick-reason" type="text" maxlength="120" placeholder="Kick-Grund">
+                                        <button id="kick-player" class="button danger" type="button">Spieler kicken</button>
+                                    </div>
+                                </section>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="page" data-page="world">
+                        <header class="page-header">
+                            <div><p class="eyebrow">PERSISTENTE WELT</p><h2>World Builder</h2></div>
+                            <div class="segmented" id="world-tabs">
+                                <button class="active" data-world-tab="npc" type="button">NPCs</button>
+                                <button data-world-tab="storage" type="button">Storages</button>
+                                <button data-world-tab="door" type="button">Türen</button>
+                            </div>
+                        </header>
+                        <div class="builder-layout">
+                            <div class="builder-form">
+                                <form id="npc-form" class="world-form active" data-world-form="npc">
+                                    <h3>NPC platzieren</h3>
+                                    <label><span>Bezeichnung</span><input id="npc-label" maxlength="64" required placeholder="z. B. Bahnhofsvorsteher"></label>
+                                    <label><span>Ped-Modell</span><input id="npc-model" list="npc-models" maxlength="100" required placeholder="u_m_m_..."></label>
+                                    <datalist id="npc-models"></datalist>
+                                    <label><span>Szenario</span><input id="npc-scenario" list="npc-scenarios" maxlength="100" placeholder="Optional"></label>
+                                    <datalist id="npc-scenarios"></datalist>
+                                    <button class="button capture world-position" data-kind="npc" type="button">Position vor mir übernehmen</button>
+                                    <div id="npc-position" class="position-readout">Noch keine Position erfasst</div>
+                                    <button class="button primary full" type="submit">NPC erstellen</button>
+                                </form>
+                                <form id="storage-form" class="world-form" data-world-form="storage">
+                                    <h3>Storage erstellen</h3>
+                                    <label><span>Bezeichnung</span><input id="storage-label" maxlength="64" required placeholder="z. B. Sheriff-Lager"></label>
+                                    <div class="form-grid">
+                                        <label><span>Typ</span><select id="storage-type"><option value="global">Global</option><option value="private">Privat je Charakter</option></select></label>
+                                        <label><span>Kapazität</span><input id="storage-capacity" type="number" min="1" value="100"></label>
+                                        <label><span>Jobzugriff</span><input id="storage-job" maxlength="32" placeholder="Leer = alle"></label>
+                                        <label><span>Radius</span><input id="storage-radius" type="number" min="1" max="5" step="0.1" value="2"></label>
+                                    </div>
+                                    <button class="button capture world-position" data-kind="storage" type="button">Position übernehmen</button>
+                                    <div id="storage-position" class="position-readout">Noch keine Position erfasst</div>
+                                    <button class="button primary full" type="submit">Storage erstellen</button>
+                                </form>
+                                <form id="door-form" class="world-form" data-world-form="door">
+                                    <h3>Tür erfassen</h3>
+                                    <label><span>Bezeichnung</span><input id="door-label" maxlength="64" required placeholder="z. B. Sheriff-Haupteingang"></label>
+                                    <div class="form-grid">
+                                        <label><span>Jobzugriff</span><input id="door-job" maxlength="32" placeholder="Leer = alle"></label>
+                                        <label><span>Radius</span><input id="door-radius" type="number" min="1" max="5" step="0.1" value="2"></label>
+                                    </div>
+                                    <button id="capture-door" class="button capture" type="button">Tür anvisieren</button>
+                                    <div id="door-position" class="position-readout">Noch keine Tür erfasst</div>
+                                    <label class="checkbox-row"><input id="door-locked" type="checkbox" checked><span>Beim Erstellen abschließen</span></label>
+                                    <button class="button primary full" type="submit">Tür erstellen</button>
+                                </form>
+                            </div>
+                            <div class="builder-records">
+                                <div class="panel-heading"><div><p class="eyebrow">DEFINITIONEN</p><h3 id="world-list-title">NPCs</h3></div><span id="world-count" class="count-badge">0</span></div>
+                                <label class="search"><span>⌕</span><input id="world-search" type="search" placeholder="Name oder ID suchen"></label>
+                                <div id="world-list" class="card-list"></div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="page" data-page="crafting">
+                        <header class="page-header">
+                            <div><p class="eyebrow">HERSTELLUNGSSYSTEM</p><h2>Crafting-Verwaltung</h2></div>
+                            <div class="segmented" id="craft-admin-tabs">
+                                <button class="active" data-craft-tab="recipes" type="button">Rezepte</button>
+                                <button data-craft-tab="points" type="button">Punkte</button>
+                            </div>
+                        </header>
+                        <div class="craft-admin-view active" data-craft-view="recipes">
+                            <div class="builder-layout">
+                                <form id="recipe-form" class="builder-form">
+                                    <h3>Rezept erstellen</h3>
+                                    <label><span>Bezeichnung</span><input id="recipe-label" maxlength="64" required placeholder="z. B. Starker Verband"></label>
+                                    <label><span>Beschreibung</span><textarea id="recipe-description" maxlength="255" placeholder="Kurze Beschreibung"></textarea></label>
+                                    <div class="form-grid">
+                                        <label><span>Ergebnis</span><select id="recipe-output"></select></label>
+                                        <label><span>Anzahl</span><input id="recipe-output-amount" type="number" min="1" value="1"></label>
+                                        <label><span>Dauer (ms)</span><input id="recipe-duration" type="number" min="1" value="2500"></label>
+                                    </div>
+                                    <div class="ingredient-heading"><span>Zutaten</span><button id="add-ingredient" class="mini-button" type="button">+ Zutat</button></div>
+                                    <div id="ingredient-list" class="ingredient-list"></div>
+                                    <button class="button primary full" type="submit">Rezept speichern</button>
+                                </form>
+                                <div class="builder-records">
+                                    <div class="panel-heading"><div><p class="eyebrow">REZEPTKATALOG</p><h3>Aktive Rezepte</h3></div><span id="recipe-count" class="count-badge">0</span></div>
+                                    <div id="recipe-list" class="card-list"></div>
                                 </div>
                             </div>
-                            <div class="action-grid">
-                                <button class="action" data-player-action="goto" type="button"><span>→</span>Goto</button>
-                                <button class="action" data-player-action="bring" type="button"><span>←</span>Bring</button>
-                                <button class="action" data-player-action="heal" type="button"><span>+</span>Heilen</button>
-                                <button class="action" data-player-action="revive" type="button"><span>✚</span>Wiederbeleben</button>
-                                <button id="freeze-action" class="action" data-player-action="freeze" type="button"><span>◆</span>Einfrieren</button>
+                        </div>
+                        <div class="craft-admin-view" data-craft-view="points">
+                            <div class="builder-layout">
+                                <form id="craft-point-form" class="builder-form">
+                                    <h3>Crafting-Punkt erstellen</h3>
+                                    <label><span>Bezeichnung</span><input id="craft-point-label" maxlength="64" required placeholder="z. B. Werkbank Valentine"></label>
+                                    <div class="form-grid">
+                                        <label><span>Jobzugriff</span><input id="craft-point-job" maxlength="32" placeholder="Leer = alle"></label>
+                                        <label><span>Radius</span><input id="craft-point-radius" type="number" min="1" max="5" step="0.1" value="2"></label>
+                                    </div>
+                                    <div class="ingredient-heading"><span>Verfügbare Rezepte</span></div>
+                                    <div id="point-recipe-options" class="check-list"></div>
+                                    <button id="capture-craft-point" class="button capture" type="button">Position übernehmen</button>
+                                    <div id="craft-point-position" class="position-readout">Noch keine Position erfasst</div>
+                                    <button class="button primary full" type="submit">Crafting-Punkt erstellen</button>
+                                </form>
+                                <div class="builder-records">
+                                    <div class="panel-heading"><div><p class="eyebrow">INTERAKTIONSPUNKTE</p><h3>Crafting-Punkte</h3></div><span id="craft-point-count" class="count-badge">0</span></div>
+                                    <div id="craft-point-list" class="card-list"></div>
+                                </div>
                             </div>
-                        </section>
-
-                        <div class="grant-grid">
-                            <form id="money-form" class="panel-block">
-                                <p class="eyebrow">WIRTSCHAFT</p>
-                                <h3>Geld hinzufügen</h3>
-                                <label>
-                                    <span>Konto</span>
-                                    <select id="money-account">
-                                        <option value="cash">Bargeld</option>
-                                        <option value="bank">Bankkonto</option>
-                                    </select>
-                                </label>
-                                <label>
-                                    <span>Betrag</span>
-                                    <input id="money-amount" type="number" min="1" value="100">
-                                </label>
-                                <button class="button primary" type="submit">Gutschreiben</button>
-                            </form>
-
-                            <form id="item-form" class="panel-block">
-                                <p class="eyebrow">INVENTAR</p>
-                                <h3>Item hinzufügen</h3>
-                                <label>
-                                    <span>Item</span>
-                                    <select id="item-name"></select>
-                                </label>
-                                <label>
-                                    <span>Anzahl</span>
-                                    <input id="item-amount" type="number" min="1" value="1">
-                                </label>
-                                <button class="button primary" type="submit">Item vergeben</button>
-                            </form>
                         </div>
+                    </section>
 
-                        <form id="kick-form" class="danger-row">
-                            <input id="kick-reason" type="text" maxlength="120" placeholder="Kick-Grund (optional)">
-                            <button id="kick-button" class="button danger" type="submit">Spieler kicken</button>
-                        </form>
-                    </div>
-
-                    <form id="coords-form" class="coordinate-tools">
-                        <div>
-                            <p class="eyebrow">ADMIN-WERKZEUGE</p>
-                            <h3>Koordinaten-Teleport</h3>
+                    <section class="page" data-page="rights">
+                        <header class="page-header">
+                            <div><p class="eyebrow">ZUGRIFFSKONTROLLE</p><h2>Adminrechte</h2></div>
+                            <span class="status-pill">Lizenzgebunden</span>
+                        </header>
+                        <div class="rights-layout">
+                            <form id="rights-form" class="panel">
+                                <div class="panel-heading"><div><p class="eyebrow">RECHTE VERTEILEN</p><h3>Online-Spieler</h3></div></div>
+                                <label><span>Spieler</span><select id="rights-player"></select></label>
+                                <div id="permission-list" class="permission-list"></div>
+                                <button class="button primary full" type="submit">Rechte speichern</button>
+                            </form>
+                            <div class="panel">
+                                <div class="panel-heading"><div><p class="eyebrow">PERSISTENTE PROFILE</p><h3>Administratoren</h3></div><span id="admin-count" class="count-badge">0</span></div>
+                                <div id="admin-list" class="card-list"></div>
+                            </div>
                         </div>
-                        <input id="coord-x" type="number" step="0.01" placeholder="X">
-                        <input id="coord-y" type="number" step="0.01" placeholder="Y">
-                        <input id="coord-z" type="number" step="0.01" placeholder="Z">
-                        <input id="coord-w" type="number" step="0.01" placeholder="Heading">
-                        <button class="button secondary" type="submit">Teleport</button>
-                    </form>
+                    </section>
                 </section>
-
-                <aside class="weather-panel">
-                    <div class="section-heading">
-                        <div>
-                            <p class="eyebrow">WELTSTEUERUNG</p>
-                            <h2>Wetter</h2>
-                        </div>
-                    </div>
-                    <p class="muted weather-copy">Die Auswahl wird serverweit synchronisiert und an neue Spieler übertragen.</p>
-                    <div id="weather-list" class="weather-list"></div>
-                    <label class="transition">
-                        <span>Übergang <strong id="transition-value">8s</strong></span>
-                        <input id="weather-transition" type="range" min="0" max="30" step="1" value="8">
-                    </label>
-                </aside>
             </div>
-
-            <footer class="footer">
-                <span>F10 zum Öffnen und Schließen</span>
-                <span>Alle Aktionen werden serverseitig geprüft und protokolliert.</span>
-            </footer>
         </div>
-
-        <div id="toast" class="toast hidden" role="status"></div>
     </main>
+
+    <section id="crafting-ui" class="crafting-ui hidden">
+        <div class="crafting-window">
+            <header>
+                <div><p class="eyebrow">FRONTIER HANDWERK</p><h2 id="crafting-title">Werkbank</h2></div>
+                <button id="close-crafting" class="icon-button" type="button">×</button>
+            </header>
+            <div id="crafting-recipes" class="crafting-recipes"></div>
+            <div id="crafting-progress" class="crafting-progress hidden"><span></span><strong>Herstellung läuft …</strong></div>
+        </div>
+    </section>
+
+    <aside id="craft-prompt" class="interaction-prompt hidden">
+        <kbd>E</kbd><div><strong>Crafting öffnen</strong><span id="craft-prompt-label"></span></div>
+    </aside>
+    <aside id="capture-hint" class="capture-hint hidden">Visiere jetzt die gewünschte Tür an …</aside>
+    <div id="toast" class="toast hidden"></div>
 
     <script src="app.js"></script>
 </body>

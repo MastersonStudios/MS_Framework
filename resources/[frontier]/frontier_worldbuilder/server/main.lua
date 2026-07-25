@@ -14,7 +14,12 @@ local function notify(source, message)
 end
 
 local function isBuilder(source)
-    return source == 0 or IsPlayerAceAllowed(source, WorldBuilderConfig.Permission)
+    if source == 0 or IsPlayerAceAllowed(source, WorldBuilderConfig.Permission) then return true end
+    if GetResourceState('frontier_adminmenu') ~= 'started' then return false end
+    local success, allowed = pcall(function()
+        return exports.frontier_adminmenu:HasPermission(source, 'world')
+    end)
+    return success and allowed == true
 end
 
 local function audit(source, action, detail)
@@ -110,6 +115,18 @@ local function builderPayload()
     }
 end
 
+local function acpPayload()
+    return {
+        definitions = builderPayload(),
+        models = WorldBuilderConfig.NpcModels,
+        scenarios = WorldBuilderConfig.NpcScenarios,
+        limits = {
+            storageCapacity = WorldBuilderConfig.MaxStorageCapacity,
+            storageRadius = 5
+        }
+    }
+end
+
 local function syncAll()
     TriggerClientEvent('frontier_worldbuilder:client:sync', -1, definitions())
 end
@@ -117,11 +134,16 @@ end
 local function refreshBuilder(source)
     if isBuilder(source) then
         TriggerClientEvent('frontier_worldbuilder:client:builderData', source, builderPayload())
+        TriggerClientEvent('frontier_adminmenu:client:worldBuilderData', source, acpPayload())
     end
 end
 
 local function result(source, success, message)
     TriggerClientEvent('frontier_worldbuilder:client:result', source, {
+        success = success == true,
+        message = message
+    })
+    TriggerClientEvent('frontier_adminmenu:client:externalResult', source, {
         success = success == true,
         message = message
     })
@@ -254,6 +276,13 @@ end)
 local function waitUntilReady()
     while not Ready do Wait(50) end
 end
+
+exports('GetAcpData', function(source)
+    source = tonumber(source)
+    if not source or not isBuilder(source) then return nil end
+    waitUntilReady()
+    return acpPayload()
+end)
 
 RegisterNetEvent('frontier_worldbuilder:server:requestSync', function()
     local source = source

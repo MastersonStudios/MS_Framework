@@ -1,14 +1,60 @@
 AdminMenuConfig = {}
 
 AdminMenuConfig.Permission = 'frontier.admin.menu'
-AdminMenuConfig.Command = 'adminmenu'
-AdminMenuConfig.DefaultKey = 'F10'
+AdminMenuConfig.Command = 'acp'
+AdminMenuConfig.CommandAliases = { 'adminmenu' }
+AdminMenuConfig.DefaultKey = 'F2'
 AdminMenuConfig.MaxMoneyGrant = 100000
 AdminMenuConfig.MaxItemGrant = 50
 AdminMenuConfig.MaxKickReasonLength = 120
 AdminMenuConfig.DefaultWeather = 'sunny'
 AdminMenuConfig.DefaultTransition = 8.0
 AdminMenuConfig.MaxWeatherTransition = 30.0
+AdminMenuConfig.MaxCraftingDefinitions = 500
+AdminMenuConfig.MaxCraftingIngredients = 8
+AdminMenuConfig.MaxCraftingAmount = 100
+AdminMenuConfig.MaxCraftingDuration = 30000
+AdminMenuConfig.DefaultCraftingRadius = 2.0
+AdminMenuConfig.MaxPlacementDistance = 12.0
+AdminMenuConfig.CraftingInteractionKey = 'E'
+
+AdminMenuConfig.Permissions = {
+    {
+        id = 'access',
+        label = 'ACP-Zugriff',
+        description = 'Darf das Administrations-Control-Panel öffnen.'
+    },
+    {
+        id = 'players',
+        label = 'Spielerverwaltung',
+        description = 'Teleport, Heilen, Wiederbeleben, Einfrieren, Kick und Noclip.'
+    },
+    {
+        id = 'economy',
+        label = 'Wirtschaft',
+        description = 'Darf Geld und Items vergeben.'
+    },
+    {
+        id = 'weather',
+        label = 'Wetter',
+        description = 'Darf das globale Wetter konfigurieren.'
+    },
+    {
+        id = 'world',
+        label = 'World Builder',
+        description = 'Darf NPCs, Storages und Türen verwalten.'
+    },
+    {
+        id = 'crafting',
+        label = 'Crafting',
+        description = 'Darf Rezepte und Crafting-Punkte verwalten.'
+    },
+    {
+        id = 'rights',
+        label = 'Rechteverwaltung',
+        description = 'Darf ACP-Rechte an andere Spieler vergeben und entziehen.'
+    }
+}
 
 AdminMenuConfig.GuarmaBounds = {
     minX = 0.0,

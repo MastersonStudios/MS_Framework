@@ -16,8 +16,9 @@ Ein schlankes, eigenständiges Roleplay-Framework für RedM.
 - persistenter Ingame-Mapeditor mit Objekt-Streaming
 - Admin-Logout zurück zur Charakterauswahl
 - Guarma-Onboarding mit Sturm-Cinematic und Bewegungstutorial
-- grafisches Adminmenü mit Wetter-, Spieler-, Geld- und Itemverwaltung
+- grafisches ACP mit Rechte-, Wetter-, Spieler-, Geld- und Itemverwaltung
 - grafischer World Builder für NPCs, Storages und sperrbare Türen
+- persistente Crafting-Rezepte und frei platzierbare Crafting-Punkte
 
 ## Voraussetzungen
 
@@ -32,7 +33,7 @@ Ein schlankes, eigenständiges Roleplay-Framework für RedM.
 3. `server.cfg.example` nach `server.cfg` kopieren und Connection-String sowie
    Lizenzschlüssel anpassen.
 4. In der Konsole zuerst `ensure frontier_core` und danach
-   `ensure frontier_adminmenu`, `ensure frontier_worldbuilder`,
+   `ensure frontier_worldbuilder`, `ensure frontier_adminmenu`,
    `ensure frontier_guarma_onboarding`, `ensure frontier_mapeditor`,
    `ensure frontier_adminlogout` sowie `ensure frontier_example` ausführen
    (oder den Server neu starten).
@@ -92,22 +93,36 @@ Charakter, bevor sie den Spieler zur Charakterauswahl zurückbringt.
 Benötigt wird das ACE-Recht `frontier.admin.logout`. Ob Admins andere Spieler
 abmelden dürfen, kann in `frontier_adminlogout/config.lua` eingestellt werden.
 
-## Grafisches Adminmenü
+## Administration Control Panel
 
-Die Resource `frontier_adminmenu` öffnet mit `F10` oder `/adminmenu` eine
-grafische Spieler- und Serververwaltung. Enthalten sind:
+Die Resource `frontier_adminmenu` öffnet mit `F2`, `/acp` oder dem
+Kompatibilitätsalias `/adminmenu` das zentrale Administration Control Panel.
+Enthalten sind:
 
 - serverweit synchronisierter Wetterkonfigurator mit Übergangszeit
 - Bargeld- und Bankgutschriften mit konfigurierbarem Betragslimit
 - persistente Itemvergabe aus dem Core-Itemkatalog
 - Goto, Bring, Heilen, Wiederbeleben, Einfrieren und Kick
 - Noclip sowie Teleport zu frei eingegebenen Koordinaten
+- vollständig integrierter World Builder für NPCs, Storages und Türen
+- persistente, lizenzgebundene ACP-Rechte mit getrennten Funktionsbereichen
+- Crafting-Rezepteditor mit mehreren Zutaten, Ergebnis, Menge und Herstellzeit
+- frei platzierbare Crafting-Punkte mit Rezeptauswahl und optionalem Jobzugriff
 - serverseitige Validierung und Konsolenprotokollierung aller Aktionen
 
-Benötigt wird das ACE-Recht `frontier.admin.menu`. Wettertypen,
-Betragsgrenzen, Standardtaste und weitere Einstellungen stehen in
-`frontier_adminmenu/config.lua`. Der Itemkatalog und die Stack-Limits befinden
+Das ACE-Recht `frontier.admin.menu` dient als Root-Zugriff und kann im ACP
+weitere Administratoren freischalten. Vergebene Rechte werden anhand der
+Rockstar-Lizenz in `frontier_admin_permissions` gespeichert und bleiben nach
+einem Neustart erhalten. Ein Root-Admin besitzt immer alle Rechte. Wettertypen,
+Betragsgrenzen, Standardtaste, Crafting-Limits und weitere Einstellungen stehen
+in `frontier_adminmenu/config.lua`. Der Itemkatalog und die Stack-Limits befinden
 sich in `frontier_core/config.lua`.
+
+Spieler benutzen einen nahen Crafting-Punkt standardmäßig mit `E`. Zutaten,
+Inventarplatz, Entfernung und Jobzugriff werden bei jeder Herstellung
+serverseitig erneut geprüft. Die Tabellen für Rechte, Rezepte und Crafting-Punkte
+werden automatisch erstellt und sind zusätzlich in `database/schema.sql`
+enthalten.
 
 ## World Builder
 

@@ -107,3 +107,46 @@ CREATE TABLE IF NOT EXISTS `frontier_doors` (
   PRIMARY KEY (`id`),
   KEY `idx_frontier_doors_position` (`x`, `y`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `frontier_admin_permissions` (
+  `identifier` VARCHAR(100) NOT NULL,
+  `display_name` VARCHAR(80) NOT NULL,
+  `permissions` LONGTEXT NOT NULL,
+  `assigned_by` VARCHAR(100) NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`identifier`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `frontier_crafting_recipes` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `label` VARCHAR(64) NOT NULL,
+  `description` VARCHAR(255) NULL,
+  `output_item` VARCHAR(64) NOT NULL,
+  `output_amount` INT UNSIGNED NOT NULL DEFAULT 1,
+  `ingredients` LONGTEXT NOT NULL,
+  `duration_ms` INT UNSIGNED NOT NULL DEFAULT 1000,
+  `active` TINYINT(1) NOT NULL DEFAULT 1,
+  `created_by` VARCHAR(100) NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `frontier_crafting_points` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `label` VARCHAR(64) NOT NULL,
+  `x` DOUBLE NOT NULL,
+  `y` DOUBLE NOT NULL,
+  `z` DOUBLE NOT NULL,
+  `heading` DOUBLE NOT NULL DEFAULT 0,
+  `interact_radius` DOUBLE NOT NULL DEFAULT 2,
+  `access_job` VARCHAR(32) NULL,
+  `recipe_ids` LONGTEXT NOT NULL,
+  `active` TINYINT(1) NOT NULL DEFAULT 1,
+  `created_by` VARCHAR(100) NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_frontier_crafting_points_position` (`x`, `y`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

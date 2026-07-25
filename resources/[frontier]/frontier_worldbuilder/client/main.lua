@@ -111,6 +111,18 @@ local function closeMenus()
     SendNUIMessage({ action = 'closeAll' })
 end
 
+local function externalUiOpen()
+    if GetResourceState('frontier_adminmenu') ~= 'started' then return false end
+    local success, open = pcall(function()
+        return exports.frontier_adminmenu:IsUiOpen()
+    end)
+    return success and open == true
+end
+
+exports('HasNearbyInteraction', function()
+    return NearestInteraction ~= nil
+end)
+
 local function builderEnvelope(data)
     return {
         definitions = data,
@@ -321,7 +333,7 @@ RegisterNUICallback('storageTransfer', function(data, cb)
 end)
 
 RegisterCommand('+frontier_world_interact', function()
-    if BuilderOpen or StorageOpen or not NearestInteraction then return end
+    if BuilderOpen or StorageOpen or externalUiOpen() or not NearestInteraction then return end
     if NearestInteraction.kind == 'storage' then
         TriggerServerEvent('frontier_worldbuilder:server:openStorage', NearestInteraction.id)
     elseif NearestInteraction.kind == 'door' then
@@ -363,7 +375,7 @@ end)
 
 CreateThread(function()
     while true do
-        if BuilderOpen or StorageOpen then
+        if BuilderOpen or StorageOpen or externalUiOpen() then
             NearestInteraction = nil
             SendNUIMessage({ action = 'prompt', visible = false })
             Wait(300)
