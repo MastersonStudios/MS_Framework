@@ -190,6 +190,22 @@ Admins weisen den Job beispielsweise mit `/setjob 12 gunsmith 0` zu. Für
 einen Meister wird Grad `1` verwendet: `/setjob 12 gunsmith 1`. Die
 Ranggehälter können in `resources/[MSCore]/MSCore/config.lua` angepasst werden.
 
+### Law-Job
+
+Der Jobschlüssel `law` besitzt zwei stündlich bezahlte Ränge:
+
+| Grad | Rang | Stundenlohn |
+| ---: | --- | ---: |
+| `0` | Countysheriff | `$12` |
+| `1` | Marschall | `$20` |
+
+Admins weisen den Job mit `/setjob 12 law 0` beziehungsweise
+`/setjob 12 law 1` zu. Nach jeweils 60 Minuten ununterbrochener
+Online-Dienstzeit wird der Ranglohn serverseitig auf das Bankkonto überwiesen.
+Ein Charakter-Logout sowie ein Job- oder Rangwechsel starten den
+Auszahlungszeitraum neu. Intervall, Zielkonto und Löhne befinden sich in
+`resources/[MSCore]/MSCore/config.lua`.
+
 ### Mapeditor-Befehle
 
 Alle Mapeditor-Befehle sind nur ingame verfügbar und benötigen das ACE-Recht

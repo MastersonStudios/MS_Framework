@@ -26,6 +26,7 @@ Config.DefaultCharacter = {
 
 Config.Spawn = vector4(-275.14, 805.09, 119.38, 282.0)
 Config.SaveInterval = 60 * 1000
+Config.PaycheckCheckIntervalMs = 30 * 1000
 Config.IdentifierType = 'license'
 Config.MaxItemStack = 100
 Config.Inventory = {
@@ -351,6 +352,15 @@ Config.Jobs = {
         grades = {
             [0] = { label = 'Lehrling', salary = 0 },
             [1] = { label = 'Meister', salary = 0 }
+        }
+    },
+    law = {
+        label = 'Law',
+        payIntervalMinutes = 60,
+        payAccount = 'bank',
+        grades = {
+            [0] = { label = 'Countysheriff', salary = 12 },
+            [1] = { label = 'Marschall', salary = 20 }
         }
     }
 }

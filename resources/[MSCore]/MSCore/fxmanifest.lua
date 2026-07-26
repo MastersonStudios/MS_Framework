@@ -20,6 +20,7 @@ server_scripts {
     'server/items.lua',
     'server/player.lua',
     'server/main.lua',
+    'server/paychecks.lua',
     'server/commands.lua'
 }
 
