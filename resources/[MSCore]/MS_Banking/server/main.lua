@@ -153,6 +153,178 @@ local function recordTransaction(characterId, transactionType, amount, balanceAf
     return success
 end
 
+local function taxSettings()
+    local config = type(MSBankingConfig.TransactionTax) == 'table'
+        and MSBankingConfig.TransactionTax
+        or {}
+    return config
+end
+
+local function calculateTax(operation, amount)
+    local config = taxSettings()
+    if config.enabled ~= true
+        or (type(config.appliesTo) == 'table' and config.appliesTo[operation] ~= true) then
+        return 0, amount
+    end
+
+    local percent = math.max(0.0, math.min(100.0, tonumber(config.percent) or 0.0))
+    if percent <= 0.0 then return 0, amount end
+    local rawTax = amount * percent / 100.0
+    local rounding = tostring(config.rounding or 'ceil'):lower()
+    local tax
+    if rounding == 'floor' then
+        tax = math.floor(rawTax)
+    elseif rounding == 'round' then
+        tax = math.floor(rawTax + 0.5)
+    else
+        tax = math.ceil(rawTax)
+    end
+
+    local minimum = math.max(0, math.floor(tonumber(config.minimum) or 0))
+    if rawTax > 0.0 then tax = math.max(tax, minimum) end
+    if tax >= amount then return nil, nil end
+    return tax, amount - tax
+end
+
+local function ensureAdminAccount()
+    local config = type(MSBankingConfig.AdminAccount) == 'table'
+        and MSBankingConfig.AdminAccount
+        or {}
+    local accountKey = tostring(config.key or 'administration')
+        :lower()
+        :gsub('[^a-z0-9_%-]', '')
+        :sub(1, 32)
+    if accountKey == '' then accountKey = 'administration' end
+    local label = tostring(config.label or 'Administrationskonto'):sub(1, 64)
+    MySQL.insert.await([[
+        INSERT INTO ms_bank_admin_accounts (account_key, label, balance)
+        VALUES (?, ?, 0)
+        ON DUPLICATE KEY UPDATE label = VALUES(label)
+    ]], { accountKey, label })
+    return MySQL.single.await([[
+        SELECT account_key, label, balance, created_at, updated_at
+        FROM ms_bank_admin_accounts
+        WHERE account_key = ?
+        LIMIT 1
+    ]], { accountKey })
+end
+
+local function hasAdminAccountAccess(playerSource, player)
+    local config = type(MSBankingConfig.AdminAccount) == 'table'
+        and MSBankingConfig.AdminAccount
+        or {}
+    local permission = tostring(config.acePermission or '')
+    if permission ~= '' and IsPlayerAceAllowed(playerSource, permission) then return true end
+    return player
+        and type(config.allowedGroups) == 'table'
+        and config.allowedGroups[player.group] == true
+end
+
+local function adminTaxTransactions(accountKey)
+    local limit = math.max(1, math.min(100, math.floor(
+        tonumber(MSBankingConfig.TransactionHistoryLimit) or 25
+    )))
+    local rows = MySQL.query.await(([[
+        SELECT id, actor_character_id, actor_name, operation_type,
+            source_account, gross_amount, tax_amount, created_at
+        FROM ms_bank_admin_transactions
+        WHERE account_key = ?
+        ORDER BY id DESC
+        LIMIT %d
+    ]]):format(limit), { accountKey }) or {}
+
+    local transactions = {}
+    for _, row in ipairs(rows) do
+        transactions[#transactions + 1] = {
+            id = tonumber(row.id),
+            actorCharacterId = tonumber(row.actor_character_id),
+            actorName = row.actor_name,
+            type = 'tax',
+            operationType = row.operation_type,
+            sourceAccount = row.source_account,
+            grossAmount = tonumber(row.gross_amount) or 0,
+            amount = tonumber(row.tax_amount) or 0,
+            createdAt = row.created_at
+        }
+    end
+    return transactions
+end
+
+local function recordAdminTax(accountKey, player, operation, sourceAccount, grossAmount, taxAmount)
+    local success, transactionId = pcall(function()
+        return MySQL.insert.await([[
+            INSERT INTO ms_bank_admin_transactions (
+                account_key, actor_character_id, actor_name, operation_type,
+                source_account, gross_amount, tax_amount
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ]], {
+            accountKey,
+            player.characterId,
+            player:getName(),
+            operation,
+            sourceAccount,
+            grossAmount,
+            taxAmount
+        })
+    end)
+    if not success then
+        print(('[MS_Banking] Steuerhistorie konnte nicht geschrieben werden: %s'):format(
+            tostring(transactionId)
+        ))
+        return nil
+    end
+    return tonumber(transactionId)
+end
+
+local function creditAdminTax(playerSource, player, operation, sourceAccount, grossAmount, taxAmount)
+    if taxAmount <= 0 then return true, nil end
+    local account = ensureAdminAccount()
+    if not account then return false, nil end
+    local affected = MySQL.update.await([[
+        UPDATE ms_bank_admin_accounts
+        SET balance = balance + ?
+        WHERE account_key = ?
+    ]], { taxAmount, account.account_key })
+    if tonumber(affected) ~= 1 then return false, nil end
+
+    local transactionId = recordAdminTax(
+        account.account_key,
+        player,
+        operation,
+        sourceAccount,
+        grossAmount,
+        taxAmount
+    )
+    TriggerEvent(
+        'ms_banking:server:taxCollected',
+        playerSource,
+        player.characterId,
+        operation,
+        grossAmount,
+        taxAmount
+    )
+    return true, transactionId
+end
+
+local function rollbackAdminTax(taxAmount, transactionId)
+    if taxAmount <= 0 then return end
+    local account = ensureAdminAccount()
+    if account then
+        MySQL.update.await([[
+            UPDATE ms_bank_admin_accounts
+            SET balance = balance - ?
+            WHERE account_key = ? AND balance >= ?
+        ]], { taxAmount, account.account_key, taxAmount })
+    end
+    if transactionId then
+        MySQL.update.await(
+            'DELETE FROM ms_bank_admin_transactions WHERE id = ?',
+            { transactionId }
+        )
+    end
+end
+
 local function companyConfigByJob(jobName)
     if type(jobName) ~= 'string' or jobName == '' then return nil end
     local config = MSBankingConfig.CompanyAccounts[jobName]
@@ -273,6 +445,39 @@ local function companyEnvelope(player)
     }
 end
 
+local function adminEnvelope(playerSource, player)
+    if not hasAdminAccountAccess(playerSource, player) then return nil end
+    local account = ensureAdminAccount()
+    if not account then return nil end
+    local tax = taxSettings()
+    return {
+        key = account.account_key,
+        label = account.label,
+        balance = tonumber(account.balance) or 0,
+        taxPercent = math.max(0.0, math.min(100.0, tonumber(tax.percent) or 0.0)),
+        minimumTax = math.max(0, math.floor(tonumber(tax.minimum) or 0)),
+        rounding = tostring(tax.rounding or 'ceil'),
+        transactions = adminTaxTransactions(account.account_key)
+    }
+end
+
+local function taxEnvelope()
+    local config = taxSettings()
+    local appliesTo = type(config.appliesTo) == 'table' and config.appliesTo or {}
+    return {
+        enabled = config.enabled == true,
+        percent = math.max(0.0, math.min(100.0, tonumber(config.percent) or 0.0)),
+        minimum = math.max(0, math.floor(tonumber(config.minimum) or 0)),
+        rounding = tostring(config.rounding or 'ceil'),
+        appliesTo = {
+            deposit = appliesTo.deposit == true,
+            withdrawal = appliesTo.withdrawal == true,
+            companyDeposit = appliesTo.companyDeposit == true,
+            companyWithdrawal = appliesTo.companyWithdrawal == true
+        }
+    }
+end
+
 local function accountEnvelope(playerSource, banker)
     local player = getPlayer(playerSource)
     local account = player and ensureAccount(player)
@@ -289,7 +494,9 @@ local function accountEnvelope(playerSource, banker)
             createdAt = account.created_at
         },
         transactions = transactionsFor(player.characterId),
-        company = companyEnvelope(player)
+        company = companyEnvelope(player),
+        admin = adminEnvelope(playerSource, player),
+        tax = taxEnvelope()
     }
 end
 
@@ -413,25 +620,57 @@ RegisterNetEvent('ms_banking:server:deposit', function(rawAmount)
         if not amount then
             return result(playerSource, false, 'Gib einen gültigen ganzzahligen Betrag ein.')
         end
+        local taxAmount, netAmount = calculateTax('deposit', amount)
+        if not taxAmount then
+            return result(playerSource, false, 'Der Betrag ist nach Abzug der Steuer zu niedrig.')
+        end
+        local account = ensureAccount(player)
+        if not account then
+            return result(playerSource, false, 'Dein Bankkonto konnte nicht geladen werden.')
+        end
         if not player:removeMoney('cash', amount, 'bank_deposit') then
             return result(playerSource, false, 'Du hast nicht genug Bargeld.')
         end
-        if not player:addMoney('bank', amount, 'bank_deposit') then
+        if not player:addMoney('bank', netAmount, 'bank_deposit') then
             player:addMoney('cash', amount, 'bank_deposit_rollback')
             return result(playerSource, false, 'Die Einzahlung konnte nicht gebucht werden.')
+        end
+        local taxCredited = creditAdminTax(
+            playerSource,
+            player,
+            'deposit',
+            ('personal:%s'):format(account.account_number),
+            amount,
+            taxAmount
+        )
+        if not taxCredited then
+            player:removeMoney('bank', netAmount, 'bank_deposit_rollback')
+            player:addMoney('cash', amount, 'bank_deposit_rollback')
+            return result(playerSource, false, 'Die Transaktionssteuer konnte nicht gebucht werden.')
         end
 
         player:save()
         recordTransaction(
             player.characterId,
             'deposit',
-            amount,
+            netAmount,
             player.money.bank,
             nil,
-            'Bargeld eingezahlt'
+            ('Bargeld eingezahlt; Steuer $%d'):format(taxAmount)
         )
-        TriggerEvent('ms_banking:server:deposited', playerSource, player.characterId, amount)
-        result(playerSource, true, ('$%d wurden eingezahlt.'):format(amount))
+        TriggerEvent(
+            'ms_banking:server:deposited',
+            playerSource,
+            player.characterId,
+            amount,
+            taxAmount,
+            netAmount
+        )
+        result(playerSource, true, ('$%d eingezahlt · $%d Steuer · $%d gutgeschrieben.'):format(
+            amount,
+            taxAmount,
+            netAmount
+        ))
         refreshClient(playerSource)
     end)
 end)
@@ -443,10 +682,31 @@ RegisterNetEvent('ms_banking:server:withdraw', function(rawAmount)
         if not amount then
             return result(playerSource, false, 'Gib einen gültigen ganzzahligen Betrag ein.')
         end
+        local taxAmount, netAmount = calculateTax('withdrawal', amount)
+        if not taxAmount then
+            return result(playerSource, false, 'Der Betrag ist nach Abzug der Steuer zu niedrig.')
+        end
+        local account = ensureAccount(player)
+        if not account then
+            return result(playerSource, false, 'Dein Bankkonto konnte nicht geladen werden.')
+        end
         if not player:removeMoney('bank', amount, 'bank_withdrawal') then
             return result(playerSource, false, 'Dein Kontoguthaben reicht nicht aus.')
         end
-        if not player:addMoney('cash', amount, 'bank_withdrawal') then
+        local taxCredited, taxTransactionId = creditAdminTax(
+            playerSource,
+            player,
+            'withdrawal',
+            ('personal:%s'):format(account.account_number),
+            amount,
+            taxAmount
+        )
+        if not taxCredited then
+            player:addMoney('bank', amount, 'bank_withdrawal_rollback')
+            return result(playerSource, false, 'Die Transaktionssteuer konnte nicht gebucht werden.')
+        end
+        if not player:addMoney('cash', netAmount, 'bank_withdrawal') then
+            rollbackAdminTax(taxAmount, taxTransactionId)
             player:addMoney('bank', amount, 'bank_withdrawal_rollback')
             return result(playerSource, false, 'Die Auszahlung konnte nicht gebucht werden.')
         end
@@ -458,10 +718,21 @@ RegisterNetEvent('ms_banking:server:withdraw', function(rawAmount)
             -amount,
             player.money.bank,
             nil,
-            'Bargeld abgehoben'
+            ('Bargeld abgehoben; Steuer $%d'):format(taxAmount)
         )
-        TriggerEvent('ms_banking:server:withdrawn', playerSource, player.characterId, amount)
-        result(playerSource, true, ('$%d wurden ausgezahlt.'):format(amount))
+        TriggerEvent(
+            'ms_banking:server:withdrawn',
+            playerSource,
+            player.characterId,
+            amount,
+            taxAmount,
+            netAmount
+        )
+        result(playerSource, true, ('$%d abgehoben · $%d Steuer · $%d ausgezahlt.'):format(
+            amount,
+            taxAmount,
+            netAmount
+        ))
         refreshClient(playerSource)
     end)
 end)
@@ -472,6 +743,10 @@ RegisterNetEvent('ms_banking:server:companyDeposit', function(rawAmount)
         local amount = validAmount(rawAmount)
         if not amount then
             return result(playerSource, false, 'Gib einen gültigen ganzzahligen Betrag ein.')
+        end
+        local taxAmount, netAmount = calculateTax('companyDeposit', amount)
+        if not taxAmount then
+            return result(playerSource, false, 'Der Betrag ist nach Abzug der Steuer zu niedrig.')
         end
         if not ensureCompanyAccount(jobName, config) then
             return result(playerSource, false, 'Das Firmenkonto konnte nicht geladen werden.')
@@ -484,10 +759,27 @@ RegisterNetEvent('ms_banking:server:companyDeposit', function(rawAmount)
             UPDATE ms_bank_company_accounts
             SET balance = balance + ?
             WHERE job_name = ?
-        ]], { amount, jobName })
+        ]], { netAmount, jobName })
         if tonumber(affected) ~= 1 then
             player:addMoney('cash', amount, 'company_bank_deposit_rollback')
             return result(playerSource, false, 'Die Firmeneinzahlung konnte nicht gebucht werden.')
+        end
+        local taxCredited = creditAdminTax(
+            playerSource,
+            player,
+            'companyDeposit',
+            ('company:%s'):format(jobName),
+            amount,
+            taxAmount
+        )
+        if not taxCredited then
+            MySQL.update.await([[
+                UPDATE ms_bank_company_accounts
+                SET balance = balance - ?
+                WHERE job_name = ? AND balance >= ?
+            ]], { netAmount, jobName, netAmount })
+            player:addMoney('cash', amount, 'company_bank_deposit_rollback')
+            return result(playerSource, false, 'Die Transaktionssteuer konnte nicht gebucht werden.')
         end
 
         local companyBalance = tonumber(MySQL.scalar.await(
@@ -499,20 +791,24 @@ RegisterNetEvent('ms_banking:server:companyDeposit', function(rawAmount)
             jobName,
             player,
             'company_deposit',
-            amount,
+            netAmount,
             companyBalance,
-            ('Einzahlung von %s'):format(player:getName())
+            ('Einzahlung von %s; Steuer $%d'):format(player:getName(), taxAmount)
         )
         TriggerEvent(
             'ms_banking:server:companyDeposited',
             playerSource,
             player.characterId,
             jobName,
-            amount
-        )
-        result(playerSource, true, ('$%d wurden auf %s eingezahlt.'):format(
             amount,
-            config.label or jobName
+            taxAmount,
+            netAmount
+        )
+        result(playerSource, true, ('$%d auf %s eingezahlt · $%d Steuer · $%d gutgeschrieben.'):format(
+            amount,
+            config.label or jobName,
+            taxAmount,
+            netAmount
         ))
         refreshClient(playerSource)
     end)
@@ -524,6 +820,10 @@ RegisterNetEvent('ms_banking:server:companyWithdraw', function(rawAmount)
         local amount = validAmount(rawAmount)
         if not amount then
             return result(playerSource, false, 'Gib einen gültigen ganzzahligen Betrag ein.')
+        end
+        local taxAmount, netAmount = calculateTax('companyWithdrawal', amount)
+        if not taxAmount then
+            return result(playerSource, false, 'Der Betrag ist nach Abzug der Steuer zu niedrig.')
         end
         if not ensureCompanyAccount(jobName, config) then
             return result(playerSource, false, 'Das Firmenkonto konnte nicht geladen werden.')
@@ -537,7 +837,24 @@ RegisterNetEvent('ms_banking:server:companyWithdraw', function(rawAmount)
         if tonumber(affected) ~= 1 then
             return result(playerSource, false, 'Das Firmenkonto besitzt nicht genug Guthaben.')
         end
-        if not player:addMoney('cash', amount, 'company_bank_withdrawal') then
+        local taxCredited, taxTransactionId = creditAdminTax(
+            playerSource,
+            player,
+            'companyWithdrawal',
+            ('company:%s'):format(jobName),
+            amount,
+            taxAmount
+        )
+        if not taxCredited then
+            MySQL.update.await([[
+                UPDATE ms_bank_company_accounts
+                SET balance = balance + ?
+                WHERE job_name = ?
+            ]], { amount, jobName })
+            return result(playerSource, false, 'Die Transaktionssteuer konnte nicht gebucht werden.')
+        end
+        if not player:addMoney('cash', netAmount, 'company_bank_withdrawal') then
+            rollbackAdminTax(taxAmount, taxTransactionId)
             MySQL.update.await([[
                 UPDATE ms_bank_company_accounts
                 SET balance = balance + ?
@@ -557,18 +874,22 @@ RegisterNetEvent('ms_banking:server:companyWithdraw', function(rawAmount)
             'company_withdrawal',
             -amount,
             companyBalance,
-            ('Auszahlung an %s'):format(player:getName())
+            ('Auszahlung an %s; Steuer $%d'):format(player:getName(), taxAmount)
         )
         TriggerEvent(
             'ms_banking:server:companyWithdrawn',
             playerSource,
             player.characterId,
             jobName,
-            amount
-        )
-        result(playerSource, true, ('$%d wurden von %s ausgezahlt.'):format(
             amount,
-            config.label or jobName
+            taxAmount,
+            netAmount
+        )
+        result(playerSource, true, ('$%d von %s abgehoben · $%d Steuer · $%d ausgezahlt.'):format(
+            amount,
+            config.label or jobName,
+            taxAmount,
+            netAmount
         ))
         refreshClient(playerSource)
     end)
@@ -765,9 +1086,40 @@ MySQL.ready(function()
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     ]])
 
+    MySQL.query.await([[
+        CREATE TABLE IF NOT EXISTS ms_bank_admin_accounts (
+            account_key VARCHAR(32) NOT NULL,
+            label VARCHAR(64) NOT NULL,
+            balance BIGINT UNSIGNED NOT NULL DEFAULT 0,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (account_key)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    ]])
+
+    MySQL.query.await([[
+        CREATE TABLE IF NOT EXISTS ms_bank_admin_transactions (
+            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            account_key VARCHAR(32) NOT NULL,
+            actor_character_id BIGINT UNSIGNED NOT NULL,
+            actor_name VARCHAR(80) NOT NULL,
+            operation_type VARCHAR(32) NOT NULL,
+            source_account VARCHAR(64) NOT NULL,
+            gross_amount INT UNSIGNED NOT NULL,
+            tax_amount INT UNSIGNED NOT NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY idx_ms_bank_admin_transactions_account (account_key, id),
+            CONSTRAINT fk_ms_bank_admin_transactions_account
+                FOREIGN KEY (account_key)
+                REFERENCES ms_bank_admin_accounts (account_key) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    ]])
+
     for jobName, config in pairs(MSBankingConfig.CompanyAccounts) do
         ensureCompanyAccount(jobName, config)
     end
+    ensureAdminAccount()
 
     Ready = true
     debugLog('Datenbanktabellen bereit.')
@@ -803,3 +1155,18 @@ function GetCompanyAccount(jobName)
 end
 
 exports('GetCompanyAccount', GetCompanyAccount)
+
+function GetAdminAccount()
+    if not Ready then return nil end
+    local account = ensureAdminAccount()
+    if not account then return nil end
+    local tax = taxSettings()
+    return {
+        key = account.account_key,
+        label = account.label,
+        balance = tonumber(account.balance) or 0,
+        taxPercent = math.max(0.0, math.min(100.0, tonumber(tax.percent) or 0.0))
+    }
+end
+
+exports('GetAdminAccount', GetAdminAccount)

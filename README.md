@@ -9,7 +9,7 @@ Aktuelle Framework-Version: `0.0.2`
 - persistente Benutzer und mehrere Charaktere
 - grafische Charakterauswahl und Charaktererstellung
 - Geldkonten (`cash`, `bank`) mit serverseitiger Validierung
-- `MS_Banking` mit Kontonummern, Bank-NPCs, Firmenkonten, Überweisungen und Buchungsverlauf
+- `MS_Banking` mit Privat-, Firmen- und Adminkonten sowie konfigurierbarer Transaktionssteuer
 - Jobs, Gruppen und Metadaten
 - server- und clientseitige Player-API
 - Callback-System zwischen Client und Server
@@ -529,6 +529,12 @@ je ein gemeinsames Firmenkonto. Alle Jobmitglieder können Bargeld einzahlen;
 Auszahlungen sind standardmäßig auf die konfigurierten Leitungsgrade begrenzt.
 Das Firmenkonto und sein separater Buchungsverlauf sind an jeder Filiale
 verfügbar. Arbeitslose erhalten kein Firmenkonto.
+
+Private und geschäftliche Ein- und Auszahlungen besitzen standardmäßig eine
+konfigurierbare Steuer von `1 %`. Sie wird vom Bruttobetrag abgezogen und auf
+dem persistenten Administrationskonto gesammelt. Berechtigte Admins sehen
+Saldo, Steuersatz und Steuerhistorie in einem schreibgeschützten Bank-Tab.
+Überweisungen zwischen persönlichen Konten bleiben standardmäßig steuerfrei.
 
 NPC-Modelle, Positionen, Interaktionstaste, Kontonummer-Präfix,
 Transaktionslimit und Verlaufslänge befinden sich in

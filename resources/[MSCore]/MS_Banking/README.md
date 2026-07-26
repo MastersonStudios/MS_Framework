@@ -15,6 +15,8 @@ denselben Saldo verwenden.
 - gemeinsame Firmenkonten für alle konfigurierten Jobs
 - Firmen-Einzahlungen und ranggeschützte Firmen-Auszahlungen
 - eigener Firmenkontoauszug mit ausführendem Charakter
+- zentrales Adminkonto mit konfigurierbarer Transaktionssteuer
+- schreibgeschützte Adminansicht mit vollständiger Steuerhistorie
 - serverseitige Distanz-, Betrags-, Guthaben- und Kontoprüfung
 - unmittelbare Speicherung erfolgreicher Geldbewegungen
 - grafische Bankoberfläche und Interaktion über `E`
@@ -56,6 +58,26 @@ ein Firmenkonto; Ausnahmen können unter `excludedJobs` eingetragen werden.
 | `native` | Stammeskonto | `1` |
 | `gunsmith` | Büchsenmacher | `1` |
 | `law` | Law | `1` |
+
+## Adminkonto und Transaktionssteuer
+
+Private und geschäftliche Ein- sowie Auszahlungen werden standardmäßig mit
+`1 %` besteuert. Die Steuer wird vom eingegebenen Bruttobetrag abgezogen und
+automatisch dem persistenten `Administrationskonto` gutgeschrieben. Beispiel:
+Bei `$100` werden `$1` Steuer gebucht und `$99` gutgeschrieben beziehungsweise
+ausgezahlt. Überweisungen zwischen persönlichen Konten sind standardmäßig
+steuerfrei.
+
+MSCore speichert Geld in ganzen Dollarbeträgen. Deshalb verwendet die
+Standardkonfiguration `ceil` und rundet eine positive Steuer auf den nächsten
+vollen Dollar auf. Vorgänge, deren Steuer den gesamten Betrag aufbrauchen
+würde, werden abgelehnt.
+
+Prozentsatz, Mindeststeuer, Rundung und betroffene Vorgänge befinden sich in
+`MSBankingConfig.TransactionTax`. Bezeichnung, Kontoschlüssel, ACE-Recht und
+zulässige Admin-Gruppen stehen unter `MSBankingConfig.AdminAccount`.
+Berechtigte Admins sehen in der Bank einen schreibgeschützten Tab mit
+Gesamtsaldo, Steuersatz und den letzten Steuerbuchungen.
 
 ## Installation
 

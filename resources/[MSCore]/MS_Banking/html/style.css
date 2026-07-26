@@ -290,12 +290,8 @@ h1 {
 
 .tabs {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(var(--tab-count, 2), minmax(0, 1fr));
     border-bottom: 1px solid rgba(82, 54, 26, .22);
-}
-
-.tabs.has-company {
-    grid-template-columns: repeat(3, 1fr);
 }
 
 .tab {
@@ -439,6 +435,99 @@ h1 {
     margin: 0 0 12px;
     color: #755d40;
     font: 11px/1.4 Arial, sans-serif;
+}
+
+.tax-hint {
+    min-height: 17px;
+    margin: -3px 0 11px;
+    color: #76572f;
+    font: 10px/1.4 Arial, sans-serif;
+}
+
+.admin-account {
+    padding: 16px;
+    border: 1px solid #244333;
+    border-radius: 5px;
+    color: #f3e8d1;
+    background: linear-gradient(125deg, #294b3b, #3d6b52);
+}
+
+.admin-account > span,
+.admin-account > strong,
+.admin-account small,
+.admin-account b {
+    display: block;
+}
+
+.admin-account > span {
+    color: #d8cba9;
+    font: 700 9px Arial, sans-serif;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+}
+
+.admin-account > strong {
+    margin: 5px 0 16px;
+    color: var(--gold-light);
+    font-size: 20px;
+}
+
+.admin-account > div {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 10px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(229, 199, 121, .28);
+}
+
+.admin-account small {
+    color: #d8cba9;
+    font: 10px Arial, sans-serif;
+    text-transform: uppercase;
+}
+
+.admin-account b {
+    color: #fff0bc;
+    font: 500 25px Georgia, serif;
+}
+
+.tax-details {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 7px;
+    margin: 12px 0;
+}
+
+.tax-details div {
+    min-width: 0;
+    padding: 9px;
+    border: 1px solid rgba(82, 54, 26, .2);
+    border-radius: 3px;
+    background: rgba(217, 195, 155, .2);
+}
+
+.tax-details dt,
+.tax-details dd {
+    margin: 0;
+}
+
+.tax-details dt {
+    color: #806b4d;
+    font: 9px Arial, sans-serif;
+    text-transform: uppercase;
+}
+
+.tax-details dd {
+    margin-top: 4px;
+    color: var(--green);
+    font: 700 13px Arial, sans-serif;
+}
+
+.admin-note {
+    margin: 0;
+    color: #755d40;
+    font: 11px/1.45 Arial, sans-serif;
 }
 
 .button {

@@ -60,6 +60,7 @@
                     <button class="tab active" type="button" data-tab="cash">Ein- &amp; Auszahlung</button>
                     <button class="tab" type="button" data-tab="transfer">Überweisung</button>
                     <button id="companyTab" class="tab hidden" type="button" data-tab="company">Firmenkonto</button>
+                    <button id="adminTab" class="tab hidden" type="button" data-tab="admin">Adminkonto</button>
                 </nav>
 
                 <form id="cashForm" class="panel active" autocomplete="off">
@@ -74,6 +75,7 @@
                         <button type="button" data-amount="50">$50</button>
                         <button type="button" data-amount="100">$100</button>
                     </div>
+                    <p id="cashTaxHint" class="tax-hint"></p>
                     <div class="operation-actions">
                         <button id="deposit" class="button button--secondary" type="button">Einzahlen</button>
                         <button id="withdraw" class="button button--primary" type="button">Abheben</button>
@@ -111,6 +113,7 @@
                         <input id="companyAmount" name="amount" type="number" min="1" step="1"
                             placeholder="0" required>
                     </div>
+                    <p id="companyTaxHint" class="tax-hint"></p>
                     <div class="operation-actions">
                         <button id="companyDeposit" class="button button--secondary" type="button">
                             Einzahlen
@@ -120,6 +123,35 @@
                         </button>
                     </div>
                 </form>
+
+                <section id="adminForm" class="panel">
+                    <div class="admin-account">
+                        <span>Serverweites Adminkonto</span>
+                        <strong id="adminLabel">Administrationskonto</strong>
+                        <div>
+                            <small>Steuerguthaben</small>
+                            <b id="adminBalance">$0</b>
+                        </div>
+                    </div>
+                    <dl class="tax-details">
+                        <div>
+                            <dt>Transaktionssteuer</dt>
+                            <dd id="adminTaxPercent">1 %</dd>
+                        </div>
+                        <div>
+                            <dt>Mindeststeuer</dt>
+                            <dd id="adminMinimumTax">$1</dd>
+                        </div>
+                        <div>
+                            <dt>Rundung</dt>
+                            <dd id="adminTaxRounding">Aufrunden</dd>
+                        </div>
+                    </dl>
+                    <p class="admin-note">
+                        Dieses Konto sammelt automatisch die Steuern aller privaten und
+                        geschäftlichen Ein- und Auszahlungen. Die Ansicht ist schreibgeschützt.
+                    </p>
+                </section>
             </section>
 
             <section class="history">

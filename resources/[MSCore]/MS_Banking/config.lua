@@ -15,6 +15,32 @@ MSBankingConfig.ModelLoadTimeout = 10000
 MSBankingConfig.ActionCooldown = 500
 MSBankingConfig.Debug = false
 
+MSBankingConfig.AdminAccount = {
+    key = 'administration',
+    label = 'Administrationskonto',
+    acePermission = 'mscore.admin',
+    allowedGroups = {
+        admin = true,
+        superadmin = true
+    }
+}
+
+-- Die Steuer wird vom Bruttobetrag abgezogen und dem Adminkonto gutgeschrieben.
+-- MSCore verwendet ganze Dollar. Mit "ceil" wird daher auf den nächsten
+-- vollen Dollar aufgerundet. Erlaubte Rundungen: ceil, floor, round.
+MSBankingConfig.TransactionTax = {
+    enabled = true,
+    percent = 1.0,
+    minimum = 1,
+    rounding = 'ceil',
+    appliesTo = {
+        deposit = true,
+        withdrawal = true,
+        companyDeposit = true,
+        companyWithdrawal = true
+    }
+}
+
 -- Alle vorhandenen, beschäftigten Jobs erhalten ein gemeinsames Firmenkonto.
 -- Jeder Rang ab minDepositGrade darf einzahlen. Auszahlungen sind
 -- standardmäßig dem jeweiligen Leitungsrang vorbehalten.

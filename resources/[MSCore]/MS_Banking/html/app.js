@@ -14,7 +14,10 @@ const companyTab = document.getElementById('companyTab');
 const companyAmount = document.getElementById('companyAmount');
 const companyDeposit = document.getElementById('companyDeposit');
 const companyWithdraw = document.getElementById('companyWithdraw');
+const adminTab = document.getElementById('adminTab');
 const historyTitle = document.getElementById('historyTitle');
+const cashTaxHint = document.getElementById('cashTaxHint');
+const companyTaxHint = document.getElementById('companyTaxHint');
 const toast = document.getElementById('toast');
 const actionButtons = [...document.querySelectorAll('.button')];
 
@@ -41,7 +44,15 @@ const transactionLabels = {
     transfer_in: 'Überweisung erhalten',
     transfer_out: 'Überweisung gesendet',
     company_deposit: 'Firmeneinzahlung',
-    company_withdrawal: 'Firmenauszahlung'
+    company_withdrawal: 'Firmenauszahlung',
+    tax: 'Transaktionssteuer'
+};
+
+const operationLabels = {
+    deposit: 'Private Einzahlung',
+    withdrawal: 'Private Auszahlung',
+    companyDeposit: 'Firmeneinzahlung',
+    companyWithdrawal: 'Firmenauszahlung'
 };
 
 function setBusy(value) {
@@ -85,11 +96,15 @@ function renderTransactions(rows = []) {
         const details = document.createElement('div');
         details.className = 'transaction__details';
         const title = document.createElement('strong');
-        title.textContent = transactionLabels[entry.type] || entry.description || 'Buchung';
+        title.textContent = entry.type === 'tax'
+            ? `Steuer · ${operationLabels[entry.operationType] || 'Bankvorgang'}`
+            : transactionLabels[entry.type] || entry.description || 'Buchung';
         const meta = document.createElement('small');
         const parts = [entry.createdAt || ''];
         if (entry.counterpartyAccount) parts.push(`Konto ${entry.counterpartyAccount}`);
         if (entry.actorName) parts.push(entry.actorName);
+        if (entry.sourceAccount) parts.push(entry.sourceAccount);
+        if (entry.grossAmount) parts.push(`Brutto ${money(entry.grossAmount)}`);
         meta.textContent = parts.filter(Boolean).join(' · ');
         details.append(title, meta);
 
@@ -97,9 +112,12 @@ function renderTransactions(rows = []) {
         amounts.className = 'transaction__amount';
         const value = document.createElement('strong');
         value.textContent = `${amount < 0 ? '−' : '+'}${money(amount)}`;
-        const after = document.createElement('small');
-        after.textContent = `Saldo ${money(entry.balanceAfter)}`;
-        amounts.append(value, after);
+        amounts.append(value);
+        if (entry.balanceAfter !== undefined && entry.balanceAfter !== null) {
+            const after = document.createElement('small');
+            after.textContent = `Saldo ${money(entry.balanceAfter)}`;
+            amounts.append(after);
+        }
 
         row.append(icon, details, amounts);
         transactions.append(row);
@@ -112,8 +130,14 @@ function activeTab() {
 
 function renderActiveTransactions() {
     const companyActive = activeTab() === 'company' && state?.company;
-    historyTitle.textContent = companyActive ? 'Firmenbuchungen' : 'Letzte Buchungen';
-    renderTransactions(companyActive ? state.company.transactions || [] : state?.transactions || []);
+    const adminActive = activeTab() === 'admin' && state?.admin;
+    historyTitle.textContent = adminActive
+        ? 'Steuerbuchungen'
+        : companyActive ? 'Firmenbuchungen' : 'Letzte Buchungen';
+    const rows = adminActive
+        ? state.admin.transactions || []
+        : companyActive ? state.company.transactions || [] : state?.transactions || [];
+    renderTransactions(rows);
 }
 
 function selectTab(name) {
@@ -127,10 +151,50 @@ function selectTab(name) {
     renderActiveTransactions();
 }
 
+function estimatedTax(operation, value) {
+    const amount = Number(value);
+    const tax = state?.tax;
+    if (!Number.isInteger(amount) || amount < 1 || !tax?.enabled
+        || tax.appliesTo?.[operation] !== true) return 0;
+    const raw = amount * (Number(tax.percent) || 0) / 100;
+    let fee;
+    if (tax.rounding === 'floor') fee = Math.floor(raw);
+    else if (tax.rounding === 'round') fee = Math.round(raw);
+    else fee = Math.ceil(raw);
+    if (raw > 0) fee = Math.max(fee, Number(tax.minimum) || 0);
+    return Math.max(0, fee);
+}
+
+function taxHint(input, operations) {
+    const amount = Number(input.value);
+    if (!Number.isInteger(amount) || amount < 1) {
+        return state?.tax?.enabled
+            ? `${Number(state.tax.percent) || 0} % Transaktionssteuer`
+            : 'Keine Transaktionssteuer';
+    }
+    return operations.map(({ key, label }) => {
+        const fee = estimatedTax(key, amount);
+        const net = Math.max(0, amount - fee);
+        return `${label}: ${money(fee)} Steuer · ${money(net)} netto`;
+    }).join(' | ');
+}
+
+function updateTaxHints() {
+    cashTaxHint.textContent = taxHint(cashAmount, [
+        { key: 'deposit', label: 'Einzahlung' },
+        { key: 'withdrawal', label: 'Auszahlung' }
+    ]);
+    companyTaxHint.textContent = taxHint(companyAmount, [
+        { key: 'companyDeposit', label: 'Einzahlung' },
+        { key: 'companyWithdrawal', label: 'Auszahlung' }
+    ]);
+}
+
 function render(data) {
     state = data || {};
     const account = state.account || {};
     const company = state.company;
+    const admin = state.admin;
     branch.textContent = state.branch || 'Bank';
     holder.textContent = account.holder || '–';
     accountNumber.textContent = account.number || '–';
@@ -144,7 +208,11 @@ function render(data) {
     companyAmount.max = Number(state.maxTransactionAmount) || '';
 
     companyTab.classList.toggle('hidden', !company);
-    document.querySelector('.tabs').classList.toggle('has-company', Boolean(company));
+    adminTab.classList.toggle('hidden', !admin);
+    document.querySelector('.tabs').style.setProperty(
+        '--tab-count',
+        String(2 + (company ? 1 : 0) + (admin ? 1 : 0))
+    );
     if (company) {
         document.getElementById('companyLabel').textContent = company.label || company.job;
         document.getElementById('companyJob').textContent = company.job || '';
@@ -157,10 +225,23 @@ function render(data) {
             ? 'Du darfst Firmenguthaben abheben.'
             : `Auszahlungen benötigen mindestens Jobgrad ${company.minWithdrawGrade}.`);
         document.getElementById('companyAccess').textContent = access.join(' ');
-    } else if (activeTab() === 'company') {
+    }
+
+    if (admin) {
+        document.getElementById('adminLabel').textContent = admin.label || 'Administrationskonto';
+        document.getElementById('adminBalance').textContent = money(admin.balance);
+        document.getElementById('adminTaxPercent').textContent = `${admin.taxPercent || 0} %`;
+        document.getElementById('adminMinimumTax').textContent = money(admin.minimumTax);
+        const roundingLabels = { ceil: 'Aufrunden', floor: 'Abrunden', round: 'Kaufmännisch' };
+        document.getElementById('adminTaxRounding').textContent =
+            roundingLabels[admin.rounding] || admin.rounding;
+    }
+
+    if ((!company && activeTab() === 'company') || (!admin && activeTab() === 'admin')) {
         selectTab('cash');
     }
 
+    updateTaxHints();
     renderActiveTransactions();
     setBusy(busy);
 }
@@ -233,8 +314,12 @@ document.getElementById('transferForm').addEventListener('submit', (event) => {
 document.querySelectorAll('.quick-values button').forEach((button) => {
     button.addEventListener('click', () => {
         cashAmount.value = button.dataset.amount || '';
+        updateTaxHints();
     });
 });
+
+cashAmount.addEventListener('input', updateTaxHints);
+companyAmount.addEventListener('input', updateTaxHints);
 
 document.querySelectorAll('.tab').forEach((button) => {
     button.addEventListener('click', () => selectTab(button.dataset.tab));

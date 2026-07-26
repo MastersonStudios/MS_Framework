@@ -83,6 +83,32 @@ CREATE TABLE IF NOT EXISTS `ms_bank_company_transactions` (
     REFERENCES `ms_bank_company_accounts` (`job_name`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS `ms_bank_admin_accounts` (
+  `account_key` VARCHAR(32) NOT NULL,
+  `label` VARCHAR(64) NOT NULL,
+  `balance` BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`account_key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `ms_bank_admin_transactions` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `account_key` VARCHAR(32) NOT NULL,
+  `actor_character_id` BIGINT UNSIGNED NOT NULL,
+  `actor_name` VARCHAR(80) NOT NULL,
+  `operation_type` VARCHAR(32) NOT NULL,
+  `source_account` VARCHAR(64) NOT NULL,
+  `gross_amount` INT UNSIGNED NOT NULL,
+  `tax_amount` INT UNSIGNED NOT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_ms_bank_admin_transactions_account` (`account_key`, `id`),
+  CONSTRAINT `fk_ms_bank_admin_transactions_account`
+    FOREIGN KEY (`account_key`)
+    REFERENCES `ms_bank_admin_accounts` (`account_key`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS `mscore_map_objects` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `model` VARCHAR(100) NOT NULL,
