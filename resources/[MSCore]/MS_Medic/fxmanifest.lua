@@ -28,7 +28,8 @@ dependencies {
     '/server:7290',
     '/onesync',
     'oxmysql',
-    'MSCore'
+    'MSCore',
+    'MS_BasicNeeds'
 }
 
 server_exports {

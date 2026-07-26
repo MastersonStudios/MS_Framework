@@ -87,8 +87,8 @@ Migrationsweg.
 4. In der Konsole zuerst `ensure MS_LoadingScreen` und `ensure MSCore`,
    danach
    `ensure MS_Banking`, `ensure MS_PlayerSync`, `ensure MS_mechat`, `ensure MS_pointing`,
-   `ensure MS_Permadeath`, `ensure MS_Medic`, `ensure MS_WeaponDamage`, `ensure MS_Inventory`,
-   `ensure MS_BasicNeeds`, `ensure MS_HUD`, `ensure MS_Jail`,
+   `ensure MS_Permadeath`, `ensure MS_Inventory`, `ensure MS_BasicNeeds`,
+   `ensure MS_Medic`, `ensure MS_WeaponDamage`, `ensure MS_HUD`, `ensure MS_Jail`,
    `ensure MS_ClothingShop`, `ensure MS_Stables`, `ensure MS_Trains`,
    `ensure MS_Telegrams`,
    `ensure MS_WorldBuilder`, `ensure MS_ResourceGuard`,
@@ -194,9 +194,9 @@ alle ACE-Rechte stehen in `server.cfg.example`.
 
 `/medicdisease` akzeptiert die Krankheitsschlüssel `influenza` (Grippe),
 `pneumonia` (Lungenentzündung), `food_poisoning`
-(Lebensmittelvergiftung), `wound_infection` (Wundinfektion) und
-`bone_fracture` (Knochenbruch). Wird beim Hinzufügen kein Schweregrad
-angegeben, verwendet das System Stufe `1`.
+(Vergiftung), `wound_infection` (Wundinfektion), `bone_fracture`
+(Knochenbruch) und `gunshot_wound` (Schusswunde). Wird beim Hinzufügen kein
+Schweregrad angegeben, verwendet das System Stufe `1`.
 
 | Beispiel | Wirkung |
 | --- | --- |
@@ -204,6 +204,7 @@ angegeben, verwendet das System Stufe `1`.
 | `/medicdisease 12 list` | Listet alle aktiven Krankheiten des Spielers auf. |
 | `/medicdisease 12 add influenza 1` | Fügt Grippe mit Schweregrad 1 hinzu. |
 | `/medicdisease 12 add bone_fracture 2` | Fügt einen Knochenbruch mit Schweregrad 2 hinzu. |
+| `/medicdisease 12 add gunshot_wound 2` | Fügt eine Schusswunde mit Schweregrad 2 hinzu. |
 | `/medicdisease 12 remove influenza` | Entfernt Grippe. |
 | `/medicdisease 12 clear` | Entfernt alle Krankheiten des Spielers. |
 
@@ -533,12 +534,20 @@ Behandlungsmenü. Jeder Charakter kann mit `/healthstatus` seine Gesundheitsakte
 Patienten zu untersuchen, Wunden zu versorgen, Krankheiten zu behandeln oder
 verstorbene Spieler wiederzubeleben.
 
-Die vorkonfigurierten Krankheiten Grippe, Lungenentzündung,
-Lebensmittelvergiftung und Wundinfektion besitzen jeweils eine eigene
-Ansteckungswahrscheinlichkeit, Verschlimmerungswahrscheinlichkeit,
-Schweregrade, Symptome, Gesundheitsschaden und Behandlung. Ein Wert von `0.01`
-entspricht einem Prozent pro konfiguriertem Prüfintervall. Krankheiten bleiben
-in `ms_medic_diseases` charaktergebunden gespeichert.
+Die vorkonfigurierten Krankheiten und Verletzungen Grippe, Lungenentzündung,
+Vergiftung, Wundinfektion, Knochenbruch und Schusswunde besitzen jeweils eigene
+Wahrscheinlichkeiten, Schweregrade, Symptome und Behandlungen. Ein Wert von
+`0.01` entspricht einem Prozent pro konfiguriertem Prüfintervall. Krankheiten
+bleiben in `ms_medic_diseases` charaktergebunden gespeichert.
+
+Eine Vergiftung löst in unregelmäßigen Abständen Erbrechen aus und senkt den
+BasicNeeds-Durstwert pro Anfall um einen Prozentpunkt. Schusswaffentreffer
+erzeugen automatisch eine persistente Schusswunde; weitere Treffer können den
+Schweregrad erhöhen. Unregelmäßige Blutungen verursachen Gesundheitsschaden
+und eine Schmerzreaktion. Beim Anklicken eines nahen Patienten öffnet sich für
+Medics ein Kontextmenü mit `Patient untersuchen`. Die festgestellten Symptome
+erscheinen in einem separaten Untersuchungsfenster, bevor die
+Behandlungsoptionen geöffnet werden.
 
 Behandlungen prüfen Medic-Job und -Grad, Routing-Bucket, Entfernung,
 Patientenzustand, benötigte Items, Behandlungsdauer und Heilungschance

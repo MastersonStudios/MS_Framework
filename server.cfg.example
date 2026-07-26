@@ -35,10 +35,10 @@ ensure MS_PlayerSync
 ensure MS_mechat
 ensure MS_pointing
 ensure MS_Permadeath
-ensure MS_Medic
-ensure MS_WeaponDamage
 ensure MS_Inventory
 ensure MS_BasicNeeds
+ensure MS_Medic
+ensure MS_WeaponDamage
 ensure MS_HUD
 ensure MS_Jail
 ensure MS_ClothingShop

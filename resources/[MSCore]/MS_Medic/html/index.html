@@ -43,6 +43,34 @@
             <section id="health-layout" class="health-layout hidden"></section>
             <footer>ESC zum Schließen · Behandlungen werden serverseitig geprüft</footer>
         </section>
+
+        <aside id="patient-context" class="patient-context hidden" role="menu" aria-label="Patientenaktionen">
+            <p class="context-label">Ärztliche Aktion</p>
+            <strong id="context-patient-name">Patient</strong>
+            <button id="context-examine" class="context-action" role="menuitem">
+                <span>✚</span>
+                <span>
+                    <b>Patient untersuchen</b>
+                    <small>Symptome und Verletzungen prüfen</small>
+                </span>
+            </button>
+        </aside>
+
+        <section id="examination-modal" class="examination-modal hidden" aria-hidden="true">
+            <article class="examination-window">
+                <header class="examination-header">
+                    <div>
+                        <p class="eyebrow">Separater Untersuchungsbericht</p>
+                        <h2 id="examination-patient-name">Patient</h2>
+                    </div>
+                    <button id="examination-close" class="icon-button" title="Fenster schließen">×</button>
+                </header>
+                <div id="examination-content" class="examination-content"></div>
+                <footer class="examination-actions">
+                    <button id="examination-treatment" class="primary-button">Behandlungsoptionen öffnen</button>
+                </footer>
+            </article>
+        </section>
     </main>
 
     <section id="progress" class="progress-card hidden" aria-live="polite">

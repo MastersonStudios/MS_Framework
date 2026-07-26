@@ -12,6 +12,14 @@ const progressNode = document.querySelector('#progress');
 const progressTitle = document.querySelector('#progress-title');
 const progressPatient = document.querySelector('#progress-patient');
 const progressBar = document.querySelector('#progress-bar');
+const patientContext = document.querySelector('#patient-context');
+const contextPatientName = document.querySelector('#context-patient-name');
+const contextExamineButton = document.querySelector('#context-examine');
+const examinationModal = document.querySelector('#examination-modal');
+const examinationPatientName = document.querySelector('#examination-patient-name');
+const examinationContent = document.querySelector('#examination-content');
+const examinationCloseButton = document.querySelector('#examination-close');
+const examinationTreatmentButton = document.querySelector('#examination-treatment');
 
 const state = {
     mode: null,
@@ -52,13 +60,42 @@ function openShell() {
     app.setAttribute('aria-hidden', 'false');
 }
 
+function closePatientContext() {
+    patientContext.classList.add('hidden');
+}
+
+function closeExaminationWindow() {
+    examinationModal.classList.add('hidden');
+    examinationModal.setAttribute('aria-hidden', 'true');
+}
+
 function closeShell() {
+    closePatientContext();
+    closeExaminationWindow();
     app.classList.add('hidden');
     app.setAttribute('aria-hidden', 'true');
     state.mode = null;
     state.payload = null;
     state.selectedSource = null;
     state.examination = null;
+}
+
+function openPatientContext(patient, anchorRect) {
+    contextPatientName.textContent = patient?.name || 'Patient';
+    patientContext.classList.remove('hidden');
+
+    const width = patientContext.offsetWidth || 290;
+    const height = patientContext.offsetHeight || 150;
+    const preferredLeft = anchorRect.right + 10;
+    const left = preferredLeft + width <= window.innerWidth - 12
+        ? preferredLeft
+        : Math.max(12, anchorRect.left - width - 10);
+    const top = Math.min(
+        Math.max(12, anchorRect.top),
+        Math.max(12, window.innerHeight - height - 12)
+    );
+    patientContext.style.left = `${left}px`;
+    patientContext.style.top = `${top}px`;
 }
 
 function renderPatients() {
@@ -77,11 +114,15 @@ function renderPatients() {
 
     patientsNode.querySelectorAll('[data-patient]').forEach((button) => {
         button.addEventListener('click', () => {
+            const patient = patients.find((entry) =>
+                Number(entry.source) === Number(button.dataset.patient)
+            );
+            const anchorRect = button.getBoundingClientRect();
             state.selectedSource = Number(button.dataset.patient);
             state.examination = null;
             renderPatients();
             renderDetails();
-            post('examine', { target: state.selectedSource });
+            openPatientContext(patient, anchorRect);
         });
     });
 }
@@ -174,6 +215,40 @@ function renderDetails() {
         </section>
     `;
     bindTreatmentButtons();
+}
+
+function renderExaminationWindow(patient) {
+    const diseases = Array.isArray(patient?.diseases) ? patient.diseases : [];
+    examinationPatientName.textContent = `${patient?.name || 'Patient'} · ID ${Number(patient?.source) || 0}`;
+    examinationContent.innerHTML = `
+        <div class="examination-vitals">
+            <span>Gesundheit</span>
+            <strong class="${patient?.dead ? 'dead-text' : ''}">
+                ${patient?.dead ? 'VERSTORBEN' : `${Number(patient?.health) || 0} / 200`}
+            </strong>
+        </div>
+        <div class="block-title">Festgestellte Symptome</div>
+        ${diseases.length
+            ? `<div class="examination-diseases">${diseases.map((disease) => {
+                const symptoms = Array.isArray(disease.symptoms) ? disease.symptoms : [];
+                return `
+                    <article class="examination-disease">
+                        <div>
+                            <span class="severity">Schweregrad ${Number(disease.severity)}/${Number(disease.maxSeverity)}</span>
+                            <h3>${escapeHtml(disease.label)}</h3>
+                        </div>
+                        <div class="symptom-list">
+                            ${symptoms.length
+                                ? symptoms.map((symptom) => `<span>${escapeHtml(symptom)}</span>`).join('')
+                                : '<span>Keine sichtbaren Symptome</span>'}
+                        </div>
+                    </article>
+                `;
+            }).join('')}</div>`
+            : '<div class="healthy">Keine Krankheit oder Verletzung festgestellt.</div>'}
+    `;
+    examinationModal.classList.remove('hidden');
+    examinationModal.setAttribute('aria-hidden', 'false');
 }
 
 function renderMedic() {
@@ -269,8 +344,10 @@ window.addEventListener('message', (event) => {
     } else if (message.action === 'examination' && state.mode === 'medic') {
         state.examination = message.patient || null;
         state.selectedSource = Number(message.patient?.source) || null;
+        closePatientContext();
         renderPatients();
         renderDetails();
+        if (state.examination) renderExaminationWindow(state.examination);
     } else if (message.action === 'treatmentProgress') {
         showProgress(message.payload);
     } else if (message.action === 'treatmentFinished') {
@@ -288,6 +365,27 @@ window.addEventListener('message', (event) => {
 
 document.querySelector('#close').addEventListener('click', () => post('close'));
 refreshButton.addEventListener('click', () => post('refresh'));
+contextExamineButton.addEventListener('click', () => {
+    closePatientContext();
+    if (state.selectedSource) post('examine', { target: state.selectedSource });
+});
+examinationCloseButton.addEventListener('click', closeExaminationWindow);
+examinationTreatmentButton.addEventListener('click', closeExaminationWindow);
+examinationModal.addEventListener('click', (event) => {
+    if (event.target === examinationModal) closeExaminationWindow();
+});
+document.addEventListener('pointerdown', (event) => {
+    if (patientContext.classList.contains('hidden')) return;
+    if (patientContext.contains(event.target) || event.target.closest('[data-patient]')) return;
+    closePatientContext();
+});
 document.addEventListener('keyup', (event) => {
-    if (event.key === 'Escape' && !app.classList.contains('hidden')) post('close');
+    if (event.key !== 'Escape' || app.classList.contains('hidden')) return;
+    if (!examinationModal.classList.contains('hidden')) {
+        closeExaminationWindow();
+    } else if (!patientContext.classList.contains('hidden')) {
+        closePatientContext();
+    } else {
+        post('close');
+    }
 });

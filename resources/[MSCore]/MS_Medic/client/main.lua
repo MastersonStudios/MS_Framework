@@ -1,5 +1,7 @@
 local Config = MSMedicConfig
 local RESURRECT_PED = 0x71BC8E838B9C6035
+local TASK_START_SCENARIO_IN_PLACE = 0x524B54361229154F
+local TASK_EMOTE = 0xB31A277C1AC7B7FF
 local INPUT_SPRINT = 0x8FFC75D6
 local MenuOpen = false
 local DiseaseCache = {}
@@ -7,6 +9,8 @@ local FractureMoveEffectActive = false
 local FractureMoveEffectMethod = nil
 local FracturePainUntil = 0
 local NextFracturePainAt = 0
+local DiseaseAnimationToken = 0
+local DiseaseAnimationActive = false
 
 local function clamp(value, minimum, maximum)
     return math.max(minimum, math.min(maximum, value))
@@ -77,6 +81,81 @@ local function canApplyFractureMovement(ped)
     if type(IsPedInAnyVehicle) == 'function' and IsPedInAnyVehicle(ped, false) then return false end
     if type(IsPedOnMount) == 'function' and IsPedOnMount(ped) then return false end
     return true
+end
+
+local function canPlayDiseaseAnimation(ped)
+    if not DoesEntityExist(ped) or IsEntityDead(ped) then return false end
+    if type(IsPedRagdoll) == 'function' and IsPedRagdoll(ped) then return false end
+    if type(IsPedInAnyVehicle) == 'function' and IsPedInAnyVehicle(ped, false) then return false end
+    if type(IsPedOnMount) == 'function' and IsPedOnMount(ped) then return false end
+    return true
+end
+
+local function beginDiseaseAnimation(durationMs)
+    DiseaseAnimationToken = DiseaseAnimationToken + 1
+    DiseaseAnimationActive = true
+    local token = DiseaseAnimationToken
+
+    SetTimeout(durationMs, function()
+        if token ~= DiseaseAnimationToken then return end
+        DiseaseAnimationActive = false
+    end)
+    return token
+end
+
+local function playVomitingEffect(ped, data)
+    local scenario = tostring(data.scenario or 'WORLD_HUMAN_VOMIT')
+    if scenario == '' then return false end
+
+    local duration = math.max(500, math.floor(tonumber(data.durationMs) or 6500))
+    local token = beginDiseaseAnimation(duration)
+    Citizen.InvokeNative(
+        TASK_START_SCENARIO_IN_PLACE,
+        ped,
+        GetHashKey(scenario),
+        duration,
+        true,
+        false,
+        false,
+        false
+    )
+
+    SetTimeout(duration, function()
+        if token ~= DiseaseAnimationToken or not DoesEntityExist(ped) then return end
+        if type(IsPedUsingAnyScenario) ~= 'function' or IsPedUsingAnyScenario(ped) then
+            ClearPedTasks(ped)
+        end
+    end)
+    return true
+end
+
+local function playGunshotPainEffect(ped, data)
+    local emoteKit = tostring(data.emoteKit or 'KIT_EMOTE_REACTION_SHOT_1')
+    if emoteKit == '' then return false end
+
+    beginDiseaseAnimation(math.max(500, math.floor(tonumber(data.durationMs) or 2600)))
+    Citizen.InvokeNative(
+        TASK_EMOTE,
+        ped,
+        math.floor(tonumber(data.emoteType) or 1),
+        math.floor(tonumber(data.emoteVariation) or 2),
+        GetHashKey(emoteKit),
+        0,
+        0,
+        0,
+        0,
+        0
+    )
+    return true
+end
+
+local function resetDiseaseAnimation()
+    DiseaseAnimationToken = DiseaseAnimationToken + 1
+    if DiseaseAnimationActive then
+        local ped = PlayerPedId()
+        if DoesEntityExist(ped) then ClearPedTasks(ped) end
+    end
+    DiseaseAnimationActive = false
 end
 
 local function playerLoaded()
@@ -174,6 +253,26 @@ RegisterNetEvent('ms_medic:client:applySymptoms', function(data)
     if health then SetEntityHealth(ped, math.max(0, math.min(200, math.floor(health)))) end
     if type(data.message) == 'string' and data.message ~= '' then
         TriggerEvent('mscore:client:notify', data.message)
+    end
+end)
+
+RegisterNetEvent('ms_medic:client:diseaseEffect', function(data)
+    if type(data) ~= 'table' then return end
+
+    local ped = PlayerPedId()
+    if not DoesEntityExist(ped) or IsEntityDead(ped) then return end
+
+    local health = tonumber(data.health)
+    if health then SetEntityHealth(ped, math.max(0, math.min(200, math.floor(health)))) end
+    if type(data.message) == 'string' and data.message ~= '' then
+        TriggerEvent('mscore:client:notify', data.message)
+    end
+
+    if DiseaseAnimationActive or not canPlayDiseaseAnimation(ped) then return end
+    if data.kind == 'vomit' then
+        playVomitingEffect(ped, data)
+    elseif data.kind == 'gunshot_pain' then
+        playGunshotPainEffect(ped, data)
     end
 end)
 
@@ -277,6 +376,7 @@ end)
 AddEventHandler('mscore:client:prepareLogout', function()
     DiseaseCache = {}
     resetFractureEffect()
+    resetDiseaseAnimation()
     closeMenu(true)
     SendNUIMessage({ action = 'reset' })
 end)
@@ -284,6 +384,7 @@ end)
 AddEventHandler('onResourceStop', function(resourceName)
     if resourceName ~= GetCurrentResourceName() then return end
     resetFractureEffect()
+    resetDiseaseAnimation()
     closeMenu(true)
     TriggerEvent('chat:removeSuggestion', '/' .. tostring(Config.MedicCommand or 'medic'))
     TriggerEvent('chat:removeSuggestion', '/' .. tostring(Config.HealthCommand or 'healthstatus'))

@@ -7,6 +7,9 @@ local BusyTargets = {}
 local ActiveTreatments = {}
 local TreatmentSequence = 0
 local OpenMenus = {}
+local DiseaseEffectTimers = {}
+local RecentGunshotHits = {}
+local GunshotWeaponHashes = {}
 local DatabaseReady = false
 
 local function debugLog(message, ...)
@@ -38,6 +41,36 @@ local function countEntries(value)
     local count = 0
     for _ in pairs(type(value) == 'table' and value or {}) do count = count + 1 end
     return count
+end
+
+local function normalizeWeaponHash(value)
+    value = tonumber(value)
+    if not value then return nil end
+    value = math.floor(value)
+    if value < 0 then value = value + 4294967296 end
+    return value % 4294967296
+end
+
+local function joaat(value)
+    local hash = 0
+    value = tostring(value or ''):lower()
+    for index = 1, #value do
+        hash = (hash + value:byte(index)) & 0xFFFFFFFF
+        hash = (hash + (hash << 10)) & 0xFFFFFFFF
+        hash = (hash ~ (hash >> 6)) & 0xFFFFFFFF
+    end
+    hash = (hash + (hash << 3)) & 0xFFFFFFFF
+    hash = (hash ~ (hash >> 11)) & 0xFFFFFFFF
+    hash = (hash + (hash << 15)) & 0xFFFFFFFF
+    return normalizeWeaponHash(hash)
+end
+
+local function rebuildGunshotWeaponHashes()
+    GunshotWeaponHashes = {}
+    local detection = type(Config.GunshotDetection) == 'table' and Config.GunshotDetection or {}
+    for _, weaponName in ipairs(type(detection.WeaponNames) == 'table' and detection.WeaponNames or {}) do
+        GunshotWeaponHashes[joaat(weaponName)] = true
+    end
 end
 
 local function itemLabel(itemName)
@@ -170,6 +203,7 @@ local function loadDiseases(playerSource, player)
     end
 
     DiseaseStates[player.characterId] = state
+    DiseaseEffectTimers[player.characterId] = {}
     SourceCharacters[playerSource] = player.characterId
     syncDiseases(playerSource)
     debugLog('%d Krankheiten für Charakter %d geladen.', countEntries(state), player.characterId)
@@ -187,7 +221,7 @@ local function addDiseaseInternal(playerSource, diseaseKey, severity, announce)
     if state[diseaseKey] then return false, 'Diese Krankheit ist bereits aktiv.' end
 
     local maximumActive = math.max(1, math.floor(tonumber(Config.MaxActiveDiseases) or 2))
-    if countEntries(state) >= maximumActive then
+    if definition.ignoreActiveLimit ~= true and countEntries(state) >= maximumActive then
         return false, 'Die maximale Anzahl aktiver Krankheiten ist erreicht.'
     end
 
@@ -219,6 +253,9 @@ local function removeDiseaseInternal(playerSource, diseaseKey, announce)
     if not state[diseaseKey] then return false, 'Diese Krankheit ist nicht aktiv.' end
 
     state[diseaseKey] = nil
+    if DiseaseEffectTimers[player.characterId] then
+        DiseaseEffectTimers[player.characterId][diseaseKey] = nil
+    end
     DiseaseStates[player.characterId] = state
     deleteDisease(player.characterId, diseaseKey)
     syncDiseases(playerSource)
@@ -741,7 +778,11 @@ end)
 local function clearPlayerState(playerSource, player)
     playerSource = tonumber(playerSource)
     local characterId = player and player.characterId or SourceCharacters[playerSource]
-    if characterId then DiseaseStates[characterId] = nil end
+    if characterId then
+        DiseaseStates[characterId] = nil
+        DiseaseEffectTimers[characterId] = nil
+        RecentGunshotHits[characterId] = nil
+    end
     SourceCharacters[playerSource] = nil
     LastActions[playerSource] = nil
     OpenMenus[playerSource] = nil
@@ -755,6 +796,96 @@ end
 AddEventHandler('mscore:server:playerUnloaded', clearPlayerState)
 AddEventHandler('playerDropped', function()
     clearPlayerState(source, nil)
+end)
+
+local function playerSourceFromNetworkId(networkId)
+    networkId = tonumber(networkId)
+    if not networkId or networkId < 1 then return nil end
+
+    local success, entity = pcall(NetworkGetEntityFromNetworkId, networkId)
+    if not success or not entity or entity == 0 then return nil end
+
+    local owner = tonumber(NetworkGetEntityOwner(entity))
+    if owner and owner > 0 and GetPlayerPed(owner) == entity and getPlayer(owner) then
+        return owner
+    end
+
+    for playerSource in pairs(exports.MSCore:GetPlayers()) do
+        playerSource = tonumber(playerSource)
+        if playerSource and GetPlayerPed(playerSource) == entity then return playerSource end
+    end
+end
+
+local function damageVictim(data)
+    if type(data) ~= 'table' then return nil end
+
+    local victim = playerSourceFromNetworkId(data.hitGlobalId)
+    if victim then return victim end
+
+    for _, networkId in ipairs(type(data.hitGlobalIds) == 'table' and data.hitGlobalIds or {}) do
+        victim = playerSourceFromNetworkId(networkId)
+        if victim then return victim end
+    end
+end
+
+local function applyGunshotWound(victimSource, lethalHit)
+    local player = getPlayer(victimSource)
+    local definition = diseaseDefinition('gunshot_wound')
+    if not player or not definition then return false end
+
+    local state = DiseaseStates[player.characterId] or {}
+    DiseaseStates[player.characterId] = state
+    local entry = state.gunshot_wound
+    local maximum = math.max(1, math.floor(tonumber(definition.maxSeverity) or 3))
+    local detection = type(Config.GunshotDetection) == 'table' and Config.GunshotDetection or {}
+    local now = GetGameTimer()
+
+    if not entry then
+        local severity = lethalHit == true
+            and clamp(math.floor(tonumber(detection.LethalHitSeverity) or maximum), 1, maximum)
+            or 1
+        local success = addDiseaseInternal(victimSource, 'gunshot_wound', severity, true)
+        if success then RecentGunshotHits[player.characterId] = now end
+        return success
+    end
+
+    if detection.IncreaseSeverityOnHit ~= true or entry.severity >= maximum then return false end
+    local cooldown = math.max(
+        1000,
+        math.floor(tonumber(detection.SeverityIncreaseCooldownMs) or 15000)
+    )
+    local lastHit = RecentGunshotHits[player.characterId]
+    if lethalHit ~= true and lastHit and now - lastHit < cooldown then return false end
+
+    entry.severity = lethalHit == true
+        and maximum
+        or math.min(maximum, entry.severity + 1)
+    RecentGunshotHits[player.characterId] = now
+    persistDisease(player.characterId, 'gunshot_wound', entry)
+    syncDiseases(victimSource)
+    notify(victimSource, ('Die Schusswunde hat sich auf Stufe %d verschlimmert.'):format(entry.severity))
+    return true
+end
+
+rebuildGunshotWeaponHashes()
+
+AddEventHandler('weaponDamageEvent', function(_, data)
+    local detection = type(Config.GunshotDetection) == 'table' and Config.GunshotDetection or {}
+    if detection.Enabled ~= true or type(data) ~= 'table' then return end
+
+    local weaponHash = normalizeWeaponHash(data.weaponType)
+    if not weaponHash or GunshotWeaponHashes[weaponHash] ~= true then return end
+
+    local victimSource = damageVictim(data)
+    if not victimSource or not getPlayer(victimSource) then return end
+
+    local chance = clamp(tonumber(detection.WoundChance) or 1.0, 0.0, 1.0)
+    if math.random() > chance then return end
+
+    applyGunshotWound(
+        victimSource,
+        data.willKill == true or tonumber(data.willKill) == 1
+    )
 end)
 
 CreateThread(function()
@@ -777,6 +908,122 @@ CreateThread(function()
         loadDiseases(tonumber(playerSource), player)
     end
     debugLog('Datenbank bereit.')
+end)
+
+local function periodicEffectDelay(effect, severity)
+    local minimum = math.max(1000, math.floor(tonumber(effect.minIntervalMs) or 30000))
+    local maximum = math.max(1000, math.floor(tonumber(effect.maxIntervalMs) or minimum))
+    if maximum < minimum then minimum, maximum = maximum, minimum end
+
+    local reduction = clamp(
+        tonumber(effect.severityIntervalReduction) or 0.0,
+        0.0,
+        0.4
+    )
+    local severityMultiplier = math.max(
+        0.25,
+        1.0 - ((math.max(1, tonumber(severity) or 1) - 1) * reduction)
+    )
+    return math.max(1000, math.floor(math.random(minimum, maximum) * severityMultiplier))
+end
+
+local function applyPeriodicDiseaseEffect(playerSource, player, diseaseKey, entry, effect)
+    local _, dead = healthState(playerSource)
+    if dead then return false end
+
+    local severity = math.max(1, math.floor(tonumber(entry.severity) or 1))
+    local message
+    if type(effect.messages) == 'table' and #effect.messages > 0 then
+        message = effect.messages[math.random(1, #effect.messages)]
+    end
+
+    local thirstDelta = tonumber(effect.thirstDelta)
+    if thirstDelta and thirstDelta ~= 0 and GetResourceState('MS_BasicNeeds') == 'started' then
+        local success, applied, reason = pcall(function()
+            return exports.MS_BasicNeeds:AddNeed(
+                playerSource,
+                'thirst',
+                thirstDelta,
+                ('medic:%s'):format(diseaseKey)
+            )
+        end)
+        if not success or applied ~= true then
+            debugLog(
+                'Dursteffekt für %d fehlgeschlagen: %s',
+                playerSource,
+                tostring(reason or applied)
+            )
+        end
+    end
+
+    local drain = math.max(0, tonumber(effect.healthDrainPerSeverity) or 0) * severity
+    local newHealth
+    if drain > 0 then
+        local health = healthState(playerSource)
+        local minimum = Config.DiseasesCanKill == true
+            and 0
+            or math.max(1, math.floor(tonumber(Config.MinimumDiseaseHealth) or 25))
+        newHealth = health > minimum
+            and math.max(minimum, health - math.floor(drain))
+            or health
+        if newHealth ~= health then player:setMetadata('health', newHealth) end
+    end
+
+    TriggerClientEvent('ms_medic:client:diseaseEffect', playerSource, {
+        key = diseaseKey,
+        kind = tostring(effect.kind or ''),
+        severity = severity,
+        health = newHealth,
+        message = message,
+        durationMs = math.max(500, math.floor(tonumber(effect.durationMs) or 3000)),
+        scenario = effect.scenario,
+        emoteKit = effect.emoteKit,
+        emoteType = effect.emoteType,
+        emoteVariation = effect.emoteVariation
+    })
+    TriggerEvent('MS_Medic:server:periodicDiseaseEffect', {
+        playerSource = playerSource,
+        characterId = player.characterId,
+        diseaseKey = diseaseKey,
+        severity = severity,
+        kind = tostring(effect.kind or ''),
+        thirstDelta = thirstDelta or 0,
+        healthDrain = drain
+    })
+    return true
+end
+
+CreateThread(function()
+    while true do
+        Wait(1000)
+        local now = GetGameTimer()
+
+        for playerSource, player in pairs(exports.MSCore:GetPlayers()) do
+            playerSource = tonumber(playerSource)
+            local state = DiseaseStates[player.characterId] or {}
+            local timers = DiseaseEffectTimers[player.characterId] or {}
+            DiseaseEffectTimers[player.characterId] = timers
+
+            for diseaseKey, entry in pairs(state) do
+                local definition = diseaseDefinition(diseaseKey)
+                local effect = definition and definition.periodicEffect
+                if type(effect) == 'table' then
+                    if not timers[diseaseKey] then
+                        timers[diseaseKey] = now + periodicEffectDelay(effect, entry.severity)
+                    elseif now >= timers[diseaseKey] then
+                        applyPeriodicDiseaseEffect(playerSource, player, diseaseKey, entry, effect)
+                        timers[diseaseKey] = now + periodicEffectDelay(effect, entry.severity)
+                    end
+                else
+                    timers[diseaseKey] = nil
+                end
+            end
+
+            for diseaseKey in pairs(timers) do
+                if not state[diseaseKey] then timers[diseaseKey] = nil end
+            end
+        end
+    end
 end)
 
 CreateThread(function()

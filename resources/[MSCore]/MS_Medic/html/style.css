@@ -290,6 +290,143 @@ footer {
     font: 11px Arial, sans-serif;
 }
 
+.patient-context {
+    position: fixed;
+    z-index: 20;
+    width: min(300px, calc(100vw - 24px));
+    padding: 13px;
+    color: var(--paper);
+    background: rgba(31, 25, 21, .99);
+    border: 1px solid rgba(197, 155, 88, .62);
+    border-radius: 9px;
+    box-shadow: 0 16px 42px rgba(0, 0, 0, .62);
+}
+.context-label {
+    margin: 0 0 3px;
+    color: var(--gold);
+    font: 700 10px Arial, sans-serif;
+    letter-spacing: .15em;
+    text-transform: uppercase;
+}
+.patient-context > strong {
+    display: block;
+    margin-bottom: 11px;
+    font-size: 17px;
+}
+.context-action {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 11px;
+    text-align: left;
+    color: var(--paper);
+    background: var(--panel-soft);
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    cursor: pointer;
+}
+.context-action:hover { border-color: var(--gold); background: #41352c; }
+.context-action > span:first-child {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    flex: 0 0 34px;
+    color: #fff;
+    background: var(--red);
+    border-radius: 50%;
+    font: 700 18px Arial, sans-serif;
+}
+.context-action b, .context-action small { display: block; }
+.context-action b { margin-bottom: 3px; font-size: 14px; }
+.context-action small { color: var(--paper-muted); font: 11px Arial, sans-serif; }
+
+.examination-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    background: rgba(0, 0, 0, .68);
+}
+.examination-window {
+    width: min(720px, 92vw);
+    max-height: min(640px, 86vh);
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    color: var(--paper);
+    background:
+        linear-gradient(135deg, rgba(197, 155, 88, .08), transparent 38%),
+        var(--panel);
+    border: 1px solid rgba(197, 155, 88, .68);
+    border-radius: 11px;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, .75);
+    overflow: hidden;
+}
+.examination-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 20px 22px;
+    border-bottom: 1px solid var(--line);
+    background: linear-gradient(90deg, rgba(142, 48, 44, .22), transparent 70%);
+}
+.examination-header h2 { font-size: 24px; }
+.examination-content {
+    padding: 22px;
+    overflow-y: auto;
+}
+.examination-vitals {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    padding: 13px 15px;
+    color: var(--paper-muted);
+    background: rgba(0, 0, 0, .2);
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    font: 13px Arial, sans-serif;
+}
+.examination-vitals strong { color: #d9eadf; font-size: 15px; }
+.examination-vitals .dead-text { color: #f1d2cf; }
+.examination-diseases { display: grid; gap: 11px; }
+.examination-disease {
+    display: grid;
+    grid-template-columns: minmax(160px, .75fr) minmax(0, 1.25fr);
+    gap: 15px;
+    padding: 15px;
+    background: var(--panel-soft);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+}
+.examination-disease h3 { margin: 4px 0 0; }
+.symptom-list {
+    display: flex;
+    align-content: flex-start;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+.symptom-list span {
+    padding: 6px 8px;
+    color: #f1d2cf;
+    background: rgba(142, 48, 44, .22);
+    border: 1px solid rgba(183, 74, 67, .42);
+    border-radius: 5px;
+    font: 12px Arial, sans-serif;
+}
+.examination-actions {
+    display: flex;
+    justify-content: flex-end;
+    padding: 14px 22px;
+    border-top: 1px solid var(--line);
+    background: rgba(0, 0, 0, .13);
+}
+.examination-actions .primary-button { width: auto; min-width: 220px; }
+
 .progress-card {
     position: absolute;
     left: 50%;
@@ -329,4 +466,5 @@ footer {
     .panel { width: 95vw; height: 91vh; }
     .layout { grid-template-columns: 280px 1fr; }
     .action-grid, .disease-list { grid-template-columns: 1fr; }
+    .examination-disease { grid-template-columns: 1fr; }
 }

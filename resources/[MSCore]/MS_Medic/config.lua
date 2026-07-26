@@ -62,16 +62,29 @@ MSMedicConfig.Diseases = {
         }
     },
     food_poisoning = {
-        label = 'Lebensmittelvergiftung',
-        description = 'Übelkeit, Krämpfe und Kreislaufprobleme.',
+        label = 'Vergiftung',
+        description = 'Giftstoffe verursachen Übelkeit, Erbrechen, Krämpfe und Kreislaufprobleme.',
         chance = 0.004,
         progressionChance = 0.1,
         maxSeverity = 2,
         healthDrainPerSeverity = 1,
-        symptoms = { 'Übelkeit', 'Bauchkrämpfe', 'Schwindel' },
+        symptoms = { 'Übelkeit', 'Erbrechen', 'Bauchkrämpfe', 'Schwindel', 'Starker Durst' },
         messages = {
             'Dir wird plötzlich übel.',
             'Starke Bauchkrämpfe zwingen dich zu einer Pause.'
+        },
+        periodicEffect = {
+            kind = 'vomit',
+            minIntervalMs = 45000,
+            maxIntervalMs = 120000,
+            severityIntervalReduction = 0.12,
+            durationMs = 6500,
+            thirstDelta = -1.0,
+            scenario = 'WORLD_HUMAN_VOMIT',
+            messages = {
+                'Die Vergiftung zwingt dich, dich zu übergeben.',
+                'Dir wird schlagartig schlecht und du musst erbrechen.'
+            }
         },
         treatment = {
             label = 'Vergiftung behandeln',
@@ -131,6 +144,107 @@ MSMedicConfig.Diseases = {
             successChance = 0.95,
             items = { bandage = 2, medicine = 1 }
         }
+    },
+    gunshot_wound = {
+        label = 'Schusswunde',
+        description = 'Eine offene Schussverletzung verursacht Blutverlust und starke Schmerzen.',
+        chance = 0.0,
+        progressionChance = 0.0,
+        maxSeverity = 3,
+        healthDrainPerSeverity = 0,
+        ignoreActiveLimit = true,
+        symptoms = { 'Blutung', 'Starke Schmerzen', 'Schwäche', 'Kreislaufprobleme' },
+        messages = {
+            'Die Schusswunde blutet weiter.',
+            'Die Verletzung pocht schmerzhaft.'
+        },
+        periodicEffect = {
+            kind = 'gunshot_pain',
+            minIntervalMs = 25000,
+            maxIntervalMs = 75000,
+            severityIntervalReduction = 0.15,
+            durationMs = 2600,
+            healthDrainPerSeverity = 1,
+            emoteKit = 'KIT_EMOTE_REACTION_SHOT_1',
+            emoteType = 1,
+            emoteVariation = 2,
+            messages = {
+                'Die Schusswunde beginnt erneut zu bluten und schmerzt heftig.',
+                'Ein stechender Schmerz fährt durch die Schusswunde.'
+            }
+        },
+        treatment = {
+            label = 'Schusswunde versorgen',
+            durationMs = 12000,
+            successChance = 0.9,
+            items = { bandage = 2, medicine = 1 }
+        }
+    }
+}
+
+MSMedicConfig.GunshotDetection = {
+    Enabled = true,
+    WoundChance = 1.0,
+    IncreaseSeverityOnHit = true,
+    SeverityIncreaseCooldownMs = 15000,
+    LethalHitSeverity = 3,
+    WeaponNames = {
+        'WEAPON_PISTOL_VOLCANIC',
+        'WEAPON_PISTOL_MAUSER_DRUNK',
+        'WEAPON_PISTOL_M1899',
+        'WEAPON_PISTOL_SEMIAUTO',
+        'WEAPON_PISTOL_MAUSER',
+        'WEAPON_REPEATER_EVANS',
+        'WEAPON_REPEATER_CARBINE_SADIE',
+        'WEAPON_REPEATER_HENRY',
+        'WEAPON_REPEATER_WINCHESTER',
+        'WEAPON_REPEATER_WINCHESTER_JOHN',
+        'WEAPON_REPEATER_CARBINE',
+        'WEAPON_REVOLVER_DOUBLEACTION_MICAH_DUALWIELD',
+        'WEAPON_REVOLVER_DOUBLEACTION_MICAH',
+        'WEAPON_REVOLVER_SCHOFIELD_CALLOWAY',
+        'WEAPON_REVOLVER_DOUBLEACTION',
+        'WEAPON_REVOLVER_CATTLEMAN',
+        'WEAPON_REVOLVER_CATTLEMAN_MEXICAN',
+        'WEAPON_REVOLVER_CATTLEMAN_HOSEA_DUALWIELD',
+        'WEAPON_REVOLVER_DOUBLEACTION_EXOTIC',
+        'WEAPON_REVOLVER_CATTLEMAN_SEAN',
+        'WEAPON_REVOLVER_CATTLEMAN_SADIE',
+        'WEAPON_REVOLVER_DOUBLEACTION_JAVIER',
+        'WEAPON_REVOLVER_LEMAT',
+        'WEAPON_REVOLVER_SCHOFIELD_BILL',
+        'WEAPON_REVOLVER_SCHOFIELD',
+        'WEAPON_REVOLVER_CATTLEMAN_SADIE_DUALWIELD',
+        'WEAPON_REVOLVER_DOUBLEACTION_GAMBLER',
+        'WEAPON_REVOLVER_CATTLEMAN_KIERAN',
+        'WEAPON_REVOLVER_SCHOFIELD_UNCLE',
+        'WEAPON_REVOLVER_CATTLEMAN_HOSEA',
+        'WEAPON_REVOLVER_CATTLEMAN_LENNY',
+        'WEAPON_REVOLVER_CATTLEMAN_JOHN',
+        'WEAPON_REVOLVER_SCHOFIELD_DUTCH_DUALWIELD',
+        'WEAPON_REVOLVER_SCHOFIELD_GOLDEN',
+        'WEAPON_REVOLVER_CATTLEMAN_PIG',
+        'WEAPON_REVOLVER_SCHOFIELD_DUTCH',
+        'WEAPON_REVOLVER_NAVY',
+        'WEAPON_REVOLVER_NAVY_CROSSOVER',
+        'WEAPON_RIFLE_SPRINGFIELD',
+        'WEAPON_RIFLE_BOLTACTION',
+        'WEAPON_RIFLE_BOLTACTION_BILL',
+        'WEAPON_RIFLE_VARMINT',
+        'WEAPON_RIFLE_ELEPHANT',
+        'WEAPON_SHOTGUN_SAWEDOFF',
+        'WEAPON_SHOTGUN_DOUBLEBARREL_EXOTIC',
+        'WEAPON_SHOTGUN_PUMP',
+        'WEAPON_SHOTGUN_REPEATING',
+        'WEAPON_SHOTGUN_SEMIAUTO',
+        'WEAPON_SHOTGUN_DOUBLEBARREL',
+        'WEAPON_SHOTGUN_DOUBLEBARREL_UNCLE',
+        'WEAPON_SHOTGUN_SAWEDOFF_CHARLES',
+        'WEAPON_SHOTGUN_SEMIAUTO_HOSEA',
+        'WEAPON_SNIPERRIFLE_ROLLINGBLOCK_LENNY',
+        'WEAPON_SNIPERRIFLE_ROLLINGBLOCK_EXOTIC',
+        'WEAPON_SNIPERRIFLE_CARCANO',
+        'WEAPON_SNIPERRIFLE_ROLLINGBLOCK'
     }
 }
 
