@@ -345,5 +345,12 @@ Config.Jobs = {
             [0] = { label = 'Stammesmitglied', salary = 0 },
             [1] = { label = 'Häuptling', salary = 0 }
         }
+    },
+    gunsmith = {
+        label = 'Büchsenmacher',
+        grades = {
+            [0] = { label = 'Lehrling', salary = 0 },
+            [1] = { label = 'Meister', salary = 0 }
+        }
     }
 }
