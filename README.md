@@ -164,6 +164,19 @@ Hinzufügen kein Schweregrad angegeben, verwendet das System Stufe `1`.
 | `/medicdisease 12 remove influenza` | Entfernt Grippe. |
 | `/medicdisease 12 clear` | Entfernt alle Krankheiten des Spielers. |
 
+### Native-Job
+
+Der Jobschlüssel `native` besitzt zwei Ränge:
+
+| Grad | Rang | Standardgehalt |
+| ---: | --- | ---: |
+| `0` | Stammesmitglied | `$0` |
+| `1` | Häuptling | `$0` |
+
+Admins weisen den Job beispielsweise mit `/setjob 12 native 0` zu. Für einen
+Häuptling wird Grad `1` verwendet: `/setjob 12 native 1`. Die Ranggehälter
+können in `resources/[MSCore]/MSCore/config.lua` angepasst werden.
+
 ### Mapeditor-Befehle
 
 Alle Mapeditor-Befehle sind nur ingame verfügbar und benötigen das ACE-Recht

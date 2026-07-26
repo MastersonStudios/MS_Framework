@@ -338,5 +338,12 @@ Config.Jobs = {
             [1] = { label = 'Arzt', salary = 10 },
             [2] = { label = 'Chefarzt', salary = 15 }
         }
+    },
+    native = {
+        label = 'Native',
+        grades = {
+            [0] = { label = 'Stammesmitglied', salary = 0 },
+            [1] = { label = 'Häuptling', salary = 0 }
+        }
     }
 }
