@@ -228,6 +228,9 @@ RegisterNetEvent('ms_adminmenu:client:externalResult', function(data)
         success = data and data.success == true,
         message = data and data.message or 'World-Builder-Aktion verarbeitet.'
     })
+    if data and data.success == true then
+        TriggerServerEvent('ms_adminmenu:server:refresh')
+    end
 end)
 
 RegisterNetEvent('ms_adminmenu:client:worldBuilderData', function(data)

@@ -29,6 +29,22 @@ local function audit(source, action, detail)
         action,
         detail or '-'
     ))
+    if GetResourceState('MS_AdminMenu') == 'started' then
+        local success, stored = pcall(function()
+            return exports.MS_AdminMenu:LogAdminAction(
+                source,
+                'world',
+                action,
+                nil,
+                { detail = detail }
+            )
+        end)
+        if not success or stored ~= true then
+            print(('[MSCore World Builder] ACP-Adminlog konnte nicht gespeichert werden: %s'):format(
+                success and 'Adminlog noch nicht bereit' or tostring(stored)
+            ))
+        end
+    end
 end
 
 local function onCooldown(source, action, duration)

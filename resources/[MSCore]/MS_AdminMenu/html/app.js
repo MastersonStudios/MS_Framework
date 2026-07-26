@@ -15,7 +15,9 @@ const state = {
     selectedWeather: null,
     page: 'overview',
     selectedSupportLog: null,
+    selectedAdminLog: null,
     adminControlTab: 'announcement',
+    supportAdminTab: 'support',
     worldTab: 'npc',
     craftAdminTab: 'recipes',
     dataAdminTab: 'items',
@@ -112,6 +114,7 @@ function applyPermissionVisibility() {
         });
     });
     selectAdminControlTab(state.adminControlTab);
+    selectSupportAdminTab(state.supportAdminTab);
     choosePage(state.page);
 }
 
@@ -341,6 +344,18 @@ function selectAdminControlTab(tab) {
     state.adminControlTab = tab;
     $$('[data-control-tab]').forEach((item) => item.classList.toggle('active', item.dataset.controlTab === tab));
     $$('[data-control-view]').forEach((view) => view.classList.toggle('active', view.dataset.controlView === tab));
+}
+
+function selectSupportAdminTab(tab) {
+    let button = $(`[data-support-tab="${tab}"]`);
+    if (!button || button.classList.contains('permission-hidden')) {
+        button = $$('[data-support-tab]').find((candidate) => !candidate.classList.contains('permission-hidden'));
+    }
+    if (!button) return;
+    tab = button.dataset.supportTab;
+    state.supportAdminTab = tab;
+    $$('[data-support-tab]').forEach((item) => item.classList.toggle('active', item.dataset.supportTab === tab));
+    $$('[data-support-view]').forEach((view) => view.classList.toggle('active', view.dataset.supportView === tab));
 }
 
 function renderResourceGuard() {
@@ -697,6 +712,118 @@ function renderSupportLogs() {
     renderSupportDetail();
 }
 
+const adminLogCategories = {
+    announcements: { label: 'Announcements', icon: '!' },
+    crafting: { label: 'Crafting', icon: '⚒' },
+    data: { label: 'Data Admin', icon: '▦' },
+    economy: { label: 'Wirtschaft', icon: '$' },
+    players: { label: 'Spieler', icon: '♟' },
+    resources: { label: 'Resources', icon: '◈' },
+    rights: { label: 'Adminrechte', icon: '⚿' },
+    system: { label: 'System', icon: '•' },
+    weather: { label: 'Wetter', icon: '☀' },
+    world: { label: 'World Builder', icon: '◇' }
+};
+
+function adminLogDetails(log) {
+    if (log?.details == null || log.details === '') return 'Keine weiteren Details.';
+    return typeof log.details === 'object'
+        ? JSON.stringify(log.details, null, 2)
+        : String(log.details);
+}
+
+function renderAdminLogDetail() {
+    const logs = state.data?.adminLogs?.logs || [];
+    const log = logs.find((entry) => Number(entry.id) === Number(state.selectedAdminLog));
+    $('#admin-log-empty').classList.toggle('hidden', Boolean(log));
+    $('#admin-log-detail').classList.toggle('hidden', !log);
+    if (!log) return;
+
+    const definition = adminLogCategories[log.category] || { label: log.category || 'System', icon: '•' };
+    $('#admin-detail-category').textContent = definition.label.toUpperCase();
+    $('#admin-detail-action').textContent = log.action || 'Unbekannte Adminaktion';
+    $('#admin-detail-time').textContent = formatLogDate(log.createdAt);
+    $('#admin-detail-id').textContent = `#${log.id}`;
+    $('#admin-detail-admin-name').textContent = log.adminName || 'Unbekannt';
+    $('#admin-detail-admin-meta').textContent = supportPartyMeta(log.adminSource, log.adminCharacterId);
+    $('#admin-detail-admin-license').textContent = log.adminIdentifier || 'Konsole / keine Lizenz';
+    $('#admin-detail-target-name').textContent = log.targetName || log.targetReference || 'Kein Ziel';
+    $('#admin-detail-target-meta').textContent = supportPartyMeta(log.targetSource, log.targetCharacterId);
+    $('#admin-detail-target-license').textContent = log.targetIdentifier || 'Keine Lizenz hinterlegt';
+    $('#admin-detail-resource').textContent = log.sourceResource || 'Unbekannt';
+    $('#admin-detail-reference').textContent = log.targetReference || '–';
+    $('#admin-detail-data').textContent = adminLogDetails(log);
+    $('#admin-log-retention').textContent =
+        `Aufbewahrung: ${state.data?.adminLogs?.retentionDays || 365} Tage · Anzeige: letzte ${state.data?.adminLogs?.limit || 1000} Einträge`;
+}
+
+function renderAdminLogs() {
+    const logs = state.data?.adminLogs?.logs || [];
+    const uniqueAdmins = new Set(logs.map((log) =>
+        log.adminIdentifier || `${log.adminName || 'Unbekannt'}:${log.adminSource || 0}`
+    ));
+    $('#admin-log-total').textContent = String(logs.length);
+    $('#admin-log-admins').textContent = String(uniqueAdmins.size);
+    $('#admin-log-players').textContent = String(logs.filter((log) => log.category === 'players').length);
+    $('#admin-log-economy').textContent = String(logs.filter((log) => log.category === 'economy').length);
+
+    const query = $('#admin-log-search').value.trim().toLowerCase();
+    const category = $('#admin-log-category').value;
+    const visible = logs.filter((log) => {
+        if (category !== 'all' && log.category !== category) return false;
+        const haystack = [
+            log.id,
+            log.category,
+            log.action,
+            log.sourceResource,
+            log.adminName,
+            log.adminSource,
+            log.adminCharacterId,
+            log.adminIdentifier,
+            log.targetName,
+            log.targetSource,
+            log.targetCharacterId,
+            log.targetIdentifier,
+            log.targetReference,
+            adminLogDetails(log)
+        ].join(' ').toLowerCase();
+        return haystack.includes(query);
+    });
+
+    if (!visible.some((log) => Number(log.id) === Number(state.selectedAdminLog))) {
+        state.selectedAdminLog = visible[0]?.id ?? null;
+    }
+
+    $('#admin-log-count').textContent = String(visible.length);
+    const list = $('#admin-log-list');
+    list.replaceChildren();
+    visible.forEach((log) => {
+        const definition = adminLogCategories[log.category] || { label: log.category || 'System', icon: '•' };
+        const row = document.createElement('button');
+        row.type = 'button';
+        row.className = `support-log-row category-${log.category}${Number(log.id) === Number(state.selectedAdminLog) ? ' selected' : ''}`;
+        const copy = document.createElement('span');
+        copy.className = 'support-log-copy';
+        const target = log.targetName || log.targetReference;
+        copy.append(
+            text('strong', log.action || 'Unbekannte Adminaktion'),
+            text('small', `${definition.label} · ${log.adminName || 'Unbekannt'}${target ? ` → ${target}` : ''}`)
+        );
+        row.append(
+            text('span', definition.icon, 'support-log-icon'),
+            copy,
+            text('time', formatLogDate(log.createdAt))
+        );
+        row.addEventListener('click', () => {
+            state.selectedAdminLog = log.id;
+            renderAdminLogs();
+        });
+        list.append(row);
+    });
+    if (!visible.length) list.append(text('div', 'Keine passenden Admin-Logs gefunden.', 'empty-state'));
+    renderAdminLogDetail();
+}
+
 function fillRightsForPlayer() {
     const source = Number($('#rights-player').value);
     const player = state.data?.players?.find((entry) => entry.source === source);
@@ -792,6 +919,7 @@ function applyData(data) {
     renderCraftingAdmin();
     renderDataAdmin();
     renderSupportLogs();
+    renderAdminLogs();
     renderResourceGuard();
     renderRights();
     applyPermissionVisibility();
@@ -854,6 +982,7 @@ $$('[data-world-tab]').forEach((button) => button.addEventListener('click', () =
 $$('[data-craft-tab]').forEach((button) => button.addEventListener('click', () => selectCraftAdminTab(button.dataset.craftTab)));
 $$('[data-data-tab]').forEach((button) => button.addEventListener('click', () => selectDataAdminTab(button.dataset.dataTab)));
 $$('[data-control-tab]').forEach((button) => button.addEventListener('click', () => selectAdminControlTab(button.dataset.controlTab)));
+$$('[data-support-tab]').forEach((button) => button.addEventListener('click', () => selectSupportAdminTab(button.dataset.supportTab)));
 
 $('#close').addEventListener('click', closeAcp);
 $('#refresh').addEventListener('click', () => post('refresh'));
@@ -862,6 +991,8 @@ $('#player-search').addEventListener('input', renderPlayers);
 $('#world-search').addEventListener('input', renderWorldList);
 $('#support-log-search').addEventListener('input', renderSupportLogs);
 $('#support-log-type').addEventListener('change', renderSupportLogs);
+$('#admin-log-search').addEventListener('input', renderAdminLogs);
+$('#admin-log-category').addEventListener('change', renderAdminLogs);
 $('#data-item-search').addEventListener('input', renderDataItems);
 $('#prop-search').addEventListener('input', renderProps);
 $('#announcement-message').addEventListener('input', updateAnnouncementLength);
@@ -1134,7 +1265,7 @@ window.addEventListener('message', ({ data }) => {
 
 const mockData = {
     selfId: 4,
-    permissions: { access: true, announcements: true, resources: true, players: true, economy: true, weather: true, world: true, crafting: true, data: true, support: true, rights: true },
+    permissions: { access: true, announcements: true, resources: true, players: true, economy: true, weather: true, world: true, crafting: true, data: true, support: true, adminlogs: true, rights: true },
     permissionDefinitions: [
         { id: 'access', label: 'ACP-Zugriff', description: 'Darf das Administrations-Control-Panel öffnen.' },
         { id: 'players', label: 'Spielerverwaltung', description: 'Teleport, Heilen, Wiederbeleben, Einfrieren, Kick, Ghost Mode und Noclip.' },
@@ -1146,6 +1277,7 @@ const mockData = {
         { id: 'crafting', label: 'Crafting', description: 'Darf Rezepte und Crafting-Punkte verwalten.' },
         { id: 'data', label: 'Data Admin', description: 'Darf Datenbank-Items erstellen und löschen.' },
         { id: 'support', label: 'Support Admin', description: 'Darf Verbindungs-, Spawn-, Schadens- und Tötungslogs einsehen.' },
+        { id: 'adminlogs', label: 'Admin-Logs', description: 'Darf alle dauerhaft gespeicherten administrativen Aktionen einsehen.' },
         { id: 'rights', label: 'Rechteverwaltung', description: 'Darf ACP-Rechte verteilen und entziehen.' }
     ],
     players: [
@@ -1206,6 +1338,16 @@ const mockData = {
             { id: 101, type: 'connection', actorSource: 12, actorIdentifier: 'license:victim', actorName: 'EliasM', details: { phase: 'playerConnecting' }, createdAt: '2026-07-25 21:39:43' }
         ]
     },
+    adminLogs: {
+        retentionDays: 365,
+        limit: 1000,
+        logs: [
+            { id: 25, category: 'players', action: 'Spieler wiederbelebt', sourceResource: 'MS_AdminMenu', adminSource: 4, adminCharacterId: 3, adminIdentifier: 'license:admin', adminName: 'Arthur Masterson', targetSource: 12, targetCharacterId: 8, targetIdentifier: 'license:target', targetName: 'Elias Mercer', details: {}, createdAt: '2026-07-25 21:48:13' },
+            { id: 24, category: 'economy', action: 'Geld hinzugefügt', sourceResource: 'MS_AdminMenu', adminSource: 4, adminCharacterId: 3, adminIdentifier: 'license:admin', adminName: 'Arthur Masterson', targetSource: 12, targetCharacterId: 8, targetIdentifier: 'license:target', targetName: 'Elias Mercer', details: { account: 'bank', amount: 250 }, createdAt: '2026-07-25 21:46:02' },
+            { id: 23, category: 'world', action: 'NPC erstellt', sourceResource: 'MS_WorldBuilder', adminSource: 4, adminCharacterId: 3, adminIdentifier: 'license:admin', adminName: 'Arthur Masterson', details: { detail: '#12 Hafenmeister (u_m_m_valgenstoreowner_01)' }, createdAt: '2026-07-25 21:42:31' },
+            { id: 22, category: 'rights', action: 'ACP-Rechte gespeichert', sourceResource: 'MS_AdminMenu', adminSource: 4, adminCharacterId: 3, adminIdentifier: 'license:admin', adminName: 'Arthur Masterson', targetSource: 27, targetCharacterId: 11, targetIdentifier: 'license:newadmin', targetName: 'Clara Bennett', details: { access: true, support: true }, createdAt: '2026-07-25 21:40:08' }
+        ]
+    },
     resourceGuard: {
         available: true,
         enabled: true,
@@ -1245,6 +1387,10 @@ if (preview) {
         app.classList.remove('hidden');
         applyData(mockData);
         if (['admin', 'players', 'support', 'world', 'crafting', 'data', 'rights'].includes(preview)) choosePage(preview);
+        if (preview === 'adminlogs') {
+            choosePage('support');
+            selectSupportAdminTab('adminlogs');
+        }
         if (preview === 'resources') {
             choosePage('admin');
             selectAdminControlTab('resources');

@@ -2,8 +2,8 @@ fx_version 'cerulean'
 game 'rdr3'
 
 author 'MSCore Framework'
-description 'Administration Control Panel with support logs, permissions, world builder and crafting'
-version '2.4.0'
+description 'Administration Control Panel with persistent admin and support logs, permissions, world builder and crafting'
+version '2.5.0'
 
 lua54 'yes'
 

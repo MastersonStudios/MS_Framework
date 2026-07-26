@@ -227,6 +227,8 @@ h4 { color: var(--gold-bright); font: 700 10px/1 Arial, sans-serif; letter-spaci
 }
 .admin-control-view { display: none; }
 .admin-control-view.active { display: block; }
+.support-admin-view { display: none; }
+.support-admin-view.active { display: block; }
 .resource-guard-panel { min-height: 500px; }
 .resource-guard-heading { align-items: flex-start; }
 .resource-guard-heading .muted { display: block; margin-top: 6px; }
@@ -564,6 +566,10 @@ select option { color: var(--ink); background: #171411; }
 }
 .support-log-row.type-damage_dealt .support-log-icon { color: #d99862; border-color: rgba(217,152,98,.45); }
 .support-log-row.type-killed_by .support-log-icon { color: #df7971; border-color: rgba(223,121,113,.48); }
+.support-log-row.category-players .support-log-icon { color: #83a8ca; border-color: rgba(131,168,202,.48); }
+.support-log-row.category-economy .support-log-icon { color: #7fb584; border-color: rgba(127,181,132,.48); }
+.support-log-row.category-rights .support-log-icon { color: #d78a80; border-color: rgba(215,138,128,.48); }
+.support-log-row.category-resources .support-log-icon { color: #d6a46f; border-color: rgba(214,164,111,.48); }
 .support-log-copy { min-width: 0; }
 .support-log-copy strong, .support-log-copy small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .support-log-copy strong { font-size: 11px; }

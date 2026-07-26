@@ -24,6 +24,8 @@ AdminMenuConfig.SupportLogBatchSize = 50
 AdminMenuConfig.SupportLogFlushInterval = 500
 AdminMenuConfig.SupportLogQueueLimit = 5000
 AdminMenuConfig.SupportLogMinimumDamage = 1
+AdminMenuConfig.AdminLogLimit = 1000
+AdminMenuConfig.AdminLogRetentionDays = 365
 AdminMenuConfig.GhostRefreshIntervalMs = 100
 AdminMenuConfig.MaxAnnouncementLength = 500
 AdminMenuConfig.AnnouncementDurationMs = 8000
@@ -79,6 +81,11 @@ AdminMenuConfig.Permissions = {
         id = 'support',
         label = 'Support Admin',
         description = 'Darf Verbindungs-, Spawn-, Schadens- und Tötungslogs einsehen.'
+    },
+    {
+        id = 'adminlogs',
+        label = 'Admin-Logs',
+        description = 'Darf alle dauerhaft gespeicherten administrativen Aktionen einsehen.'
     },
     {
         id = 'rights',

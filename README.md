@@ -21,6 +21,7 @@ Aktuelle Framework-Version: `0.0.2`
 - Guarma-Onboarding mit Sturm-Cinematic und Bewegungstutorial
 - grafisches ACP mit Rechte-, Wetter-, Spieler-, Geld- und Itemverwaltung
 - Support Admin mit persistenten Verbindungs-, Spawn-, Schadens- und Tötungslogs
+- persistentes ACP-Adminlog für administrative Aktionen mit Admin, Ziel und Details
 - Admin-Bereich für serverweite Announcements mit Banner- und Chat-Ausgabe
 - passiver KI-Ressourcenwächter mit Gesundheitsanalyse und sicherer Quarantäne
 - grafischer World Builder für NPCs, Storages und sperrbare Türen
@@ -842,11 +843,13 @@ Enthalten sind:
 - Data Admin zum vollständigen Konfigurieren und direkten Speichern neuer Items
 - durchsuchbarer Prop-Katalog mit Übernahme in den Itemcreator
 - geschützte Löschfunktion für benutzerdefinierte Items
-- Support Admin mit filterbarem Unterpunkt **Logs**
+- Support Admin mit getrennten, filterbaren Unterpunkten **Support-Logs** und
+  **Admin-Logs**
 - eingehende Verbindungen und geladene Charakter-/Playerspawns
 - ausgeteilter Spielerschaden mit Waffenhash, Schadenswert, Akteur und Ziel
 - separate **Getötet von**-Einträge für tödliche Spielertreffer
-- serverseitige Validierung und Konsolenprotokollierung aller Aktionen
+- persistentes Auditlog aller über das ACP und den World Builder ausgeführten
+  Adminaktionen
 
 Das ACE-Recht `mscore.admin.menu` dient als Root-Zugriff und kann im ACP
 weitere Administratoren freischalten. Vergebene Rechte werden anhand der
@@ -888,10 +891,21 @@ Batchgröße und Warteschlangenlimit sind konfigurierbar. Lizenzkennungen und
 Charakternamen werden als Momentaufnahme gespeichert, damit Einträge auch nach
 einem Disconnect nachvollziehbar bleiben.
 
+Adminaktionen werden als fortlaufende, im ACP nicht bearbeitbare Einträge in
+`mscore_admin_logs` gespeichert. Das Log enthält Kategorie, Aktion,
+ausführende Resource, Administrator samt Rockstar-Lizenz und Charakter-ID,
+optionales Ziel sowie strukturierte Aktionsdetails. Erfasst werden
+Spielerverwaltung, Wirtschaft, Announcements, Wetter, Resource-Wächter,
+World Builder, Crafting- und Datenverwaltung sowie Rechteänderungen. Die
+Ansicht benötigt die getrennt verteilbare Berechtigung `adminlogs`.
+`AdminMenuConfig.AdminLogLimit` und
+`AdminMenuConfig.AdminLogRetentionDays` steuern Anzeige und automatische
+Aufbewahrung.
+
 Spieler benutzen einen nahen Crafting-Punkt standardmäßig mit `E`. Zutaten,
 Inventarplatz, Entfernung und Jobzugriff werden bei jeder Herstellung
-serverseitig erneut geprüft. Die Tabellen für Rechte, Support-Logs, Rezepte und
-Crafting-Punkte werden automatisch erstellt und sind zusätzlich in
+serverseitig erneut geprüft. Die Tabellen für Rechte, Support-Logs, Admin-Logs,
+Rezepte und Crafting-Punkte werden automatisch erstellt und sind zusätzlich in
 `database/schema.sql` enthalten.
 
 ## KI-Ressourcenwächter

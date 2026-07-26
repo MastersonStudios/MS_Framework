@@ -218,6 +218,30 @@ CREATE TABLE IF NOT EXISTS `mscore_support_logs` (
   KEY `idx_mscore_support_logs_target` (`target_character_id`, `created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS `mscore_admin_logs` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `category` VARCHAR(32) NOT NULL,
+  `action` VARCHAR(80) NOT NULL,
+  `source_resource` VARCHAR(64) NOT NULL,
+  `admin_source` INT UNSIGNED NULL,
+  `admin_character_id` BIGINT UNSIGNED NULL,
+  `admin_identifier` VARCHAR(100) NULL,
+  `admin_name` VARCHAR(80) NOT NULL,
+  `target_source` INT UNSIGNED NULL,
+  `target_character_id` BIGINT UNSIGNED NULL,
+  `target_identifier` VARCHAR(100) NULL,
+  `target_name` VARCHAR(80) NULL,
+  `target_reference` VARCHAR(120) NULL,
+  `details` LONGTEXT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_mscore_admin_logs_created` (`created_at`),
+  KEY `idx_mscore_admin_logs_category_time` (`category`, `created_at`),
+  KEY `idx_mscore_admin_logs_admin` (`admin_identifier`, `created_at`),
+  KEY `idx_mscore_admin_logs_target` (`target_character_id`, `created_at`),
+  KEY `idx_mscore_admin_logs_resource` (`source_resource`, `created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS `mscore_items` (
   `name` VARCHAR(64) NOT NULL,
   `label` VARCHAR(64) NOT NULL,

@@ -35,16 +35,6 @@ local function permadeathBlocksRestore(playerSource)
     return success and blocked == true
 end
 
-local function audit(source, action, target, detail)
-    print(('[MSCore ACP] %s (%d) | %s | Ziel: %s | %s'):format(
-        source == 0 and 'Konsole' or (GetPlayerName(source) or 'Unbekannt'),
-        source,
-        action,
-        target and tostring(target) or '-',
-        detail or '-'
-    ))
-end
-
 local function ghostSnapshot()
     local snapshot = {}
     for playerSource in pairs(GhostPlayers) do
@@ -225,6 +215,111 @@ local function supportSnapshot(source, options)
     }
 end
 
+local AdminLogCategories = {
+    announcements = true,
+    crafting = true,
+    data = true,
+    economy = true,
+    players = true,
+    resources = true,
+    rights = true,
+    system = true,
+    weather = true,
+    world = true
+}
+
+local function auditText(value, maximum, fallback)
+    value = tostring(value or fallback or ''):gsub('[%c]', ' '):match('^%s*(.-)%s*$')
+    if value == '' then value = fallback or '-' end
+    return value:sub(1, maximum)
+end
+
+local function auditTarget(target)
+    target = type(target) == 'table' and target or {
+        reference = target ~= nil and tostring(target) or nil
+    }
+    local targetSource = tonumber(target.source)
+    local player = targetSource and exports.MSCore:GetPlayer(targetSource)
+    return {
+        source = targetSource,
+        characterId = player and tonumber(player.characterId) or tonumber(target.characterId),
+        identifier = target.identifier or (targetSource and getLicense(targetSource)) or nil,
+        name = target.name
+            or (player and player:getName())
+            or (targetSource and GetPlayerName(targetSource))
+            or nil,
+        reference = target.reference
+    }
+end
+
+local function audit(source, category, action, target, details, sourceResource)
+    source = tonumber(source) or 0
+    category = AdminLogCategories[category] and category or 'system'
+    action = auditText(action, 80, 'Unbekannte Adminaktion')
+    sourceResource = auditText(sourceResource or GetInvokingResource() or GetCurrentResourceName(), 64, 'unknown')
+
+    local actorPlayer = source > 0 and exports.MSCore:GetPlayer(source) or nil
+    local actorName = source == 0 and 'Konsole'
+        or (actorPlayer and actorPlayer:getName())
+        or GetPlayerName(source)
+        or 'Unbekannt'
+    local targetData = auditTarget(target)
+    local encodedDetails
+    if type(details) == 'table' then
+        local success, encoded = pcall(json.encode, details)
+        encodedDetails = success and encoded or tostring(details)
+    elseif details ~= nil then
+        encodedDetails = tostring(details)
+    end
+    encodedDetails = encodedDetails and encodedDetails:sub(1, 8000) or ''
+
+    print(('[MSCore ACP] %s (%d) | %s/%s | Ziel: %s | %s'):format(
+        actorName,
+        source,
+        category,
+        action,
+        targetData.name or targetData.reference or targetData.source or '-',
+        encodedDetails ~= '' and encodedDetails or '-'
+    ))
+
+    if not Ready then return false end
+    local success, logId = pcall(MySQL.insert.await, [[
+        INSERT INTO mscore_admin_logs
+            (category, action, source_resource,
+             admin_source, admin_character_id, admin_identifier, admin_name,
+             target_source, target_character_id, target_identifier, target_name,
+             target_reference, details)
+        VALUES
+            (?, ?, ?,
+             NULLIF(?, 0), NULLIF(?, 0), NULLIF(?, ''), ?,
+             NULLIF(?, 0), NULLIF(?, 0), NULLIF(?, ''), NULLIF(?, ''),
+             NULLIF(?, ''), NULLIF(?, ''))
+    ]], {
+        category,
+        action,
+        sourceResource,
+        source,
+        actorPlayer and tonumber(actorPlayer.characterId) or 0,
+        source > 0 and (getLicense(source) or '') or '',
+        auditText(actorName, 80, 'Unbekannt'),
+        targetData.source or 0,
+        targetData.characterId or 0,
+        targetData.identifier or '',
+        targetData.name and auditText(targetData.name, 80, 'Unbekannt') or '',
+        targetData.reference and auditText(targetData.reference, 120, '-') or '',
+        encodedDetails
+    })
+    if not success then
+        print(('[MSCore ACP] Adminlog konnte nicht gespeichert werden: %s'):format(tostring(logId)))
+        return false
+    end
+    return true, tonumber(logId)
+end
+
+exports('LogAdminAction', function(source, category, action, target, details)
+    return audit(source, category, action, target, details, GetInvokingResource())
+end)
+
 local function queueSupportLog(eventType, actor, target, data)
     local knownTypes = {
         connection = true,
@@ -291,6 +386,45 @@ local function supportLogRows()
             damage = tonumber(row.damage_amount),
             weaponHash = row.weapon_hash and tostring(row.weapon_hash) or nil,
             details = decodeTable(row.details),
+            createdAt = row.created_at
+        }
+    end
+    return logs
+end
+
+local function adminLogRows()
+    local limit = math.max(25, math.min(
+        5000,
+        math.floor(tonumber(AdminMenuConfig.AdminLogLimit) or 1000)
+    ))
+    local rows = MySQL.query.await(([[
+        SELECT id, category, action, source_resource,
+               admin_source, admin_character_id, admin_identifier, admin_name,
+               target_source, target_character_id, target_identifier, target_name,
+               target_reference, details, created_at
+        FROM mscore_admin_logs
+        ORDER BY id DESC
+        LIMIT %d
+    ]]):format(limit)) or {}
+
+    local logs = {}
+    for _, row in ipairs(rows) do
+        local decodedDetails = decodeTable(row.details)
+        logs[#logs + 1] = {
+            id = tonumber(row.id),
+            category = row.category,
+            action = row.action,
+            sourceResource = row.source_resource,
+            adminSource = tonumber(row.admin_source),
+            adminCharacterId = tonumber(row.admin_character_id),
+            adminIdentifier = row.admin_identifier,
+            adminName = row.admin_name,
+            targetSource = tonumber(row.target_source),
+            targetCharacterId = tonumber(row.target_character_id),
+            targetIdentifier = row.target_identifier,
+            targetName = row.target_name,
+            targetReference = row.target_reference,
+            details = next(decodedDetails) and decodedDetails or row.details,
             createdAt = row.created_at
         }
     end
@@ -510,6 +644,15 @@ local function payload(source)
                 tonumber(AdminMenuConfig.SupportLogLimit) or 500
             )))
         } or nil,
+        adminLogs = permissions.adminlogs and {
+            logs = adminLogRows(),
+            retentionDays = math.max(1, math.min(3650, math.floor(
+                tonumber(AdminMenuConfig.AdminLogRetentionDays) or 365
+            ))),
+            limit = math.max(25, math.min(5000, math.floor(
+                tonumber(AdminMenuConfig.AdminLogLimit) or 1000
+            )))
+        } or nil,
         resourceGuard = resourceGuardData(source),
         worldBuilder = worldBuilderData(source),
         limits = {
@@ -618,6 +761,31 @@ local function createTables()
             KEY idx_mscore_support_logs_target (target_character_id, created_at)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     ]])
+    MySQL.query.await([[
+        CREATE TABLE IF NOT EXISTS mscore_admin_logs (
+            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            category VARCHAR(32) NOT NULL,
+            action VARCHAR(80) NOT NULL,
+            source_resource VARCHAR(64) NOT NULL,
+            admin_source INT UNSIGNED NULL,
+            admin_character_id BIGINT UNSIGNED NULL,
+            admin_identifier VARCHAR(100) NULL,
+            admin_name VARCHAR(80) NOT NULL,
+            target_source INT UNSIGNED NULL,
+            target_character_id BIGINT UNSIGNED NULL,
+            target_identifier VARCHAR(100) NULL,
+            target_name VARCHAR(80) NULL,
+            target_reference VARCHAR(120) NULL,
+            details LONGTEXT NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY idx_mscore_admin_logs_created (created_at),
+            KEY idx_mscore_admin_logs_category_time (category, created_at),
+            KEY idx_mscore_admin_logs_admin (admin_identifier, created_at),
+            KEY idx_mscore_admin_logs_target (target_character_id, created_at),
+            KEY idx_mscore_admin_logs_resource (source_resource, created_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    ]])
 end
 
 local function cleanupSupportLogs()
@@ -630,9 +798,20 @@ local function cleanupSupportLogs()
     ]]):format(retentionDays))
 end
 
+local function cleanupAdminLogs()
+    local retentionDays = math.max(1, math.min(
+        3650,
+        math.floor(tonumber(AdminMenuConfig.AdminLogRetentionDays) or 365)
+    ))
+    MySQL.update.await(([[DELETE FROM mscore_admin_logs
+        WHERE created_at < DATE_SUB(CURRENT_TIMESTAMP, INTERVAL %d DAY)
+    ]]):format(retentionDays))
+end
+
 MySQL.ready(function()
     createTables()
     cleanupSupportLogs()
+    cleanupAdminLogs()
     for _, row in ipairs(MySQL.query.await('SELECT * FROM mscore_admin_permissions') or {}) do
         AdminGrants[row.identifier] = {
             displayName = row.display_name,
@@ -689,7 +868,7 @@ local function setPermissions(source, data)
         setGhostMode(target, false)
         TriggerClientEvent('ms_adminmenu:client:forceClose', target)
         TriggerClientEvent('mscore:client:notify', target, 'Deine ACP-Rechte wurden entzogen.')
-        audit(source, 'ACP-Rechte entzogen', target)
+        audit(source, 'rights', 'ACP-Rechte entzogen', { source = target })
         refreshAllMenus()
         return result(source, true, 'ACP-Rechte vollständig entzogen.')
     end
@@ -712,7 +891,7 @@ local function setPermissions(source, data)
         assignedBy = assignedBy
     }
     if permissions.players ~= true then setGhostMode(target, false) end
-    audit(source, 'ACP-Rechte gespeichert', target, json.encode(permissions))
+    audit(source, 'rights', 'ACP-Rechte gespeichert', { source = target }, permissions)
     refreshAllMenus()
     TriggerClientEvent('mscore:client:notify', target, 'Deine ACP-Rechte wurden aktualisiert.')
     return result(source, true, ('Rechte für %s gespeichert.'):format(displayName))
@@ -736,7 +915,12 @@ local function revokePermissions(source, data)
     local displayName = AdminGrants[identifier].displayName or identifier
     MySQL.update.await('DELETE FROM mscore_admin_permissions WHERE identifier = ?', { identifier })
     AdminGrants[identifier] = nil
-    audit(source, 'ACP-Rechte entzogen', target, displayName)
+    audit(source, 'rights', 'ACP-Rechte entzogen', {
+        source = target,
+        identifier = identifier,
+        name = displayName,
+        reference = identifier
+    })
     if target then
         TriggerClientEvent('mscore:client:notify', target, 'Deine ACP-Rechte wurden entzogen.')
         if not isAdmin(target) then
@@ -810,7 +994,15 @@ local function createRecipe(source, data)
         getLicense(source)
     })
     CraftingRecipes[recipe.id] = recipe
-    audit(source, 'Crafting-Rezept erstellt', recipe.id, recipe.label)
+    audit(source, 'crafting', 'Crafting-Rezept erstellt', {
+        reference = ('recipe:%d'):format(recipe.id),
+        name = recipe.label
+    }, {
+        outputItem = recipe.outputItem,
+        outputAmount = recipe.outputAmount,
+        duration = recipe.duration,
+        ingredients = recipe.ingredients
+    })
     refreshAllMenus()
     return result(source, true, ('Rezept #%d erstellt.'):format(recipe.id))
 end
@@ -840,7 +1032,9 @@ local function deleteRecipe(source, data)
             )
         end
     end
-    audit(source, 'Crafting-Rezept gelöscht', id)
+    audit(source, 'crafting', 'Crafting-Rezept gelöscht', {
+        reference = ('recipe:%d'):format(id)
+    })
     refreshAllMenus()
     return result(source, true, ('Rezept #%d gelöscht.'):format(id))
 end
@@ -897,7 +1091,17 @@ local function createCraftingPoint(source, data)
     })
     CraftingPoints[point.id] = point
     syncCraftingPoints()
-    audit(source, 'Crafting-Punkt erstellt', point.id, point.label)
+    audit(source, 'crafting', 'Crafting-Punkt erstellt', {
+        reference = ('crafting_point:%d'):format(point.id),
+        name = point.label
+    }, {
+        x = point.x,
+        y = point.y,
+        z = point.z,
+        radius = point.radius,
+        accessJob = point.accessJob,
+        recipeIds = point.recipeIds
+    })
     refreshAllMenus()
     return result(source, true, ('Crafting-Punkt #%d erstellt.'):format(point.id))
 end
@@ -913,7 +1117,9 @@ local function deleteCraftingPoint(source, data)
     MySQL.update.await('DELETE FROM mscore_crafting_points WHERE id = ?', { id })
     CraftingPoints[id] = nil
     syncCraftingPoints()
-    audit(source, 'Crafting-Punkt gelöscht', id)
+    audit(source, 'crafting', 'Crafting-Punkt gelöscht', {
+        reference = ('crafting_point:%d'):format(id)
+    })
     refreshAllMenus()
     return result(source, true, ('Crafting-Punkt #%d gelöscht.'):format(id))
 end
@@ -934,7 +1140,15 @@ local function createDatabaseItem(source, data)
         return result(source, false, 'Der Core konnte das Item nicht erstellen.')
     end
     if not success then return result(source, false, itemOrError or 'Item konnte nicht erstellt werden.') end
-    audit(source, 'Datenbank-Item erstellt', itemOrError.name, itemOrError.label)
+    audit(source, 'data', 'Datenbank-Item erstellt', {
+        reference = itemOrError.name,
+        name = itemOrError.label
+    }, {
+        category = itemOrError.category,
+        maxStack = itemOrError.maxStack,
+        weight = itemOrError.weight,
+        prop = itemOrError.prop
+    })
     refreshAllMenus()
     return result(source, true, ('Item „%s“ wurde direkt in der Datenbank erstellt.'):format(itemOrError.label))
 end
@@ -953,7 +1167,10 @@ local function deleteDatabaseItem(source, data)
         return result(source, false, 'Der Core konnte das Item nicht löschen.')
     end
     if not success then return result(source, false, itemOrError or 'Item konnte nicht gelöscht werden.') end
-    audit(source, 'Datenbank-Item gelöscht', name, itemOrError.label)
+    audit(source, 'data', 'Datenbank-Item gelöscht', {
+        reference = name,
+        name = itemOrError.label
+    })
     refreshAllMenus()
     return result(source, true, ('Item „%s“ wurde gelöscht.'):format(itemOrError.label))
 end
@@ -1021,7 +1238,11 @@ RegisterNetEvent('ms_adminmenu:server:execute', function(action, data)
             hash = weather.hash,
             transition = transition
         })
-        audit(source, 'Wetter', nil, ('%s / %.1fs'):format(weather.label, transition))
+        audit(source, 'weather', 'Wetter geändert', nil, {
+            weather = weather.id,
+            label = weather.label,
+            transition = transition
+        })
         refreshAllMenus()
         return result(source, true, ('Wetter auf %s gesetzt.'):format(weather.label))
     end
@@ -1040,7 +1261,12 @@ RegisterNetEvent('ms_adminmenu:server:execute', function(action, data)
         TriggerClientEvent('ms_adminmenu:client:teleport', source, {
             x = x, y = y, z = z, w = heading
         })
-        audit(source, 'Koordinaten-Teleport', source, ('%.2f, %.2f, %.2f'):format(x, y, z))
+        audit(source, 'players', 'Koordinaten-Teleport', { source = source }, {
+            x = x,
+            y = y,
+            z = z,
+            heading = heading
+        })
         return result(source, true, 'Teleport ausgeführt.')
     end
 
@@ -1049,7 +1275,8 @@ RegisterNetEvent('ms_adminmenu:server:execute', function(action, data)
             return result(source, false, 'Keine Berechtigung für Noclip.')
         end
         TriggerClientEvent('ms_adminmenu:client:toggleNoclip', source)
-        audit(source, 'Noclip umgeschaltet', source)
+        audit(source, 'players', 'Noclip umgeschaltet', { source = source })
+        refresh(source)
         return
     end
 
@@ -1058,7 +1285,10 @@ RegisterNetEvent('ms_adminmenu:server:execute', function(action, data)
             return result(source, false, 'Keine Berechtigung für den Ghost Mode.')
         end
         local enabled = setGhostMode(source, not GhostPlayers[source])
-        audit(source, 'Ghost Mode', source, enabled and 'aktiviert' or 'deaktiviert')
+        audit(source, 'players', 'Ghost Mode', { source = source }, {
+            enabled = enabled
+        })
+        refresh(source)
         return
     end
 
@@ -1090,7 +1320,10 @@ RegisterNetEvent('ms_adminmenu:server:execute', function(action, data)
             duration = duration,
             authorSource = source
         })
-        audit(source, 'Server-Announcement', nil, message)
+        audit(source, 'announcements', 'Server-Announcement gesendet', nil, {
+            message = message,
+            duration = duration
+        })
         return result(source, true, 'Server-Announcement gesendet.')
     end
 
@@ -1106,6 +1339,9 @@ RegisterNetEvent('ms_adminmenu:server:execute', function(action, data)
         end
         if action == 'resourceGuardRefresh' then
             local success = pcall(function() exports.MS_ResourceGuard:RunCheck() end)
+            if success then
+                audit(source, 'resources', 'Resource-Prüfung ausgeführt')
+            end
             return result(
                 source,
                 success,
@@ -1120,7 +1356,11 @@ RegisterNetEvent('ms_adminmenu:server:execute', function(action, data)
                 return exports.MS_ResourceGuard:SetEnabled(data.enabled)
             end)
             if not success then return result(source, false, 'Überwachung konnte nicht geändert werden.') end
-            audit(source, 'KI-Ressourcenwächter', nil, data.enabled and 'aktiviert' or 'deaktiviert')
+            audit(source, 'resources', 'KI-Ressourcenwächter geändert', nil, {
+                enabled = data.enabled,
+                changed = changed == true,
+                message = message
+            })
             return result(source, changed == true, message or 'Überwachungsstatus aktualisiert.')
         end
         local resource = cleanText(data.resource, 100, false)
@@ -1133,7 +1373,13 @@ RegisterNetEvent('ms_adminmenu:server:execute', function(action, data)
                 )
             end)
             if not success then return result(source, false, 'Quarantäneaktion fehlgeschlagen.') end
-            audit(source, 'Resource-Quarantäne', resource, message)
+            audit(source, 'resources', 'Resource-Quarantäne', {
+                reference = resource,
+                name = resource
+            }, {
+                changed = changed == true,
+                message = message
+            })
             return result(source, changed == true, message or 'Quarantäneaktion verarbeitet.')
         end
         local success, changed, message = pcall(function()
@@ -1143,7 +1389,13 @@ RegisterNetEvent('ms_adminmenu:server:execute', function(action, data)
             )
         end)
         if not success then return result(source, false, 'Freigabeaktion fehlgeschlagen.') end
-        audit(source, 'Resource-Freigabe', resource, message)
+        audit(source, 'resources', 'Resource-Freigabe', {
+            reference = resource,
+            name = resource
+        }, {
+            changed = changed == true,
+            message = message
+        })
         return result(source, changed == true, message or 'Freigabeaktion verarbeitet.')
     end
 
@@ -1166,7 +1418,10 @@ RegisterNetEvent('ms_adminmenu:server:execute', function(action, data)
                 amount,
                 account == 'cash' and 'Bargeld' or 'Bankkonto'
             ))
-            audit(source, 'Geld hinzugefügt', target, ('%s $%d'):format(account, amount))
+            audit(source, 'economy', 'Geld hinzugefügt', { source = target }, {
+                account = account,
+                amount = amount
+            })
             return result(source, true, ('$%d erfolgreich gutgeschrieben.'):format(amount))
         end
 
@@ -1182,7 +1437,11 @@ RegisterNetEvent('ms_adminmenu:server:execute', function(action, data)
             if item.name == itemName then itemLabel = item.label break end
         end
         notify(target, ('%dx %s wurde deinem Inventar hinzugefügt.'):format(amount, itemLabel))
-        audit(source, 'Item hinzugefügt', target, ('%s x%d'):format(itemName, amount))
+        audit(source, 'economy', 'Item hinzugefügt', { source = target }, {
+            item = itemName,
+            label = itemLabel,
+            amount = amount
+        })
         return result(source, true, ('%dx %s vergeben.'):format(amount, itemLabel))
     end
 
@@ -1198,7 +1457,12 @@ RegisterNetEvent('ms_adminmenu:server:execute', function(action, data)
         player:setMetadata('health', 200)
         player:save()
         notify(target, action == 'revive' and 'Du wurdest von einem Admin wiederbelebt.' or 'Du wurdest von einem Admin geheilt.')
-        audit(source, action == 'revive' and 'Wiederbelebt' or 'Geheilt', target)
+        audit(
+            source,
+            'players',
+            action == 'revive' and 'Spieler wiederbelebt' or 'Spieler geheilt',
+            { source = target }
+        )
         return result(source, true, action == 'revive' and 'Spieler wiederbelebt.' or 'Spieler geheilt.')
     end
 
@@ -1206,7 +1470,7 @@ RegisterNetEvent('ms_adminmenu:server:execute', function(action, data)
         local coords = playerCoordinates(target)
         if not coords then return result(source, false, 'Spielerposition nicht verfügbar.') end
         TriggerClientEvent('ms_adminmenu:client:teleport', source, coords)
-        audit(source, 'Goto', target)
+        audit(source, 'players', 'Goto', { source = target })
         return result(source, true, 'Zum Spieler teleportiert.')
     end
 
@@ -1215,14 +1479,19 @@ RegisterNetEvent('ms_adminmenu:server:execute', function(action, data)
         if not coords then return result(source, false, 'Adminposition nicht verfügbar.') end
         TriggerClientEvent('ms_adminmenu:client:teleport', target, coords)
         notify(target, 'Du wurdest von einem Admin teleportiert.')
-        audit(source, 'Bring', target)
+        audit(source, 'players', 'Bring', { source = target })
         return result(source, true, 'Spieler zu dir teleportiert.')
     end
 
     if action == 'freeze' then
         FrozenPlayers[target] = not FrozenPlayers[target]
         TriggerClientEvent('ms_adminmenu:client:setFrozen', target, FrozenPlayers[target])
-        audit(source, FrozenPlayers[target] and 'Eingefroren' or 'Freigegeben', target)
+        audit(
+            source,
+            'players',
+            FrozenPlayers[target] and 'Spieler eingefroren' or 'Spieler freigegeben',
+            { source = target }
+        )
         return result(source, true, FrozenPlayers[target] and 'Spieler eingefroren.' or 'Spieler freigegeben.')
     end
 
@@ -1230,7 +1499,9 @@ RegisterNetEvent('ms_adminmenu:server:execute', function(action, data)
         if target == source then return result(source, false, 'Du kannst dich nicht selbst kicken.') end
         local reason = tostring(data.reason or ''):gsub('[\r\n]', ' '):sub(1, AdminMenuConfig.MaxKickReasonLength)
         if reason:match('^%s*$') then reason = 'Von der Administration vom Server entfernt.' end
-        audit(source, 'Kick', target, reason)
+        audit(source, 'players', 'Spieler gekickt', { source = target }, {
+            reason = reason
+        })
         DropPlayer(target, reason)
         refreshAllMenus()
         return result(source, true, 'Spieler vom Server entfernt.')
@@ -1372,7 +1643,6 @@ RegisterNetEvent('ms_adminmenu:server:craft', function(pointId, recipeId)
 
     player:save()
     CraftingLocks[source] = nil
-    audit(source, 'Gegenstand hergestellt', recipe.id, ('%s x%d'):format(recipe.outputItem, recipe.outputAmount))
     TriggerClientEvent('ms_adminmenu:client:craftResult', source, {
         success = true,
         message = ('%dx %s hergestellt.'):format(recipe.outputAmount, output.label)
@@ -1612,10 +1882,16 @@ CreateThread(function()
     while true do
         Wait(3600000)
         if Ready then
-            local success, err = pcall(cleanupSupportLogs)
-            if not success then
+            local supportSuccess, supportError = pcall(cleanupSupportLogs)
+            if not supportSuccess then
                 print(('[MSCore ACP] Alte Support-Logs konnten nicht bereinigt werden: %s'):format(
-                    tostring(err)
+                    tostring(supportError)
+                ))
+            end
+            local adminSuccess, adminError = pcall(cleanupAdminLogs)
+            if not adminSuccess then
+                print(('[MSCore ACP] Alte Admin-Logs konnten nicht bereinigt werden: %s'):format(
+                    tostring(adminError)
                 ))
             end
         end
