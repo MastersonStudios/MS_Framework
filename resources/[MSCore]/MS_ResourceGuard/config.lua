@@ -28,6 +28,7 @@ ResourceGuardConfig.ExpectedResources = {
     'MS_LoadingScreen',
     'oxmysql',
     'MSCore',
+    'MS_Banking',
     'MS_PlayerSync',
     'MS_mechat',
     'MS_pointing',

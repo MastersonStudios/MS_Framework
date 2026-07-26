@@ -31,6 +31,32 @@ CREATE TABLE IF NOT EXISTS `mscore_characters` (
     FOREIGN KEY (`user_id`) REFERENCES `mscore_users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS `ms_bank_accounts` (
+  `character_id` BIGINT UNSIGNED NOT NULL,
+  `account_number` VARCHAR(24) NOT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`character_id`),
+  UNIQUE KEY `uq_ms_bank_accounts_number` (`account_number`),
+  CONSTRAINT `fk_ms_bank_accounts_character`
+    FOREIGN KEY (`character_id`) REFERENCES `mscore_characters` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `ms_bank_transactions` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `account_character_id` BIGINT UNSIGNED NOT NULL,
+  `transaction_type` VARCHAR(24) NOT NULL,
+  `amount` INT NOT NULL,
+  `balance_after` INT UNSIGNED NOT NULL,
+  `counterparty_account` VARCHAR(24) NULL,
+  `description` VARCHAR(100) NOT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_ms_bank_transactions_account` (`account_character_id`, `id`),
+  CONSTRAINT `fk_ms_bank_transactions_account`
+    FOREIGN KEY (`account_character_id`)
+    REFERENCES `ms_bank_accounts` (`character_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS `mscore_map_objects` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `model` VARCHAR(100) NOT NULL,

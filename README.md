@@ -9,6 +9,7 @@ Aktuelle Framework-Version: `0.0.2`
 - persistente Benutzer und mehrere Charaktere
 - grafische Charakterauswahl und Charaktererstellung
 - Geldkonten (`cash`, `bank`) mit serverseitiger Validierung
+- `MS_Banking` mit Kontonummern, Bank-NPCs, Überweisungen und Buchungsverlauf
 - Jobs, Gruppen und Metadaten
 - server- und clientseitige Player-API
 - Callback-System zwischen Client und Server
@@ -54,7 +55,7 @@ Aktuelle Framework-Version: `0.0.2`
    Lizenzschlüssel anpassen.
 4. In der Konsole zuerst `ensure MS_LoadingScreen` und `ensure MSCore`,
    danach
-   `ensure MS_PlayerSync`, `ensure MS_mechat`, `ensure MS_pointing`,
+   `ensure MS_Banking`, `ensure MS_PlayerSync`, `ensure MS_mechat`, `ensure MS_pointing`,
    `ensure MS_Medic`, `ensure MS_WeaponDamage`, `ensure MS_Inventory`,
    `ensure MS_BasicNeeds`, `ensure MS_HUD`, `ensure MS_Jail`,
    `ensure MS_ClothingShop`, `ensure MS_Stables`, `ensure MS_Trains`,
@@ -90,7 +91,7 @@ Chatbefehle werden ingame mit `/` eingegeben. In der Serverkonsole entfällt
 der Schrägstrich. `<Wert>` kennzeichnet ein Pflichtargument, `[Wert]` ein
 optionales Argument.
 
-Stand Framework `0.0.2`: 36 öffentliche Befehle. Interne Keymapping-Befehle
+Stand Framework `0.0.2`: 37 öffentliche Befehle. Interne Keymapping-Befehle
 werden hier nicht aufgeführt.
 
 ### Spielerbefehle
@@ -101,6 +102,7 @@ werden hier nicht aufgeführt.
 | `/selectchar <Charakter-ID>` | Wählt einen eigenen Charakter anhand seiner Datenbank-ID aus. |
 | `/newchar <Vorname> <Nachname> [male\|female]` | Erstellt einen Charakter; ohne Geschlechtsangabe wird `male` verwendet. |
 | `/cash` | Zeigt Bargeld und Bankguthaben des aktiven Charakters an. |
+| `/bank` | Öffnet das Banksystem beim nächsten erreichbaren Banker. |
 | `/daily` | Holt einmal pro UTC-Tag den Beispielbonus von `$10` ab; benötigt `MS_Example`. |
 | `/frameworkversion` | Zeigt die installierte Framework-Version und den letzten Update-Status. |
 | `/me <Aktion>` | Zeigt eine Roleplay-Aktion im nahen Chat und als 3D-Text über dem Charakter. |
@@ -508,6 +510,25 @@ Sämtliche Krankheiten, Wahrscheinlichkeiten, Intervalle, Mindestgesundheit,
 Medic-Jobs, Reichweiten, Items und Behandlungswerte befinden sich in
 `resources/[MSCore]/MS_Medic/config.lua`. Der Test- und Supportbefehl
 `/medicdisease` benötigt `mscore.admin`.
+
+## MS Banking
+
+`MS_Banking` erstellt für jeden Charakter beim ersten Bankbesuch automatisch
+ein persönliches Konto mit eindeutiger Kontonummer. Der Saldo verwendet direkt
+das MSCore-Bankguthaben, sodass Jobgehälter und Admin-Gutschriften ohne
+zusätzliche Umbuchung an jeder Bankfiliale verfügbar sind.
+
+Bei jedem konfigurierten Banker können Spieler Bargeld einzahlen, Guthaben
+abheben, Geld an andere Kontonummern überweisen und ihre letzten Buchungen
+einsehen. Überweisungen erreichen auch Offline-Charaktere. Beträge, Guthaben,
+Konten, aktive Charaktere und die Entfernung zum Banker werden ausschließlich
+serverseitig geprüft; erfolgreiche Buchungen werden sofort gespeichert.
+
+NPC-Modelle, Positionen, Interaktionstaste, Kontonummer-Präfix,
+Transaktionslimit und Verlaufslänge befinden sich in
+`resources/[MSCore]/MS_Banking/config.lua`. Die Oberfläche wird mit `E` oder
+beim nächsten Banker mit `/bank` geöffnet. Alle Filialen greifen auf dasselbe
+Charakterkonto zu.
 
 ## MS Stables
 

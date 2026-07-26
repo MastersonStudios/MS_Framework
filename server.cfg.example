@@ -12,6 +12,7 @@ set mysql_connection_string "mysql://redm:password@127.0.0.1/redm?charset=utf8mb
 ensure MS_LoadingScreen
 ensure oxmysql
 ensure MSCore
+ensure MS_Banking
 ensure MS_PlayerSync
 ensure MS_mechat
 ensure MS_pointing

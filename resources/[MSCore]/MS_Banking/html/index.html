@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>MS Banking</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <aside id="prompt" class="prompt hidden" aria-live="polite">
+        <span id="promptKey" class="prompt__key">E</span>
+        <span>
+            <strong id="promptLabel">Bank</strong>
+            <small>Bankgeschäfte öffnen</small>
+        </span>
+    </aside>
+
+    <main id="bank" class="bank hidden" aria-label="Banksystem">
+        <header class="bank__header">
+            <div>
+                <p class="eyebrow">Masterson Trust &amp; Savings</p>
+                <h1 id="branch">Bank</h1>
+            </div>
+            <div class="header-actions">
+                <button id="refresh" class="icon-button" type="button" title="Aktualisieren">↻</button>
+                <button id="close" class="icon-button icon-button--close" type="button" title="Schließen">×</button>
+            </div>
+        </header>
+
+        <section class="account-card">
+            <div>
+                <span class="account-card__label">Kontoinhaber</span>
+                <strong id="holder">–</strong>
+            </div>
+            <div class="account-card__number">
+                <span class="account-card__label">Kontonummer</span>
+                <button id="copyAccount" type="button" title="Kontonummer kopieren">
+                    <strong id="accountNumber">–</strong>
+                    <span>Kopieren</span>
+                </button>
+            </div>
+        </section>
+
+        <section class="balances" aria-label="Guthaben">
+            <article>
+                <span>Bargeld</span>
+                <strong id="cash">$0</strong>
+                <small>Für Einzahlungen verfügbar</small>
+            </article>
+            <article class="balances__primary">
+                <span>Kontoguthaben</span>
+                <strong id="balance">$0</strong>
+                <small>An jeder Filiale verfügbar</small>
+            </article>
+        </section>
+
+        <div class="workspace">
+            <section class="operations">
+                <nav class="tabs" aria-label="Bankaktionen">
+                    <button class="tab active" type="button" data-tab="cash">Ein- &amp; Auszahlung</button>
+                    <button class="tab" type="button" data-tab="transfer">Überweisung</button>
+                </nav>
+
+                <form id="cashForm" class="panel active" autocomplete="off">
+                    <label for="cashAmount">Betrag</label>
+                    <div class="money-input">
+                        <span id="cashCurrency">$</span>
+                        <input id="cashAmount" name="amount" type="number" min="1" step="1" placeholder="0" required>
+                    </div>
+                    <div class="quick-values" aria-label="Schnellauswahl">
+                        <button type="button" data-amount="10">$10</button>
+                        <button type="button" data-amount="25">$25</button>
+                        <button type="button" data-amount="50">$50</button>
+                        <button type="button" data-amount="100">$100</button>
+                    </div>
+                    <div class="operation-actions">
+                        <button id="deposit" class="button button--secondary" type="button">Einzahlen</button>
+                        <button id="withdraw" class="button button--primary" type="button">Abheben</button>
+                    </div>
+                </form>
+
+                <form id="transferForm" class="panel" autocomplete="off">
+                    <label for="targetAccount">Empfängerkonto</label>
+                    <input id="targetAccount" class="text-input" name="account" type="text"
+                        maxlength="24" placeholder="MS0000000000" spellcheck="false" required>
+                    <label for="transferAmount">Betrag</label>
+                    <div class="money-input">
+                        <span id="transferCurrency">$</span>
+                        <input id="transferAmount" name="amount" type="number" min="1" step="1" placeholder="0" required>
+                    </div>
+                    <button class="button button--primary button--full" type="submit">Überweisen</button>
+                </form>
+            </section>
+
+            <section class="history">
+                <div class="section-title">
+                    <div>
+                        <p class="eyebrow">Kontoauszug</p>
+                        <h2>Letzte Buchungen</h2>
+                    </div>
+                    <span id="transactionCount">0 Buchungen</span>
+                </div>
+                <div id="transactions" class="transactions"></div>
+            </section>
+        </div>
+
+        <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>
