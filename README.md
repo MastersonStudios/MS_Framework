@@ -513,10 +513,18 @@ Medic-Jobs, Reichweiten, Items und Behandlungswerte befinden sich in
 
 ## MS Banking
 
+Aktuelle Resource-Version: `1.2.0`
+
 `MS_Banking` erstellt für jeden Charakter beim ersten Bankbesuch automatisch
 ein persönliches Konto mit eindeutiger Kontonummer. Der Saldo verwendet direkt
 das MSCore-Bankguthaben, sodass Jobgehälter und Admin-Gutschriften ohne
 zusätzliche Umbuchung an jeder Bankfiliale verfügbar sind.
+
+| Kontotyp | Besitzer | Funktionen |
+| --- | --- | --- |
+| Privatkonto | einzelner Charakter | Bargeld einzahlen und abheben, Überweisungen senden, Buchungen einsehen |
+| Firmenkonto | alle Mitglieder eines Jobs | gemeinsamer Saldo, rangabhängige Ein- und Auszahlungen, eigener Kontoauszug |
+| Adminkonto | Serveradministration | automatische Steuereinnahmen und schreibgeschützte Steuerhistorie |
 
 Bei jedem konfigurierten Banker können Spieler Bargeld einzahlen, Guthaben
 abheben, Geld an andere Kontonummern überweisen und ihre letzten Buchungen
@@ -530,17 +538,61 @@ Auszahlungen sind standardmäßig auf die konfigurierten Leitungsgrade begrenzt.
 Das Firmenkonto und sein separater Buchungsverlauf sind an jeder Filiale
 verfügbar. Arbeitslose erhalten kein Firmenkonto.
 
+| Job | Firmenkonto | Einzahlung ab Grad | Auszahlung ab Grad |
+| --- | --- | ---: | ---: |
+| `sheriff` | Sheriff Office | `0` | `1` |
+| `medic` | Medic | `0` | `2` |
+| `native` | Stammeskonto | `0` | `1` |
+| `gunsmith` | Büchsenmacher | `0` | `1` |
+| `law` | Law | `0` | `1` |
+
+Neue Jobs erhalten über `CompanyAccountDefaults` automatisch ein Firmenkonto.
+`unemployed` ist standardmäßig ausgeschlossen. Für einen Job können Label und
+Mindestränge jederzeit in `CompanyAccounts` überschrieben werden.
+
 Private und geschäftliche Ein- und Auszahlungen besitzen standardmäßig eine
 konfigurierbare Steuer von `1 %`. Sie wird vom Bruttobetrag abgezogen und auf
 dem persistenten Administrationskonto gesammelt. Berechtigte Admins sehen
 Saldo, Steuersatz und Steuerhistorie in einem schreibgeschützten Bank-Tab.
 Überweisungen zwischen persönlichen Konten bleiben standardmäßig steuerfrei.
 
+Da MSCore Geld in ganzen Dollarbeträgen speichert, wird die Steuer
+standardmäßig mit `ceil` auf den nächsten vollen Dollar aufgerundet:
+
+| Vorgang | Bruttobetrag | Steuer | Nettobetrag |
+| --- | ---: | ---: | ---: |
+| Ein- oder Auszahlung | `$100` | `$1` | `$99` |
+| Ein- oder Auszahlung | `$250` | `$3` | `$247` |
+| Persönliche Überweisung | `$100` | `$0` | `$100` |
+
+Ein Vorgang wird abgelehnt, wenn die konfigurierte Mindeststeuer den gesamten
+Betrag aufbrauchen würde. Der Standardbetrag von `$1` kann deshalb nicht ein-
+oder ausgezahlt werden.
+
 NPC-Modelle, Positionen, Interaktionstaste, Kontonummer-Präfix,
 Transaktionslimit und Verlaufslänge befinden sich in
 `resources/[MSCore]/MS_Banking/config.lua`. Die Oberfläche wird mit `E` oder
 beim nächsten Banker mit `/bank` geöffnet. Alle Filialen greifen auf dasselbe
 Charakterkonto zu.
+
+Wichtige Konfigurationsbereiche:
+
+| Einstellung | Zweck |
+| --- | --- |
+| `Bankers` | NPC-Modelle, Szenarien, Filialnamen und Koordinaten |
+| `CompanyAccounts` | feste Firmenkonten und Mindestränge pro Job |
+| `CompanyAccountDefaults` | automatische Konten für später ergänzte Jobs |
+| `AdminAccount` | Kontoschlüssel, Label, ACE-Recht und erlaubte Admin-Gruppen |
+| `TransactionTax` | Aktivierung, Prozentsatz, Mindeststeuer, Rundung und steuerpflichtige Vorgänge |
+| `MaxTransactionAmount` | maximaler Betrag eines einzelnen Bankvorgangs |
+
+Die Tabellen `ms_bank_accounts`, `ms_bank_transactions`,
+`ms_bank_company_accounts`, `ms_bank_company_transactions`,
+`ms_bank_admin_accounts` und `ms_bank_admin_transactions` werden beim Start
+automatisch angelegt. Für neue Installationen sind sie außerdem in
+`database/schema.sql` enthalten. Das Adminkonto benötigt standardmäßig das
+ACE-Recht `mscore.admin` oder eine in `AdminAccount.allowedGroups`
+freigeschaltete Gruppe.
 
 ## MS Stables
 
