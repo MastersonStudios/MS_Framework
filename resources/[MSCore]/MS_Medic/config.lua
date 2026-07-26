@@ -98,6 +98,39 @@ MSMedicConfig.Diseases = {
             successChance = 0.95,
             items = { bandage = 1, medicine = 1 }
         }
+    },
+    bone_fracture = {
+        label = 'Knochenbruch',
+        description = 'Ein gebrochener Knochen verursacht starke Schmerzen und schränkt die Bewegung ein.',
+        chance = 0.001,
+        progressionChance = 0.08,
+        maxSeverity = 3,
+        healthDrainPerSeverity = 1,
+        symptoms = { 'Starke Schmerzen', 'Eingeschränkte Bewegung', 'Schmerzhafte Belastung' },
+        messages = {
+            'Der gebrochene Knochen schmerzt bei jeder Bewegung.',
+            'Ein stechender Schmerz fährt durch deinen Körper.'
+        },
+        effects = {
+            movementMultiplier = 0.78,
+            movementPenaltyPerSeverity = 0.10,
+            minimumMovementMultiplier = 0.50,
+            disableSprint = true,
+            painIntervalMs = 30000,
+            painChance = 0.65,
+            painDurationMs = 2500,
+            painMovementMultiplier = 0.60,
+            painMessages = {
+                'Der Knochenbruch verursacht einen heftigen Schmerzschub.',
+                'Du zuckst vor Schmerzen zusammen und musst langsamer werden.'
+            }
+        },
+        treatment = {
+            label = 'Knochenbruch schienen',
+            durationMs = 10000,
+            successChance = 0.95,
+            items = { bandage = 2, medicine = 1 }
+        }
     }
 }
 

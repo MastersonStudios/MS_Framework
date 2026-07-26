@@ -30,7 +30,7 @@ Aktuelle Framework-Version: `0.0.2`
 - serverautoritatives Spieler-Presence-Sync für bis zu 64 Slots
 - `MS_mechat` mit räumlichem `/me`-Chat und 3D-Text über dem Charakter
 - `MS_pointing` mit frei belegbarer Finger-Zeigegeste auf der Taste `B`
-- `MS_Medic` mit Krankheiten, Behandlungen und Wiederbelebung
+- `MS_Medic` mit Krankheiten, Knochenbruch-Effekten, Behandlungen und Wiederbelebung
 - `MS_Permadeath` mit dauerhaftem Todesrisiko und filmischer Finalszene
 - `MS_WeaponDamage` mit einzeln konfigurierbarem Schaden für sämtliche Waffen
 - `MS_Inventory` mit konfigurierbarer Kapazität, Kontextaktionen und Outfit-Drag-and-Drop
@@ -194,14 +194,16 @@ alle ACE-Rechte stehen in `server.cfg.example`.
 
 `/medicdisease` akzeptiert die Krankheitsschlüssel `influenza` (Grippe),
 `pneumonia` (Lungenentzündung), `food_poisoning`
-(Lebensmittelvergiftung) und `wound_infection` (Wundinfektion). Wird beim
-Hinzufügen kein Schweregrad angegeben, verwendet das System Stufe `1`.
+(Lebensmittelvergiftung), `wound_infection` (Wundinfektion) und
+`bone_fracture` (Knochenbruch). Wird beim Hinzufügen kein Schweregrad
+angegeben, verwendet das System Stufe `1`.
 
 | Beispiel | Wirkung |
 | --- | --- |
 | `/setjob 12 medic 0` | Weist Spieler 12 den Medic-Job als Sanitäter zu. Die Grade `1` und `2` entsprechen Arzt und Chefarzt. |
 | `/medicdisease 12 list` | Listet alle aktiven Krankheiten des Spielers auf. |
 | `/medicdisease 12 add influenza 1` | Fügt Grippe mit Schweregrad 1 hinzu. |
+| `/medicdisease 12 add bone_fracture 2` | Fügt einen Knochenbruch mit Schweregrad 2 hinzu. |
 | `/medicdisease 12 remove influenza` | Entfernt Grippe. |
 | `/medicdisease 12 clear` | Entfernt alle Krankheiten des Spielers. |
 

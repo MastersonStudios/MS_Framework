@@ -29,6 +29,7 @@ Vorkonfiguriert sind:
 - Lungenentzündung
 - Lebensmittelvergiftung
 - Wundinfektion
+- Knochenbruch
 
 ## Medic-Behandlungen
 
@@ -36,6 +37,11 @@ Medics können nahe Spieler untersuchen, Wunden versorgen, einzelne Krankheiten
 behandeln und verstorbene Spieler wiederbeleben. Job, Grad, Entfernung,
 Patientenzustand, Behandlungsdauer, benötigte Items und Heilungschance werden
 serverseitig geprüft.
+
+Ein aktiver `bone_fracture` reduziert die Gehgeschwindigkeit abhängig vom
+Schweregrad, verhindert Sprinten und löst konfigurierbare Schmerzschübe aus.
+Medics behandeln den Knochenbruch mit zwei Verbänden und einer Medizin. Alle
+Werte befinden sich unter `MSMedicConfig.Diseases.bone_fracture`.
 
 Die Resource verwendet `bandage`, `medicine`, `herbal_tonic` und `revive_kit`.
 Die zusätzlichen Items sowie der Job `medic` sind in `MSCore/config.lua`
