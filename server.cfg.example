@@ -37,6 +37,7 @@ ensure MS_pointing
 ensure MS_Permadeath
 ensure MS_Inventory
 ensure MS_Crime
+ensure MS_RestrictedAreas
 ensure MS_BasicNeeds
 ensure MS_Medic
 ensure MS_WeaponDamage
@@ -68,4 +69,5 @@ add_ace group.admin mscore.admin.permadeath allow
 add_ace group.admin mscore.weapon.damage allow
 add_ace group.admin mscore.version.check allow
 add_ace group.admin mscore.resourceguard allow
+add_ace group.admin mscore.restrictedareas.bypass allow
 # add_principal identifier.license:YOUR_LICENSE group.admin

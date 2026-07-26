@@ -32,6 +32,7 @@ Aktuelle Framework-Version: `0.0.2`
 - `MS_pointing` mit frei belegbarer Finger-Zeigegeste auf der Taste `B`
 - `MS_Medic` mit Krankheiten, Knochenbruch-Effekten, Behandlungen und Wiederbelebung
 - `MS_Crime` mit gefesselter Spielersuche, Raubinventar und geschützter Crime-Stadt Van Horn
+- `MS_RestrictedAreas` mit Jobgebieten, Komplettsperren und mexikanischen 5:1-Wachen
 - `MS_Permadeath` mit dauerhaftem Todesrisiko und filmischer Finalszene
 - `MS_WeaponDamage` mit einzeln konfigurierbarem Schaden für sämtliche Waffen
 - `MS_Inventory` mit konfigurierbarer Kapazität, Kontextaktionen und Outfit-Drag-and-Drop
@@ -88,7 +89,8 @@ Migrationsweg.
 4. In der Konsole zuerst `ensure MS_LoadingScreen` und `ensure MSCore`,
    danach
    `ensure MS_Banking`, `ensure MS_PlayerSync`, `ensure MS_mechat`, `ensure MS_pointing`,
-   `ensure MS_Permadeath`, `ensure MS_Inventory`, `ensure MS_Crime`, `ensure MS_BasicNeeds`,
+   `ensure MS_Permadeath`, `ensure MS_Inventory`, `ensure MS_Crime`,
+   `ensure MS_RestrictedAreas`, `ensure MS_BasicNeeds`,
    `ensure MS_Medic`, `ensure MS_WeaponDamage`, `ensure MS_HUD`, `ensure MS_Jail`,
    `ensure MS_ClothingShop`, `ensure MS_Stables`, `ensure MS_Trains`,
    `ensure MS_Telegrams`,
@@ -411,6 +413,31 @@ NPC-Modelle, Waffen und Wachpositionen befinden sich in
 serverseitigen Export `SetRestrained(playerSource, true|false|nil)` oder einen
 der dokumentierten State-Bag-Schlüssel verwenden. Weitere Hinweise stehen in
 `resources/[MSCore]/MS_Crime/README.md`.
+
+## MS Restricted Areas
+
+`MS_RestrictedAreas` erstellt beliebig viele kreisförmige oder polygonale
+Zugangsgebiete. Job und Rang werden von MSCore auf dem Server geprüft.
+
+- Im Modus `jobs` dürfen nur die konfigurierten Jobs und Ränge eintreten.
+  Unberechtigte Charaktere werden an einen sicheren Punkt außerhalb des
+  Gebiets zurückgesetzt.
+- Im Modus `locked` ist das Gebiet vollständig gesperrt. Für jeden
+  Eindringling erscheinen standardmäßig fünf mexikanische Banditen, die nur
+  diesen Spieler angreifen. Zwei Eindringlinge lösen somit zehn getrennte
+  Wachen aus.
+- Überlappungen werden über eine Gebietspriorität aufgelöst. Kreisradius,
+  Polygonpunkte, Höhenbereich, Ausgang, Texte, NPC-Modell, Waffen, Stärke und
+  das Verhältnis sind vollständig konfigurierbar.
+- Die Wachen sind lokal und nicht netzwerksynchronisiert. Dadurch greifen sie
+  keine berechtigten oder unbeteiligten Spieler auf anderen Clients an.
+
+Die Beispiele in `resources/[MSCore]/MS_RestrictedAreas/config.lua` sind
+vorsorglich deaktiviert. Nach dem Eintragen der gewünschten Koordinaten werden
+sie über `Enabled = true` aktiviert. Admins besitzen über
+`mscore.restrictedareas.bypass` den konfigurierbaren Test-Bypass. Eine
+vollständige Anleitung steht in
+`resources/[MSCore]/MS_RestrictedAreas/README.md`.
 
 ## MS Basic Needs
 
