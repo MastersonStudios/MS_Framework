@@ -47,7 +47,8 @@ Charakters zu.
 Firmenkonten stehen unter `MSBankingConfig.CompanyAccounts`. Grad `0` darf
 standardmäßig einzahlen; Auszahlungen benötigen den pro Job eingetragenen
 `minWithdrawGrade`. Vorkonfiguriert sind `sheriff`, `medic`, `native`,
-`gunsmith` und `law`. Arbeitslose besitzen kein Firmenkonto.
+`gunsmith` und `law`. Arbeitslose und der Job `crime` besitzen kein
+Firmenkonto.
 Neue, später ergänzte Jobs erhalten über `CompanyAccountDefaults` automatisch
 ein Firmenkonto; Ausnahmen können unter `excludedJobs` eingetragen werden.
 

@@ -79,7 +79,8 @@ MSBankingConfig.CompanyAccountDefaults = {
     minDepositGrade = 0,
     minWithdrawGrade = 1,
     excludedJobs = {
-        unemployed = true
+        unemployed = true,
+        crime = true
     }
 }
 

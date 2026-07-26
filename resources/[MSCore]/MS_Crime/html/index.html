@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>MS Crime</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <main id="loot" class="hidden" aria-hidden="true">
+        <section class="loot-window">
+            <header>
+                <div>
+                    <p class="eyebrow">Crime · Beuteinventar</p>
+                    <h1 id="target-name">Gefesselte Person</h1>
+                    <p id="target-meta">Inventar wird serverseitig geprüft</p>
+                </div>
+                <div class="header-actions">
+                    <button id="refresh" class="icon-button" title="Aktualisieren">↻</button>
+                    <button id="close" class="icon-button danger" title="Schließen">×</button>
+                </div>
+            </header>
+            <div id="items" class="item-list"></div>
+            <footer>
+                Nur handelbare Gegenstände können geraubt werden · ESC zum Schließen
+            </footer>
+        </section>
+    </main>
+
+    <section id="search-progress" class="search-progress hidden" aria-live="polite">
+        <div class="search-symbol">⌕</div>
+        <div class="search-copy">
+            <strong id="search-text">Du durchsuchst die Person.</strong>
+            <span id="search-target"></span>
+            <div class="progress-track"><i id="progress-bar"></i></div>
+            <small id="search-timer">60 Sekunden</small>
+        </div>
+    </section>
+
+    <script src="app.js"></script>
+</body>
+</html>

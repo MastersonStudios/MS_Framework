@@ -31,6 +31,7 @@ Aktuelle Framework-Version: `0.0.2`
 - `MS_mechat` mit räumlichem `/me`-Chat und 3D-Text über dem Charakter
 - `MS_pointing` mit frei belegbarer Finger-Zeigegeste auf der Taste `B`
 - `MS_Medic` mit Krankheiten, Knochenbruch-Effekten, Behandlungen und Wiederbelebung
+- `MS_Crime` mit gefesselter Spielersuche, Raubinventar und geschützter Crime-Stadt Van Horn
 - `MS_Permadeath` mit dauerhaftem Todesrisiko und filmischer Finalszene
 - `MS_WeaponDamage` mit einzeln konfigurierbarem Schaden für sämtliche Waffen
 - `MS_Inventory` mit konfigurierbarer Kapazität, Kontextaktionen und Outfit-Drag-and-Drop
@@ -87,7 +88,7 @@ Migrationsweg.
 4. In der Konsole zuerst `ensure MS_LoadingScreen` und `ensure MSCore`,
    danach
    `ensure MS_Banking`, `ensure MS_PlayerSync`, `ensure MS_mechat`, `ensure MS_pointing`,
-   `ensure MS_Permadeath`, `ensure MS_Inventory`, `ensure MS_BasicNeeds`,
+   `ensure MS_Permadeath`, `ensure MS_Inventory`, `ensure MS_Crime`, `ensure MS_BasicNeeds`,
    `ensure MS_Medic`, `ensure MS_WeaponDamage`, `ensure MS_HUD`, `ensure MS_Jail`,
    `ensure MS_ClothingShop`, `ensure MS_Stables`, `ensure MS_Trains`,
    `ensure MS_Telegrams`,
@@ -127,7 +128,7 @@ Chatbefehle werden ingame mit `/` eingegeben. In der Serverkonsole entfällt
 der Schrägstrich. `<Wert>` kennzeichnet ein Pflichtargument, `[Wert]` ein
 optionales Argument.
 
-Stand Framework `0.0.2`: 39 öffentliche Befehle. Interne Keymapping-Befehle
+Stand Framework `0.0.2`: 40 öffentliche Befehle. Interne Keymapping-Befehle
 werden hier nicht aufgeführt.
 
 ### Spielerbefehle
@@ -148,6 +149,7 @@ werden hier nicht aufgeführt.
 | `/medic` | Öffnet mit dem Job `medic` das Behandlungsmenü. |
 | `/jailstatus` | Zeigt die eigene verbleibende Haftzeit und den Haftgrund. |
 | `/inventory` | Öffnet `MS_Inventory`. |
+| `/durchsuchen` | Durchsucht als Crime-Mitglied nach 60 Sekunden die nächste gefesselte Person. |
 | `/clothingshop` | Öffnet den nächsten erreichbaren Bekleidungshändler. |
 | `/stables` | Öffnet den nächsten erreichbaren Stall. |
 | `/trains` | Öffnet das Menü des nächsten erreichbaren Bahnhof-NPCs. |
@@ -267,6 +269,16 @@ Ein Charakter-Logout sowie ein Job- oder Rangwechsel starten den
 Auszahlungszeitraum neu. Intervall, Zielkonto und Löhne befinden sich in
 `resources/[MSCore]/MSCore/config.lua`.
 
+### Crime-Job
+
+Der Jobschlüssel `crime` besitzt den Rang `0` **Krimineller**. Der Job erhält
+weder Lohnzahlungen noch ein Firmenkonto. Admins weisen ihn beispielsweise mit
+`/setjob 12 crime 0` zu.
+
+Crime-Mitglieder können gefesselte Personen durchsuchen und ausrauben. Van Horn
+ist als geschützte Crime-Stadt eingerichtet; nur die Jobs `crime` und `medic`
+werden dort nicht von den konfigurierten Wachen angegriffen.
+
 ### Mapeditor-Befehle
 
 Alle Mapeditor-Befehle sind nur ingame verfügbar und benötigen das ACE-Recht
@@ -291,6 +303,7 @@ Alle Keymappings können Spieler in den RedM-Tastatureinstellungen ändern.
 | `F6` | Medic-Behandlungsmenü öffnen. |
 | `F9` | World Builder öffnen oder schließen. |
 | `I` | Inventar öffnen oder schließen. |
+| `H` | Als Crime-Mitglied die nächste gefesselte Person durchsuchen. |
 | `B` | Mit dem Finger nach vorne zeigen. |
 | `E` | Händler, Stall, Bahnhof, Telegrafenamt, Crafting-Punkt, Storage oder Tür benutzen. |
 | `W` / `S` | Zug beschleunigen oder bremsen. |
@@ -374,6 +387,30 @@ damit das Kleidungsstück auch am Ped dargestellt wird:
 Gültige Standardslots stehen in
 `resources/[MSCore]/MS_Inventory/config.lua`. Neue Kleidungsitems lassen
 sich damit direkt über **ACP → Data Admin → Itemcreator** anlegen.
+
+## MS Crime
+
+`MS_Crime` stellt den unbezahlten Job `crime`, die Durchsuchung gefesselter
+Spieler und die Zugangskontrolle für Van Horn bereit.
+
+- Mit `H` oder `/durchsuchen` wird die nächste gefesselte Person in Reichweite
+  ausgewählt. Während der serverseitig gemessenen 60 Sekunden erscheint
+  **„Du durchsuchst die Person.“**
+- Ziel, Entfernung, Fesselstatus und Job werden beim Start, nach Ablauf der
+  Suchzeit und bei jeder Entnahme erneut auf dem Server geprüft.
+- Anschließend zeigt ein separates Beuteinventar die Gegenstände des Ziels.
+  Nur handelbare Items können in zulässiger Menge geraubt werden; Kapazität und
+  Besitz werden serverseitig validiert.
+- Van Horn ist standardmäßig um `2981.65, 561.72, 44.85` mit einem Radius von
+  `235.0` geschützt. Für andere Jobs als `crime` und `medic` erscheinen lokale,
+  bewaffnete Wachen, die ausschließlich den unberechtigten Spieler angreifen.
+
+Suchdauer, Reichweiten, Taste, erlaubte Jobs, Stadtmittelpunkt, Radius,
+NPC-Modelle, Waffen und Wachpositionen befinden sich in
+`resources/[MSCore]/MS_Crime/config.lua`. Andere Fesselscripts können den
+serverseitigen Export `SetRestrained(playerSource, true|false|nil)` oder einen
+der dokumentierten State-Bag-Schlüssel verwenden. Weitere Hinweise stehen in
+`resources/[MSCore]/MS_Crime/README.md`.
 
 ## MS Basic Needs
 
@@ -621,7 +658,7 @@ Die Jobs `sheriff`, `medic`, `native`, `gunsmith` und `law` besitzen außerdem
 je ein gemeinsames Firmenkonto. Alle Jobmitglieder können Bargeld einzahlen;
 Auszahlungen sind standardmäßig auf die konfigurierten Leitungsgrade begrenzt.
 Das Firmenkonto und sein separater Buchungsverlauf sind an jeder Filiale
-verfügbar. Arbeitslose erhalten kein Firmenkonto.
+verfügbar. Arbeitslose und der Job `crime` erhalten kein Firmenkonto.
 
 | Job | Firmenkonto | Einzahlung ab Grad | Auszahlung ab Grad |
 | --- | --- | ---: | ---: |
@@ -632,8 +669,9 @@ verfügbar. Arbeitslose erhalten kein Firmenkonto.
 | `law` | Law | `0` | `1` |
 
 Neue Jobs erhalten über `CompanyAccountDefaults` automatisch ein Firmenkonto.
-`unemployed` ist standardmäßig ausgeschlossen. Für einen Job können Label und
-Mindestränge jederzeit in `CompanyAccounts` überschrieben werden.
+`unemployed` und `crime` sind standardmäßig ausgeschlossen. Für einen Job
+können Label und Mindestränge jederzeit in `CompanyAccounts` überschrieben
+werden.
 
 Private und geschäftliche Ein- und Auszahlungen besitzen standardmäßig eine
 konfigurierbare Steuer von `1 %`. Sie wird vom Bruttobetrag abgezogen und auf

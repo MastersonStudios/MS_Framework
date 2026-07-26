@@ -366,5 +366,11 @@ Config.Jobs = {
             [0] = { label = 'Countysheriff', salary = 12 },
             [1] = { label = 'Marschall', salary = 20 }
         }
+    },
+    crime = {
+        label = 'Crime',
+        grades = {
+            [0] = { label = 'Krimineller', salary = 0 }
+        }
     }
 }

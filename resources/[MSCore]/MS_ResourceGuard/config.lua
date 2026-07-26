@@ -42,6 +42,7 @@ ResourceGuardConfig.ExpectedResources = {
     'MS_Medic',
     'MS_WeaponDamage',
     'MS_Inventory',
+    'MS_Crime',
     'MS_BasicNeeds',
     'MS_HUD',
     'MS_Jail',
