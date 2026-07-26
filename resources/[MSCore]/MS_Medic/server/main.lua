@@ -690,6 +690,44 @@ RegisterCommand(Config.AdminDiseaseCommand or 'medicdisease', function(playerSou
     notify(playerSource, success and 'Krankheitsstatus geändert.' or message)
 end, false)
 
+local function handleTxAdminHeal(targetSource, author)
+    targetSource = tonumber(targetSource)
+    local target = targetSource and getPlayer(targetSource)
+    if not target then return false end
+    if permadeathBlocksRevive(targetSource) then
+        print(('[MS_Medic] txAdmin-Heilung für %s (%d) blockiert: permanenter Tod.'):format(
+            target:getName(),
+            targetSource
+        ))
+        return false
+    end
+
+    target:setMetadata('health', 200)
+    target:save()
+    TriggerClientEvent('ms_medic:client:restoreHealth', targetSource, true, 200)
+    TriggerEvent('MS_Medic:server:txAdminHealed', {
+        targetSource = targetSource,
+        targetCharacterId = target.characterId,
+        author = tostring(author or 'txAdmin')
+    })
+    return true
+end
+
+-- txAdmin v8+: synchronisiert den Menüpunkt "Heal" mit MSCore/Medic.
+AddEventHandler('txAdmin:events:playerHealed', function(eventData)
+    if type(eventData) ~= 'table' then return end
+    local targetSource = tonumber(eventData.target)
+    if not targetSource then return end
+
+    if targetSource == -1 then
+        for playerSource in pairs(exports.MSCore:GetPlayers()) do
+            handleTxAdminHeal(tonumber(playerSource), eventData.author)
+        end
+        return
+    end
+    handleTxAdminHeal(targetSource, eventData.author)
+end)
+
 AddEventHandler('mscore:server:playerLoaded', function(playerSource, player)
     if DatabaseReady then
         loadDiseases(playerSource, player)

@@ -1,22 +1,29 @@
-# RedM
-endpoint_add_tcp "0.0.0.0:30120"
-endpoint_add_udp "0.0.0.0:30120"
-sv_hostname "MSCore RedM"
-sets sv_projectName "MSCore RedM"
-sets sv_projectDesc "MSCore Roleplay Framework by Masterson Studios"
-sets tags "redm, roleplay, mscore"
+# ---------------------------------------------------------------------------
+# MSCore RedM – txAdmin-Konfiguration
+# Diese Datei wird durch recipe.yaml als server.cfg installiert.
+# Werte in {{...}} werden vom txAdmin Recipe Deployer eingesetzt.
+# ---------------------------------------------------------------------------
+
+# Serverdarstellung
+sv_hostname "{{serverName}} | MSCore"
+sets sv_projectName "[MSCore] {{serverName}}"
+sets sv_projectDesc "{{recipeDescription}}"
+sets tags "redm, roleplay, mscore, masterson-studios"
 sets locale "de-DE"
+
+# RedM / Netzwerk
 set gamename rdr3
-set sv_enforceGameBuild 1491
+sv_enforceGameBuild 1491
+sv_licenseKey "{{svLicense}}"
+sv_maxclients {{maxClients}}
+{{serverEndpoints}}
+set steam_webApiKey "none"
+set resources_useSystemChat true
 set onesync on
 set sv_stateBagStrictMode true
-set resources_useSystemChat true
-set steam_webApiKey "none"
-sv_maxclients 64
-sv_licenseKey "CHANGE_ME"
 
-# Database
-set mysql_connection_string "mysql://redm:password@127.0.0.1/redm?charset=utf8mb4"
+# Datenbank – wird vom txAdmin-Datenbankschritt erzeugt.
+set mysql_connection_string "{{dbConnectionString}}"
 
 # Offizielle RedM-Basisresources
 ensure mapmanager
@@ -26,9 +33,11 @@ ensure sessionmanager-rdr3
 ensure redm-map-one
 ensure hardcap
 
-# MSCore
-ensure MS_LoadingScreen
+# Datenbanktreiber
 ensure oxmysql
+
+# MSCore Framework
+ensure MS_LoadingScreen
 ensure MSCore
 ensure MS_Banking
 ensure MS_PlayerSync
@@ -53,7 +62,7 @@ ensure MS_MapEditor
 ensure MS_AdminLogout
 ensure MS_Example
 
-# Framework admins
+# txAdmin- und Framework-Administratoren
 add_ace group.admin command allow
 add_ace group.admin command.quit deny
 add_ace group.admin mscore.admin allow
@@ -67,4 +76,6 @@ add_ace group.admin mscore.admin.permadeath allow
 add_ace group.admin mscore.weapon.damage allow
 add_ace group.admin mscore.version.check allow
 add_ace group.admin mscore.resourceguard allow
-# add_principal identifier.license:YOUR_LICENSE group.admin
+
+# Der im txAdmin-Setup angelegte Master-Admin wird group.admin zugewiesen.
+{{addPrincipalsMaster}}

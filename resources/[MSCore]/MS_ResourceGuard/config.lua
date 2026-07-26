@@ -25,6 +25,12 @@ ResourceGuardConfig.AllowedResources = {}
 ResourceGuardConfig.BlockedResources = {}
 
 ResourceGuardConfig.ExpectedResources = {
+    'mapmanager',
+    'chat',
+    'spawnmanager',
+    'sessionmanager-rdr3',
+    'redm-map-one',
+    'hardcap',
     'MS_LoadingScreen',
     'oxmysql',
     'MSCore',
@@ -53,6 +59,12 @@ ResourceGuardConfig.ExpectedResources = {
 }
 
 ResourceGuardConfig.CriticalResources = {
+    'mapmanager',
+    'chat',
+    'spawnmanager',
+    'sessionmanager-rdr3',
+    'redm-map-one',
+    'hardcap',
     'oxmysql',
     'MSCore',
     'MS_Permadeath',
@@ -74,6 +86,8 @@ ResourceGuardConfig.ProtectedResources = {
     'mapmanager',
     'spawnmanager',
     'sessionmanager',
+    'sessionmanager-rdr3',
+    'redm-map-one',
     'hardcap',
     'baseevents',
     'monitor',

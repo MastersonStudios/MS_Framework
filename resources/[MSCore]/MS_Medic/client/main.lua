@@ -80,7 +80,7 @@ end)
 RegisterNetEvent('ms_medic:client:restoreHealth', function(revive, rawHealth)
     local ped = PlayerPedId()
     local health = math.max(1, math.min(200, math.floor(tonumber(rawHealth) or 100)))
-    if revive == true then
+    if revive == true and IsEntityDead(ped) then
         Citizen.InvokeNative(RESURRECT_PED, ped)
         ClearPedTasksImmediately(ped)
     end

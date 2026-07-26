@@ -50,6 +50,35 @@ Aktuelle Framework-Version: `0.0.2`
 
 ## Installation
 
+### txAdmin-Installation per URL
+
+Für eine neue Installation kann das Framework direkt im txAdmin Recipe
+Deployer über folgende URL installiert werden:
+
+```text
+https://raw.githubusercontent.com/MastersonStudios/MS_Framework/main/recipe.yaml
+```
+
+1. Einen aktuellen RedM-FXServer ohne `+exec server.cfg` starten und den
+   txAdmin-Ersteinrichtungsassistenten öffnen.
+2. Im Recipe Deployer `Remote URL` auswählen und die oben stehende URL
+   einfügen.
+3. Servername, Cfx-Lizenzschlüssel, Slotanzahl und MySQL-/MariaDB-Zugangsdaten
+   eintragen.
+4. Das Recipe ausführen und den Server nach erfolgreichem Abschluss starten.
+
+Das Recipe installiert die offiziellen RedM-Basisresources, die gepinnte
+`oxmysql`-Release `2.14.1`, sämtliche MSCore-Resources, die
+[txAdmin-Serverkonfiguration](server.cfg.txadmin) und das vollständige
+Datenbankschema. Die Platzhalter für Endpoints, Slots, Lizenz, Datenbank und
+den ersten Master-Admin werden ausschließlich durch txAdmin ausgefüllt.
+
+Die URL-Installation ist für eine neue MSCore-Datenbank vorgesehen. Für eine
+bestehende Frontier-Installation gilt weiterhin der nachfolgend beschriebene
+Migrationsweg.
+
+### Manuelle Installation
+
 1. `database/schema.sql` in eine leere Datenbank importieren.
 2. Die Ordner aus `resources/` in den `resources`-Ordner des Servers kopieren.
 3. `server.cfg.example` nach `server.cfg` kopieren und Connection-String sowie
@@ -71,6 +100,11 @@ Aktuelle Framework-Version: `0.0.2`
 Beim ersten Beitritt öffnet sich die Charaktererstellung. In
 `MSCore/config.lua` kann optional die automatische Erstellung eines
 Platzhalter-Charakters aktiviert werden.
+
+Die manuelle Beispielkonfiguration enthält die offiziellen RedM-Systemresources
+und feste Beispielwerte. Für txAdmin darf sie nicht anstelle von
+`server.cfg.txadmin` verwendet werden, da nur die txAdmin-Datei die benötigten
+`{{...}}`-Platzhalter besitzt.
 
 ### Aktualisierung einer bestehenden Frontier-Installation
 

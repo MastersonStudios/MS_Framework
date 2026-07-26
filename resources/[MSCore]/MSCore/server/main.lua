@@ -199,6 +199,10 @@ local function savePlayer(source)
     if player then player:save() end
 end
 
+local function saveAllPlayers()
+    for source in pairs(Players) do savePlayer(source) end
+end
+
 AddEventHandler('playerDropped', function()
     savePlayer(source)
     TriggerEvent('mscore:server:playerUnloaded', source, Players[source])
@@ -214,7 +218,12 @@ CreateThread(function()
     end
 end)
 
+AddEventHandler('txAdmin:events:serverShuttingDown', function()
+    saveAllPlayers()
+    print('[MSCore] Aktive Charaktere vor dem txAdmin-Shutdown gespeichert.')
+end)
+
 AddEventHandler('onResourceStop', function(resource)
     if resource ~= GetCurrentResourceName() then return end
-    for source in pairs(Players) do savePlayer(source) end
+    saveAllPlayers()
 end)

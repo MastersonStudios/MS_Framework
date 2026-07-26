@@ -1,0 +1,76 @@
+$engine: 3
+$minFxVersion: 7290
+$onesync: on
+
+name: MSCore RedM
+version: 0.0.2
+author: Masterson Studios
+description: Vollständiges MSCore Roleplay-Framework für RedM mit automatischer Datenbank- und Dependency-Installation.
+
+tasks:
+  # Datenbankverbindung früh prüfen und eine neue Datenbank anlegen, falls nötig.
+  - action: connect_database
+
+  # Framework laden. main ist der stabile, öffentlich installierbare Stand.
+  - action: download_github
+    src: https://github.com/MastersonStudios/MS_Framework
+    ref: main
+    dest: ./tmp/mscore
+
+  - action: query_database
+    file: ./tmp/mscore/database/schema.sql
+
+  # Offizielle RedM-Basisresources entsprechend dem Cfx-Standardrezept.
+  - action: download_github
+    src: https://github.com/citizenfx/cfx-server-data
+    ref: master
+    subpath: resources
+    dest: ./resources
+
+  # FXServer stellt den aktuellen System-Chat bereit.
+  - action: remove_path
+    path: ./resources/[gameplay]/chat
+
+  - action: ensure_dir
+    path: ./resources/[standalone]
+
+  # Gepinnte oxmysql-Release statt eines veränderlichen Latest-Downloads.
+  - action: download_file
+    url: https://github.com/overextended/oxmysql/releases/download/v2.14.1/oxmysql.zip
+    path: ./tmp/oxmysql.zip
+
+  - action: unzip
+    src: ./tmp/oxmysql.zip
+    dest: ./resources/[standalone]
+
+  # MSCore-Resources, Dokumentation und txAdmin-Konfiguration installieren.
+  - action: move_path
+    src: ./tmp/mscore/resources/[MSCore]
+    dest: ./resources/[MSCore]
+    overwrite: true
+
+  - action: ensure_dir
+    path: ./MSCore
+
+  - action: copy_path
+    src: ./tmp/mscore/LICENSE
+    dest: ./MSCore/LICENSE
+    overwrite: true
+
+  - action: copy_path
+    src: ./tmp/mscore/README.md
+    dest: ./MSCore/README.md
+    overwrite: true
+
+  - action: copy_path
+    src: ./tmp/mscore/database
+    dest: ./MSCore/database
+    overwrite: true
+
+  - action: move_path
+    src: ./tmp/mscore/server.cfg.txadmin
+    dest: ./server.cfg
+    overwrite: true
+
+  - action: remove_path
+    path: ./tmp
