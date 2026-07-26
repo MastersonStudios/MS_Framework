@@ -327,15 +327,19 @@ Config.Jobs = {
     },
     sheriff = {
         label = 'Sheriff',
+        payIntervalMinutes = 60,
+        payAccount = 'bank',
         grades = {
-            [0] = { label = 'Deputy', salary = 5 },
-            [1] = { label = 'Sheriff', salary = 10 }
+            [0] = { label = 'Deputy', salary = 10 },
+            [1] = { label = 'Sheriff', salary = 12 }
         }
     },
     medic = {
         label = 'Medic',
+        payIntervalMinutes = 60,
+        payAccount = 'bank',
         grades = {
-            [0] = { label = 'Sanitäter', salary = 5 },
+            [0] = { label = 'Sanitäter', salary = 8 },
             [1] = { label = 'Arzt', salary = 10 },
             [2] = { label = 'Chefarzt', salary = 15 }
         }

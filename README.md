@@ -164,6 +164,23 @@ Hinzufügen kein Schweregrad angegeben, verwendet das System Stufe `1`.
 | `/medicdisease 12 remove influenza` | Entfernt Grippe. |
 | `/medicdisease 12 clear` | Entfernt alle Krankheiten des Spielers. |
 
+### Stündliche Jobgehälter
+
+Die folgenden Jobgehälter werden nach jeweils 60 Minuten ununterbrochener
+Online-Dienstzeit serverseitig auf das Bankkonto ausgezahlt:
+
+| Job | Grad | Rang | Stundenlohn |
+| --- | ---: | --- | ---: |
+| `medic` | `0` | Sanitäter | `$8` |
+| `medic` | `1` | Arzt | `$10` |
+| `medic` | `2` | Chefarzt | `$15` |
+| `sheriff` | `0` | Deputy | `$10` |
+| `sheriff` | `1` | Sheriff | `$12` |
+
+Ein Charakter-Logout sowie ein Job- oder Rangwechsel starten den
+Auszahlungszeitraum neu. Intervall, Zielkonto und Löhne befinden sich in
+`resources/[MSCore]/MSCore/config.lua`.
+
 ### Native-Job
 
 Der Jobschlüssel `native` besitzt zwei Ränge:
