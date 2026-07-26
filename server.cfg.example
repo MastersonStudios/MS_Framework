@@ -16,6 +16,7 @@ ensure MS_Banking
 ensure MS_PlayerSync
 ensure MS_mechat
 ensure MS_pointing
+ensure MS_Permadeath
 ensure MS_Medic
 ensure MS_WeaponDamage
 ensure MS_Inventory
@@ -42,6 +43,7 @@ add_ace group.admin mscore.mapeditor allow
 add_ace group.admin mscore.admin.logout allow
 add_ace group.admin mscore.admin.guarma allow
 add_ace group.admin mscore.admin.jail allow
+add_ace group.admin mscore.admin.permadeath allow
 add_ace group.admin mscore.weapon.damage allow
 add_ace group.admin mscore.version.check allow
 add_ace group.admin mscore.resourceguard allow

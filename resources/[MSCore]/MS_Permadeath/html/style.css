@@ -1,0 +1,157 @@
+:root {
+    color-scheme: dark;
+    font-family: Georgia, "Times New Roman", serif;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+    background: transparent;
+    pointer-events: none;
+}
+
+.risk-toast {
+    position: fixed;
+    top: 7vh;
+    left: 50%;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.2rem 1.1rem;
+    min-width: 320px;
+    padding: 0.9rem 1.2rem;
+    color: #f6ead1;
+    background: linear-gradient(115deg, rgba(26, 15, 12, 0.96), rgba(76, 27, 20, 0.92));
+    border: 1px solid rgba(220, 155, 91, 0.6);
+    border-radius: 3px;
+    box-shadow: 0 14px 35px rgba(0, 0, 0, 0.45);
+    opacity: 0;
+    transform: translate(-50%, -18px);
+    transition: opacity 250ms ease, transform 250ms ease;
+}
+
+.risk-toast.visible {
+    opacity: 1;
+    transform: translate(-50%, 0);
+}
+
+.risk-kicker {
+    grid-column: 1 / -1;
+    color: #cba36f;
+    font: 700 0.66rem/1.2 Arial, sans-serif;
+    letter-spacing: 0.18em;
+}
+
+#risk-value {
+    font-size: 1.4rem;
+}
+
+#risk-increase {
+    align-self: center;
+    color: #ee8a74;
+    font: 700 0.9rem/1 Arial, sans-serif;
+}
+
+.finale {
+    position: fixed;
+    inset: 0;
+    display: grid;
+    place-items: end center;
+    padding: 0 10vw 12vh;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 900ms ease;
+}
+
+.finale.visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+.vignette {
+    position: absolute;
+    inset: 0;
+    background:
+        linear-gradient(180deg, rgba(16, 8, 5, 0.18), rgba(41, 18, 8, 0.1) 45%, rgba(7, 4, 3, 0.78)),
+        radial-gradient(circle at 72% 28%, rgba(227, 151, 69, 0.17), transparent 42%),
+        radial-gradient(circle, transparent 30%, rgba(0, 0, 0, 0.72) 100%);
+}
+
+.letterbox {
+    position: absolute;
+    right: 0;
+    left: 0;
+    height: 8vh;
+    background: #050403;
+}
+
+.letterbox.top {
+    top: 0;
+}
+
+.letterbox.bottom {
+    bottom: 0;
+}
+
+.finale-copy {
+    position: relative;
+    z-index: 2;
+    width: min(760px, 86vw);
+    color: #f4e8d1;
+    text-align: center;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.9);
+}
+
+.character-name {
+    margin: 0 0 0.25rem;
+    color: #d8ba87;
+    font: 700 0.76rem/1.2 Arial, sans-serif;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+}
+
+h1 {
+    margin: 0;
+    font-size: clamp(2rem, 4.2vw, 4.2rem);
+    font-weight: 400;
+}
+
+.subtitle {
+    margin: 0.65rem auto 1.6rem;
+    max-width: 620px;
+    color: rgba(244, 232, 209, 0.8);
+    font-size: clamp(0.9rem, 1.4vw, 1.15rem);
+}
+
+.caption {
+    min-height: 1.5em;
+    margin: 0;
+    font-size: clamp(1rem, 1.6vw, 1.28rem);
+    font-style: italic;
+    transition: opacity 250ms ease;
+}
+
+.threshold-line {
+    margin: 1.1rem 0 0;
+    color: #d19b78;
+    font: 700 0.68rem/1.2 Arial, sans-serif;
+    letter-spacing: 0.12em;
+}
+
+.test-label {
+    display: none;
+    margin-bottom: 0.7rem;
+    color: #b8d8c3;
+    font: 700 0.68rem/1 Arial, sans-serif;
+    letter-spacing: 0.16em;
+}
+
+.finale.test .test-label {
+    display: inline-block;
+}

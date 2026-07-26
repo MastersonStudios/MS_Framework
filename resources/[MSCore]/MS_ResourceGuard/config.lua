@@ -32,6 +32,7 @@ ResourceGuardConfig.ExpectedResources = {
     'MS_PlayerSync',
     'MS_mechat',
     'MS_pointing',
+    'MS_Permadeath',
     'MS_Medic',
     'MS_WeaponDamage',
     'MS_Inventory',
@@ -54,6 +55,7 @@ ResourceGuardConfig.ExpectedResources = {
 ResourceGuardConfig.CriticalResources = {
     'oxmysql',
     'MSCore',
+    'MS_Permadeath',
     'MS_PlayerSync',
     'MS_Inventory',
     'MS_BasicNeeds',

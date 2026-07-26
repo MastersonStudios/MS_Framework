@@ -281,6 +281,14 @@ local function healthState(playerSource)
     return health, health <= 0
 end
 
+local function permadeathBlocksRevive(playerSource)
+    if GetResourceState('MS_Permadeath') ~= 'started' then return false end
+    local success, blocked = pcall(function()
+        return exports.MS_Permadeath:IsFinalDeath(playerSource)
+    end)
+    return success and blocked == true
+end
+
 local function patientRow(playerSource)
     local player = getPlayer(playerSource)
     if not player then return nil end
@@ -442,6 +450,10 @@ local function completeTreatment(medicSource, targetSource, actionType, actionKe
         abortTreatment(medicSource, targetSource, 'Der Zustand des Patienten hat sich verändert.')
         return
     end
+    if actionType == 'care' and actionKey == 'revive' and permadeathBlocksRevive(targetSource) then
+        abortTreatment(medicSource, targetSource, 'Dieser Charakter befindet sich im permanenten Tod.')
+        return
+    end
 
     if actionType == 'disease' then
         local state = DiseaseStates[target.characterId] or {}
@@ -579,6 +591,9 @@ RegisterNetEvent('ms_medic:server:treat', function(rawTarget, actionType, action
     local health, dead = healthState(targetSource)
     if actionType == 'care' and actionKey == 'revive' then
         if not dead then return notify(medicSource, 'Der Patient ist nicht verstorben.') end
+        if permadeathBlocksRevive(targetSource) then
+            return notify(medicSource, 'Dieser Charakter kann nicht mehr wiederbelebt werden.')
+        end
     elseif dead then
         return notify(medicSource, 'Ein verstorbener Patient muss zuerst wiederbelebt werden.')
     end

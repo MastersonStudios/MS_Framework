@@ -30,6 +30,7 @@ Aktuelle Framework-Version: `0.0.2`
 - `MS_mechat` mit räumlichem `/me`-Chat und 3D-Text über dem Charakter
 - `MS_pointing` mit frei belegbarer Finger-Zeigegeste auf der Taste `B`
 - `MS_Medic` mit Krankheiten, Behandlungen und Wiederbelebung
+- `MS_Permadeath` mit dauerhaftem Todesrisiko und filmischer Finalszene
 - `MS_WeaponDamage` mit einzeln konfigurierbarem Schaden für sämtliche Waffen
 - `MS_Inventory` mit konfigurierbarer Kapazität, Kontextaktionen und Outfit-Drag-and-Drop
 - `MS_BasicNeeds` mit konfigurierbarem Hunger und Durst
@@ -56,7 +57,7 @@ Aktuelle Framework-Version: `0.0.2`
 4. In der Konsole zuerst `ensure MS_LoadingScreen` und `ensure MSCore`,
    danach
    `ensure MS_Banking`, `ensure MS_PlayerSync`, `ensure MS_mechat`, `ensure MS_pointing`,
-   `ensure MS_Medic`, `ensure MS_WeaponDamage`, `ensure MS_Inventory`,
+   `ensure MS_Permadeath`, `ensure MS_Medic`, `ensure MS_WeaponDamage`, `ensure MS_Inventory`,
    `ensure MS_BasicNeeds`, `ensure MS_HUD`, `ensure MS_Jail`,
    `ensure MS_ClothingShop`, `ensure MS_Stables`, `ensure MS_Trains`,
    `ensure MS_Telegrams`,
@@ -91,7 +92,7 @@ Chatbefehle werden ingame mit `/` eingegeben. In der Serverkonsole entfällt
 der Schrägstrich. `<Wert>` kennzeichnet ein Pflichtargument, `[Wert]` ein
 optionales Argument.
 
-Stand Framework `0.0.2`: 37 öffentliche Befehle. Interne Keymapping-Befehle
+Stand Framework `0.0.2`: 39 öffentliche Befehle. Interne Keymapping-Befehle
 werden hier nicht aufgeführt.
 
 ### Spielerbefehle
@@ -108,6 +109,7 @@ werden hier nicht aufgeführt.
 | `/me <Aktion>` | Zeigt eine Roleplay-Aktion im nahen Chat und als 3D-Text über dem Charakter. |
 | `/point` | Führt die Finger-Zeigegeste aus; alternativ kann `B` verwendet werden. |
 | `/healthstatus` | Öffnet die eigene Gesundheitsakte mit aktiven Krankheiten. |
+| `/deathrisk` | Zeigt das persistente permanente Todesrisiko, die Todesanzahl und den Schwellwert. |
 | `/medic` | Öffnet mit dem Job `medic` das Behandlungsmenü. |
 | `/jailstatus` | Zeigt die eigene verbleibende Haftzeit und den Haftgrund. |
 | `/inventory` | Öffnet `MS_Inventory`. |
@@ -136,6 +138,7 @@ werden hier nicht aufgeführt.
 | `/resourceguard quarantine <Resource>` | `mscore.resourceguard` | Stoppt eine nicht geschützte Resource und setzt sie unter Quarantäne. |
 | `/resourceguard release <Resource>` | `mscore.resourceguard` | Hebt die Quarantäne auf; ein automatischer Start erfolgt bewusst nicht. |
 | `/medicdisease <Server-ID> <add\|remove\|clear\|list> [Krankheit] [Schweregrad]` | `mscore.admin` | Verwaltet Krankheiten eines aktiven Charakters. |
+| `/permadeath <status\|set\|reset\|testscene> [Server-ID] [Prozent]` | `mscore.admin.permadeath` | Prüft oder setzt das Todesrisiko und startet eine sichere Testszene. |
 | `/jail <Server-ID> <Minuten> [Grund]` | `mscore.admin.jail` oder Job `sheriff` | Inhaftiert einen aktiven Charakter persistent in Sisika. |
 | `/unjail <Server-ID> [Grund]` | `mscore.admin.jail` oder Job `sheriff` | Entlässt einen Gefangenen vorzeitig. |
 | `/jailstatus <Server-ID>` | `mscore.admin.jail` oder Job `sheriff` | Zeigt den Haftstatus eines anderen Spielers. |
@@ -145,10 +148,11 @@ werden hier nicht aufgeführt.
 | `/weapondamage resetall` | `mscore.weapon.damage` | Entfernt alle Laufzeitänderungen am Waffenschaden. |
 
 `setjob`, `givemoney`, `logout`, `charlogout`, `guarmareset`,
-`frameworkversion`, `medicdisease`, `jail`, `unjail`, `jailstatus` und
+`frameworkversion`, `medicdisease`, `permadeath`, `jail`, `unjail`, `jailstatus` und
 `weapondamage` können auch in der Serverkonsole
 verwendet werden. Bei `logout`, `charlogout` und `guarmareset` ist dort eine
-Server-ID erforderlich; bei `jailstatus` ebenfalls. Beispielzuweisungen für
+Server-ID erforderlich; bei `permadeath` und `jailstatus` ebenfalls.
+Beispielzuweisungen für
 alle ACE-Rechte stehen in `server.cfg.example`.
 
 ### Medic-Befehlsbeispiele
@@ -510,6 +514,41 @@ Sämtliche Krankheiten, Wahrscheinlichkeiten, Intervalle, Mindestgesundheit,
 Medic-Jobs, Reichweiten, Items und Behandlungswerte befinden sich in
 `resources/[MSCore]/MS_Medic/config.lua`. Der Test- und Supportbefehl
 `/medicdisease` benötigt `mscore.admin`.
+
+## MS Permadeath
+
+`MS_Permadeath` speichert für jeden Charakter ein dauerhaftes Todesrisiko.
+Jeder vom Server bestätigte Tod erhöht es zufällig um `1–3` Prozentpunkte.
+Der Standardschwellwert beträgt `60 %`; weil standardmäßig die echte
+Überschreitung zählt, löst der permanente Tod ab `61 %` aus. Bereich,
+Schwellwert, Cooldowns und Befehle stehen in
+`resources/[MSCore]/MS_Permadeath/config.lua`.
+
+Optionale Death-Events und die eigene RedM-Clientprüfung werden entprellt und am Server
+gegen den tatsächlichen Ped-Gesundheitszustand validiert. Sobald der Schwellwert
+überschritten wurde, setzt die Resource `mscore_characters.is_deleted = 1`.
+Der Charakter verschwindet damit aus der normalen Auswahl, sein Datensatz wird
+aber nicht hart gelöscht. Ein Disconnect oder Resource-Neustart kann den
+bereits ausgelösten Charaktertod nicht aufheben.
+
+Die Finalsequenz versucht auf Wunsch ein in `Finale.NativeCutscene.Name`
+eingetragenes natives Story-Asset. Weil solche Assets vom RDR2-Build und
+Storyzustand abhängen, läuft bei leerem oder nicht ladbarem Namen automatisch
+eine integrierte, von Arthur Morgans Sonnenaufgangs-Finale inspirierte
+Kamerasequenz. `/permadeath testscene [Server-ID]` testet sie ohne
+Datenänderung.
+
+`MS_Medic` und das ACP sperren Heilung sowie Wiederbelebung, sobald der
+permanente Tod ausgelöst ist. Die übrigen Admin-Unterbefehle sind
+`/permadeath status [Server-ID]`, `/permadeath set <Server-ID> <0-100>` und
+`/permadeath reset <Server-ID>`. Sie benötigen
+`mscore.admin.permadeath` oder das übergeordnete `mscore.admin`.
+
+Die Tabelle `ms_permadeath_states` wird beim Resource-Start automatisch
+angelegt und ist auch in `database/schema.sql` enthalten. `MS_Permadeath` muss
+vor `MS_Medic` gestartet werden; die passende Reihenfolge steht in
+`server.cfg.example`. Die Todeserkennung benötigt keine GTA-spezifische
+`baseevents`-Resource.
 
 ## MS Banking
 

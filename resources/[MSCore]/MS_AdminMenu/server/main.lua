@@ -27,6 +27,14 @@ local function notify(source, message)
     TriggerClientEvent('mscore:client:notify', source, message)
 end
 
+local function permadeathBlocksRestore(playerSource)
+    if GetResourceState('MS_Permadeath') ~= 'started' then return false end
+    local success, blocked = pcall(function()
+        return exports.MS_Permadeath:IsFinalDeath(playerSource)
+    end)
+    return success and blocked == true
+end
+
 local function audit(source, action, target, detail)
     print(('[MSCore ACP] %s (%d) | %s | Ziel: %s | %s'):format(
         source == 0 and 'Konsole' or (GetPlayerName(source) or 'Unbekannt'),
@@ -1183,6 +1191,9 @@ RegisterNetEvent('ms_adminmenu:server:execute', function(action, data)
     end
 
     if action == 'heal' or action == 'revive' then
+        if permadeathBlocksRestore(target) then
+            return result(source, false, 'Der permanente Charaktertod wurde bereits ausgelöst.')
+        end
         TriggerClientEvent('ms_adminmenu:client:restorePlayer', target, action == 'revive')
         player:setMetadata('health', 200)
         player:save()

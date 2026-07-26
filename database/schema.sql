@@ -366,3 +366,22 @@ CREATE TABLE IF NOT EXISTS `ms_jail_sentences` (
   CONSTRAINT `fk_ms_jail_character`
     FOREIGN KEY (`character_id`) REFERENCES `mscore_characters` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `ms_permadeath_states` (
+  `character_id` BIGINT UNSIGNED NOT NULL,
+  `risk_percent` TINYINT UNSIGNED NOT NULL DEFAULT 0,
+  `recorded_deaths` INT UNSIGNED NOT NULL DEFAULT 0,
+  `last_increase` TINYINT UNSIGNED NOT NULL DEFAULT 0,
+  `last_cause` VARCHAR(32) NULL,
+  `death_active` TINYINT(1) NOT NULL DEFAULT 0,
+  `pending_finale` TINYINT(1) NOT NULL DEFAULT 0,
+  `permadead` TINYINT(1) NOT NULL DEFAULT 0,
+  `last_death_at` TIMESTAMP NULL DEFAULT NULL,
+  `permadeath_at` TIMESTAMP NULL DEFAULT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`character_id`),
+  KEY `idx_ms_permadeath_pending` (`pending_finale`, `permadead`),
+  CONSTRAINT `fk_ms_permadeath_character`
+    FOREIGN KEY (`character_id`) REFERENCES `mscore_characters` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
