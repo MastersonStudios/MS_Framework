@@ -12,6 +12,9 @@ denselben Saldo verwenden.
 - Auszahlungen vom Bankkonto als Bargeld an jeder Filiale
 - Überweisungen an Kontonummern von Online- und Offline-Charakteren
 - persistenter Buchungsverlauf mit Kontostand nach jeder Transaktion
+- gemeinsame Firmenkonten für alle konfigurierten Jobs
+- Firmen-Einzahlungen und ranggeschützte Firmen-Auszahlungen
+- eigener Firmenkontoauszug mit ausführendem Charakter
 - serverseitige Distanz-, Betrags-, Guthaben- und Kontoprüfung
 - unmittelbare Speicherung erfolgreicher Geldbewegungen
 - grafische Bankoberfläche und Interaktion über `E`
@@ -38,6 +41,21 @@ Interaktionstaste, Kontonummer-Präfix, Maximallimit, Reichweiten,
 Streaming-Distanzen und Länge des Buchungsverlaufs sind ebenfalls
 konfigurierbar. Alle eingetragenen Banker greifen auf dasselbe Konto eines
 Charakters zu.
+
+Firmenkonten stehen unter `MSBankingConfig.CompanyAccounts`. Grad `0` darf
+standardmäßig einzahlen; Auszahlungen benötigen den pro Job eingetragenen
+`minWithdrawGrade`. Vorkonfiguriert sind `sheriff`, `medic`, `native`,
+`gunsmith` und `law`. Arbeitslose besitzen kein Firmenkonto.
+Neue, später ergänzte Jobs erhalten über `CompanyAccountDefaults` automatisch
+ein Firmenkonto; Ausnahmen können unter `excludedJobs` eingetragen werden.
+
+| Job | Firmenkonto | Auszahlungen ab Grad |
+| --- | --- | ---: |
+| `sheriff` | Sheriff Office | `1` |
+| `medic` | Medic | `2` |
+| `native` | Stammeskonto | `1` |
+| `gunsmith` | Büchsenmacher | `1` |
+| `law` | Law | `1` |
 
 ## Installation
 

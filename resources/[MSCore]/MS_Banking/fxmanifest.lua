@@ -3,7 +3,7 @@ game 'rdr3'
 
 author 'Masterson Studios'
 description 'Persistent bank accounts and configurable banker NPCs for MSCore'
-version '1.0.0'
+version '1.1.0'
 
 lua54 'yes'
 
@@ -32,7 +32,8 @@ dependencies {
 }
 
 server_exports {
-    'GetAccount'
+    'GetAccount',
+    'GetCompanyAccount'
 }
 
 client_exports {

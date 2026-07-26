@@ -9,7 +9,7 @@ Aktuelle Framework-Version: `0.0.2`
 - persistente Benutzer und mehrere Charaktere
 - grafische Charakterauswahl und Charaktererstellung
 - Geldkonten (`cash`, `bank`) mit serverseitiger Validierung
-- `MS_Banking` mit Kontonummern, Bank-NPCs, Überweisungen und Buchungsverlauf
+- `MS_Banking` mit Kontonummern, Bank-NPCs, Firmenkonten, Überweisungen und Buchungsverlauf
 - Jobs, Gruppen und Metadaten
 - server- und clientseitige Player-API
 - Callback-System zwischen Client und Server
@@ -523,6 +523,12 @@ abheben, Geld an andere Kontonummern überweisen und ihre letzten Buchungen
 einsehen. Überweisungen erreichen auch Offline-Charaktere. Beträge, Guthaben,
 Konten, aktive Charaktere und die Entfernung zum Banker werden ausschließlich
 serverseitig geprüft; erfolgreiche Buchungen werden sofort gespeichert.
+
+Die Jobs `sheriff`, `medic`, `native`, `gunsmith` und `law` besitzen außerdem
+je ein gemeinsames Firmenkonto. Alle Jobmitglieder können Bargeld einzahlen;
+Auszahlungen sind standardmäßig auf die konfigurierten Leitungsgrade begrenzt.
+Das Firmenkonto und sein separater Buchungsverlauf sind an jeder Filiale
+verfügbar. Arbeitslose erhalten kein Firmenkonto.
 
 NPC-Modelle, Positionen, Interaktionstaste, Kontonummer-Präfix,
 Transaktionslimit und Verlaufslänge befinden sich in

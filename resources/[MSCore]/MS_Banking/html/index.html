@@ -59,6 +59,7 @@
                 <nav class="tabs" aria-label="Bankaktionen">
                     <button class="tab active" type="button" data-tab="cash">Ein- &amp; Auszahlung</button>
                     <button class="tab" type="button" data-tab="transfer">Überweisung</button>
+                    <button id="companyTab" class="tab hidden" type="button" data-tab="company">Firmenkonto</button>
                 </nav>
 
                 <form id="cashForm" class="panel active" autocomplete="off">
@@ -90,13 +91,42 @@
                     </div>
                     <button class="button button--primary button--full" type="submit">Überweisen</button>
                 </form>
+
+                <form id="companyForm" class="panel" autocomplete="off">
+                    <div class="company-account">
+                        <div>
+                            <span>Gemeinsames Firmenkonto</span>
+                            <strong id="companyLabel">–</strong>
+                            <small id="companyJob">–</small>
+                        </div>
+                        <div>
+                            <span>Firmenguthaben</span>
+                            <strong id="companyBalance">$0</strong>
+                        </div>
+                    </div>
+                    <p id="companyAccess" class="company-access"></p>
+                    <label for="companyAmount">Betrag</label>
+                    <div class="money-input">
+                        <span id="companyCurrency">$</span>
+                        <input id="companyAmount" name="amount" type="number" min="1" step="1"
+                            placeholder="0" required>
+                    </div>
+                    <div class="operation-actions">
+                        <button id="companyDeposit" class="button button--secondary" type="button">
+                            Einzahlen
+                        </button>
+                        <button id="companyWithdraw" class="button button--primary" type="button">
+                            Abheben
+                        </button>
+                    </div>
+                </form>
             </section>
 
             <section class="history">
                 <div class="section-title">
                     <div>
                         <p class="eyebrow">Kontoauszug</p>
-                        <h2>Letzte Buchungen</h2>
+                        <h2 id="historyTitle">Letzte Buchungen</h2>
                     </div>
                     <span id="transactionCount">0 Buchungen</span>
                 </div>

@@ -15,6 +15,48 @@ MSBankingConfig.ModelLoadTimeout = 10000
 MSBankingConfig.ActionCooldown = 500
 MSBankingConfig.Debug = false
 
+-- Alle vorhandenen, beschäftigten Jobs erhalten ein gemeinsames Firmenkonto.
+-- Jeder Rang ab minDepositGrade darf einzahlen. Auszahlungen sind
+-- standardmäßig dem jeweiligen Leitungsrang vorbehalten.
+MSBankingConfig.CompanyAccounts = {
+    sheriff = {
+        label = 'Sheriff Office',
+        minDepositGrade = 0,
+        minWithdrawGrade = 1
+    },
+    medic = {
+        label = 'Medic',
+        minDepositGrade = 0,
+        minWithdrawGrade = 2
+    },
+    native = {
+        label = 'Stammeskonto',
+        minDepositGrade = 0,
+        minWithdrawGrade = 1
+    },
+    gunsmith = {
+        label = 'Büchsenmacher',
+        minDepositGrade = 0,
+        minWithdrawGrade = 1
+    },
+    law = {
+        label = 'Law',
+        minDepositGrade = 0,
+        minWithdrawGrade = 1
+    }
+}
+
+-- Neue Jobschlüssel erhalten beim ersten Bankbesuch automatisch ein Konto,
+-- auch wenn sie oben noch keinen eigenen Eintrag besitzen.
+MSBankingConfig.CompanyAccountDefaults = {
+    enabled = true,
+    minDepositGrade = 0,
+    minWithdrawGrade = 1,
+    excludedJobs = {
+        unemployed = true
+    }
+}
+
 -- Banker können ergänzt, verschoben oder entfernt werden. Die Kennung links
 -- muss eindeutig bleiben. An jeder Filiale ist dasselbe Charakterkonto nutzbar.
 MSBankingConfig.Bankers = {

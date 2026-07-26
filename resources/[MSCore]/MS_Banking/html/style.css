@@ -294,6 +294,10 @@ h1 {
     border-bottom: 1px solid rgba(82, 54, 26, .22);
 }
 
+.tabs.has-company {
+    grid-template-columns: repeat(3, 1fr);
+}
+
 .tab {
     padding: 14px 10px;
     border: 0;
@@ -384,6 +388,57 @@ h1 {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 9px;
+}
+
+.company-account {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.company-account > div {
+    min-width: 0;
+    padding: 12px;
+    border: 1px solid rgba(82, 54, 26, .22);
+    border-radius: 4px;
+    background: rgba(217, 195, 155, .2);
+}
+
+.company-account span,
+.company-account strong,
+.company-account small {
+    display: block;
+}
+
+.company-account span {
+    margin-bottom: 5px;
+    color: #71593c;
+    font: 700 9px Arial, sans-serif;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+}
+
+.company-account strong {
+    overflow: hidden;
+    color: var(--green);
+    font-size: 17px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.company-account small {
+    margin-top: 3px;
+    color: #806b4d;
+    font: 10px Arial, sans-serif;
+    text-transform: uppercase;
+}
+
+.company-access {
+    min-height: 30px;
+    margin: 0 0 12px;
+    color: #755d40;
+    font: 11px/1.4 Arial, sans-serif;
 }
 
 .button {

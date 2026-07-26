@@ -204,6 +204,18 @@ RegisterNUICallback('withdraw', function(data, cb)
     cb({ ok = true })
 end)
 
+RegisterNUICallback('companyDeposit', function(data, cb)
+    if not BankOpen or type(data) ~= 'table' then return cb({ ok = false }) end
+    TriggerServerEvent('ms_banking:server:companyDeposit', data.amount)
+    cb({ ok = true })
+end)
+
+RegisterNUICallback('companyWithdraw', function(data, cb)
+    if not BankOpen or type(data) ~= 'table' then return cb({ ok = false }) end
+    TriggerServerEvent('ms_banking:server:companyWithdraw', data.amount)
+    cb({ ok = true })
+end)
+
 RegisterNUICallback('transfer', function(data, cb)
     if not BankOpen or type(data) ~= 'table' then return cb({ ok = false }) end
     TriggerServerEvent('ms_banking:server:transfer', data.accountNumber, data.amount)

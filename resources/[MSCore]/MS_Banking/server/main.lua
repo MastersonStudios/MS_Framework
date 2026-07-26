@@ -2,6 +2,7 @@ local Sessions = {}
 local LastActions = {}
 local OperationLocks = {}
 local AccountLocks = {}
+local CompanyLocks = {}
 local Ready = false
 
 local function debugLog(message, ...)
@@ -152,6 +153,126 @@ local function recordTransaction(characterId, transactionType, amount, balanceAf
     return success
 end
 
+local function companyConfigByJob(jobName)
+    if type(jobName) ~= 'string' or jobName == '' then return nil end
+    local config = MSBankingConfig.CompanyAccounts[jobName]
+    if type(config) == 'table' then return config end
+
+    local defaults = MSBankingConfig.CompanyAccountDefaults
+    if type(defaults) ~= 'table' or defaults.enabled ~= true
+        or (type(defaults.excludedJobs) == 'table' and defaults.excludedJobs[jobName]) then
+        return nil
+    end
+
+    local label = jobName:gsub('_', ' ')
+    label = label:gsub('^%l', string.upper)
+    return {
+        label = label,
+        minDepositGrade = defaults.minDepositGrade,
+        minWithdrawGrade = defaults.minWithdrawGrade
+    }
+end
+
+local function companyConfigFor(player)
+    if not player or type(player.job) ~= 'string' then return nil, nil end
+    local config = companyConfigByJob(player.job)
+    if not config then return nil, nil end
+    return player.job, config
+end
+
+local function ensureCompanyAccount(jobName, config)
+    if type(jobName) ~= 'string' or type(config) ~= 'table' then return nil end
+    local label = tostring(config.label or jobName):sub(1, 64)
+    MySQL.insert.await([[
+        INSERT INTO ms_bank_company_accounts (job_name, label, balance)
+        VALUES (?, ?, 0)
+        ON DUPLICATE KEY UPDATE label = VALUES(label)
+    ]], { jobName, label })
+    return MySQL.single.await([[
+        SELECT job_name, label, balance, created_at, updated_at
+        FROM ms_bank_company_accounts
+        WHERE job_name = ?
+        LIMIT 1
+    ]], { jobName })
+end
+
+local function companyTransactionsFor(jobName)
+    local limit = math.max(1, math.min(100, math.floor(
+        tonumber(MSBankingConfig.TransactionHistoryLimit) or 25
+    )))
+    local rows = MySQL.query.await(([[
+        SELECT id, actor_character_id, actor_name, transaction_type,
+            amount, balance_after, description, created_at
+        FROM ms_bank_company_transactions
+        WHERE company_job = ?
+        ORDER BY id DESC
+        LIMIT %d
+    ]]):format(limit), { jobName }) or {}
+
+    local transactions = {}
+    for _, row in ipairs(rows) do
+        transactions[#transactions + 1] = {
+            id = tonumber(row.id),
+            actorCharacterId = tonumber(row.actor_character_id),
+            actorName = row.actor_name,
+            type = row.transaction_type,
+            amount = tonumber(row.amount) or 0,
+            balanceAfter = tonumber(row.balance_after) or 0,
+            description = row.description,
+            createdAt = row.created_at
+        }
+    end
+    return transactions
+end
+
+local function recordCompanyTransaction(jobName, player, transactionType, amount, balanceAfter, description)
+    local success, err = pcall(function()
+        MySQL.insert.await([[
+            INSERT INTO ms_bank_company_transactions (
+                company_job, actor_character_id, actor_name, transaction_type,
+                amount, balance_after, description
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ]], {
+            jobName,
+            player.characterId,
+            player:getName(),
+            transactionType,
+            amount,
+            balanceAfter,
+            description
+        })
+    end)
+    if not success then
+        print(('[MS_Banking] Firmenbuchung für Job %s fehlgeschlagen: %s'):format(
+            jobName,
+            tostring(err)
+        ))
+    end
+    return success
+end
+
+local function companyEnvelope(player)
+    local jobName, config = companyConfigFor(player)
+    if not jobName then return nil end
+    local company = ensureCompanyAccount(jobName, config)
+    if not company then return nil end
+
+    local grade = math.floor(tonumber(player.jobGrade) or -1)
+    local minDepositGrade = math.max(0, math.floor(tonumber(config.minDepositGrade) or 0))
+    local minWithdrawGrade = math.max(0, math.floor(tonumber(config.minWithdrawGrade) or 0))
+    return {
+        job = jobName,
+        label = company.label,
+        balance = tonumber(company.balance) or 0,
+        canDeposit = grade >= minDepositGrade,
+        canWithdraw = grade >= minWithdrawGrade,
+        minDepositGrade = minDepositGrade,
+        minWithdrawGrade = minWithdrawGrade,
+        transactions = companyTransactionsFor(jobName)
+    }
+end
+
 local function accountEnvelope(playerSource, banker)
     local player = getPlayer(playerSource)
     local account = player and ensureAccount(player)
@@ -167,7 +288,8 @@ local function accountEnvelope(playerSource, banker)
             balance = tonumber(player.money.bank) or 0,
             createdAt = account.created_at
         },
-        transactions = transactionsFor(player.characterId)
+        transactions = transactionsFor(player.characterId),
+        company = companyEnvelope(player)
     }
 end
 
@@ -222,6 +344,36 @@ local function runOperation(playerSource, action, handler)
         ))
         result(playerSource, false, 'Der Bankauftrag konnte nicht verarbeitet werden.')
     end
+end
+
+local function runCompanyOperation(playerSource, action, permission, handler)
+    runOperation(playerSource, action, function(player, banker)
+        local jobName, config = companyConfigFor(player)
+        if not jobName then
+            return result(playerSource, false, 'Für deinen Job ist kein Firmenkonto eingerichtet.')
+        end
+
+        local requiredGrade = permission == 'withdraw'
+            and math.max(0, math.floor(tonumber(config.minWithdrawGrade) or 0))
+            or math.max(0, math.floor(tonumber(config.minDepositGrade) or 0))
+        if (tonumber(player.jobGrade) or -1) < requiredGrade then
+            return result(
+                playerSource,
+                false,
+                ('Für diese Firmenbuchung wird mindestens Jobgrad %d benötigt.'):format(
+                    requiredGrade
+                )
+            )
+        end
+        if CompanyLocks[jobName] then
+            return result(playerSource, false, 'Das Firmenkonto verarbeitet bereits einen Auftrag.')
+        end
+
+        CompanyLocks[jobName] = true
+        local success, err = pcall(handler, player, banker, jobName, config)
+        CompanyLocks[jobName] = nil
+        if not success then error(err) end
+    end)
 end
 
 RegisterNetEvent('ms_banking:server:open', function(bankerId)
@@ -310,6 +462,114 @@ RegisterNetEvent('ms_banking:server:withdraw', function(rawAmount)
         )
         TriggerEvent('ms_banking:server:withdrawn', playerSource, player.characterId, amount)
         result(playerSource, true, ('$%d wurden ausgezahlt.'):format(amount))
+        refreshClient(playerSource)
+    end)
+end)
+
+RegisterNetEvent('ms_banking:server:companyDeposit', function(rawAmount)
+    local playerSource = source
+    runCompanyOperation(playerSource, 'company_deposit', 'deposit', function(player, _, jobName, config)
+        local amount = validAmount(rawAmount)
+        if not amount then
+            return result(playerSource, false, 'Gib einen gültigen ganzzahligen Betrag ein.')
+        end
+        if not ensureCompanyAccount(jobName, config) then
+            return result(playerSource, false, 'Das Firmenkonto konnte nicht geladen werden.')
+        end
+        if not player:removeMoney('cash', amount, 'company_bank_deposit') then
+            return result(playerSource, false, 'Du hast nicht genug Bargeld.')
+        end
+
+        local affected = MySQL.update.await([[
+            UPDATE ms_bank_company_accounts
+            SET balance = balance + ?
+            WHERE job_name = ?
+        ]], { amount, jobName })
+        if tonumber(affected) ~= 1 then
+            player:addMoney('cash', amount, 'company_bank_deposit_rollback')
+            return result(playerSource, false, 'Die Firmeneinzahlung konnte nicht gebucht werden.')
+        end
+
+        local companyBalance = tonumber(MySQL.scalar.await(
+            'SELECT balance FROM ms_bank_company_accounts WHERE job_name = ?',
+            { jobName }
+        )) or 0
+        player:save()
+        recordCompanyTransaction(
+            jobName,
+            player,
+            'company_deposit',
+            amount,
+            companyBalance,
+            ('Einzahlung von %s'):format(player:getName())
+        )
+        TriggerEvent(
+            'ms_banking:server:companyDeposited',
+            playerSource,
+            player.characterId,
+            jobName,
+            amount
+        )
+        result(playerSource, true, ('$%d wurden auf %s eingezahlt.'):format(
+            amount,
+            config.label or jobName
+        ))
+        refreshClient(playerSource)
+    end)
+end)
+
+RegisterNetEvent('ms_banking:server:companyWithdraw', function(rawAmount)
+    local playerSource = source
+    runCompanyOperation(playerSource, 'company_withdraw', 'withdraw', function(player, _, jobName, config)
+        local amount = validAmount(rawAmount)
+        if not amount then
+            return result(playerSource, false, 'Gib einen gültigen ganzzahligen Betrag ein.')
+        end
+        if not ensureCompanyAccount(jobName, config) then
+            return result(playerSource, false, 'Das Firmenkonto konnte nicht geladen werden.')
+        end
+
+        local affected = MySQL.update.await([[
+            UPDATE ms_bank_company_accounts
+            SET balance = balance - ?
+            WHERE job_name = ? AND balance >= ?
+        ]], { amount, jobName, amount })
+        if tonumber(affected) ~= 1 then
+            return result(playerSource, false, 'Das Firmenkonto besitzt nicht genug Guthaben.')
+        end
+        if not player:addMoney('cash', amount, 'company_bank_withdrawal') then
+            MySQL.update.await([[
+                UPDATE ms_bank_company_accounts
+                SET balance = balance + ?
+                WHERE job_name = ?
+            ]], { amount, jobName })
+            return result(playerSource, false, 'Die Firmenauszahlung konnte nicht gebucht werden.')
+        end
+
+        local companyBalance = tonumber(MySQL.scalar.await(
+            'SELECT balance FROM ms_bank_company_accounts WHERE job_name = ?',
+            { jobName }
+        )) or 0
+        player:save()
+        recordCompanyTransaction(
+            jobName,
+            player,
+            'company_withdrawal',
+            -amount,
+            companyBalance,
+            ('Auszahlung an %s'):format(player:getName())
+        )
+        TriggerEvent(
+            'ms_banking:server:companyWithdrawn',
+            playerSource,
+            player.characterId,
+            jobName,
+            amount
+        )
+        result(playerSource, true, ('$%d wurden von %s ausgezahlt.'):format(
+            amount,
+            config.label or jobName
+        ))
         refreshClient(playerSource)
     end)
 end)
@@ -475,6 +735,40 @@ MySQL.ready(function()
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     ]])
 
+    MySQL.query.await([[
+        CREATE TABLE IF NOT EXISTS ms_bank_company_accounts (
+            job_name VARCHAR(32) NOT NULL,
+            label VARCHAR(64) NOT NULL,
+            balance BIGINT UNSIGNED NOT NULL DEFAULT 0,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (job_name)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    ]])
+
+    MySQL.query.await([[
+        CREATE TABLE IF NOT EXISTS ms_bank_company_transactions (
+            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            company_job VARCHAR(32) NOT NULL,
+            actor_character_id BIGINT UNSIGNED NOT NULL,
+            actor_name VARCHAR(80) NOT NULL,
+            transaction_type VARCHAR(32) NOT NULL,
+            amount INT NOT NULL,
+            balance_after BIGINT UNSIGNED NOT NULL,
+            description VARCHAR(120) NOT NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY idx_ms_bank_company_transactions_job (company_job, id),
+            CONSTRAINT fk_ms_bank_company_transactions_job
+                FOREIGN KEY (company_job)
+                REFERENCES ms_bank_company_accounts (job_name) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    ]])
+
+    for jobName, config in pairs(MSBankingConfig.CompanyAccounts) do
+        ensureCompanyAccount(jobName, config)
+    end
+
     Ready = true
     debugLog('Datenbanktabellen bereit.')
 end)
@@ -493,3 +787,19 @@ function GetAccount(playerSource)
 end
 
 exports('GetAccount', GetAccount)
+
+function GetCompanyAccount(jobName)
+    if not Ready or type(jobName) ~= 'string' then return nil end
+    local config = companyConfigByJob(jobName)
+    local company = config and ensureCompanyAccount(jobName, config) or nil
+    if not company then return nil end
+    return {
+        job = company.job_name,
+        label = company.label,
+        balance = tonumber(company.balance) or 0,
+        minDepositGrade = math.max(0, math.floor(tonumber(config.minDepositGrade) or 0)),
+        minWithdrawGrade = math.max(0, math.floor(tonumber(config.minWithdrawGrade) or 0))
+    }
+end
+
+exports('GetCompanyAccount', GetCompanyAccount)

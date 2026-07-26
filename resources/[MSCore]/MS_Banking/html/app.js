@@ -10,6 +10,11 @@ const transactionCount = document.getElementById('transactionCount');
 const cashAmount = document.getElementById('cashAmount');
 const targetAccount = document.getElementById('targetAccount');
 const transferAmount = document.getElementById('transferAmount');
+const companyTab = document.getElementById('companyTab');
+const companyAmount = document.getElementById('companyAmount');
+const companyDeposit = document.getElementById('companyDeposit');
+const companyWithdraw = document.getElementById('companyWithdraw');
+const historyTitle = document.getElementById('historyTitle');
 const toast = document.getElementById('toast');
 const actionButtons = [...document.querySelectorAll('.button')];
 
@@ -34,7 +39,9 @@ const transactionLabels = {
     deposit: 'Einzahlung',
     withdrawal: 'Auszahlung',
     transfer_in: 'Überweisung erhalten',
-    transfer_out: 'Überweisung gesendet'
+    transfer_out: 'Überweisung gesendet',
+    company_deposit: 'Firmeneinzahlung',
+    company_withdrawal: 'Firmenauszahlung'
 };
 
 function setBusy(value) {
@@ -42,6 +49,8 @@ function setBusy(value) {
     actionButtons.forEach((button) => {
         button.disabled = busy;
     });
+    companyDeposit.disabled = busy || state?.company?.canDeposit !== true;
+    companyWithdraw.disabled = busy || state?.company?.canWithdraw !== true;
 }
 
 function showToast(message, success = true) {
@@ -80,6 +89,7 @@ function renderTransactions(rows = []) {
         const meta = document.createElement('small');
         const parts = [entry.createdAt || ''];
         if (entry.counterpartyAccount) parts.push(`Konto ${entry.counterpartyAccount}`);
+        if (entry.actorName) parts.push(entry.actorName);
         meta.textContent = parts.filter(Boolean).join(' · ');
         details.append(title, meta);
 
@@ -96,9 +106,31 @@ function renderTransactions(rows = []) {
     });
 }
 
+function activeTab() {
+    return document.querySelector('.tab.active')?.dataset.tab || 'cash';
+}
+
+function renderActiveTransactions() {
+    const companyActive = activeTab() === 'company' && state?.company;
+    historyTitle.textContent = companyActive ? 'Firmenbuchungen' : 'Letzte Buchungen';
+    renderTransactions(companyActive ? state.company.transactions || [] : state?.transactions || []);
+}
+
+function selectTab(name) {
+    const button = document.querySelector(`.tab[data-tab="${name}"]`);
+    const panel = document.getElementById(`${name}Form`);
+    if (!button || !panel || button.classList.contains('hidden')) return;
+    document.querySelectorAll('.tab').forEach((tab) => tab.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach((current) => current.classList.remove('active'));
+    button.classList.add('active');
+    panel.classList.add('active');
+    renderActiveTransactions();
+}
+
 function render(data) {
     state = data || {};
     const account = state.account || {};
+    const company = state.company;
     branch.textContent = state.branch || 'Bank';
     holder.textContent = account.holder || '–';
     accountNumber.textContent = account.number || '–';
@@ -106,9 +138,31 @@ function render(data) {
     balance.textContent = money(account.balance);
     document.getElementById('cashCurrency').textContent = currency();
     document.getElementById('transferCurrency').textContent = currency();
+    document.getElementById('companyCurrency').textContent = currency();
     cashAmount.max = Number(state.maxTransactionAmount) || '';
     transferAmount.max = Number(state.maxTransactionAmount) || '';
-    renderTransactions(state.transactions || []);
+    companyAmount.max = Number(state.maxTransactionAmount) || '';
+
+    companyTab.classList.toggle('hidden', !company);
+    document.querySelector('.tabs').classList.toggle('has-company', Boolean(company));
+    if (company) {
+        document.getElementById('companyLabel').textContent = company.label || company.job;
+        document.getElementById('companyJob').textContent = company.job || '';
+        document.getElementById('companyBalance').textContent = money(company.balance);
+        const access = [];
+        access.push(company.canDeposit
+            ? 'Du darfst auf dieses Firmenkonto einzahlen.'
+            : `Einzahlungen benötigen mindestens Jobgrad ${company.minDepositGrade}.`);
+        access.push(company.canWithdraw
+            ? 'Du darfst Firmenguthaben abheben.'
+            : `Auszahlungen benötigen mindestens Jobgrad ${company.minWithdrawGrade}.`);
+        document.getElementById('companyAccess').textContent = access.join(' ');
+    } else if (activeTab() === 'company') {
+        selectTab('cash');
+    }
+
+    renderActiveTransactions();
+    setBusy(busy);
 }
 
 function validInput(input) {
@@ -132,12 +186,32 @@ function cashOperation(type) {
     });
 }
 
+function companyOperation(type) {
+    if (busy || !state?.company) return;
+    const allowed = type === 'companyDeposit'
+        ? state.company.canDeposit
+        : state.company.canWithdraw;
+    if (!allowed) {
+        showToast('Dein Jobgrad besitzt dafür keine Berechtigung.', false);
+        return;
+    }
+    const amount = validInput(companyAmount);
+    if (!amount) return;
+    setBusy(true);
+    post(type, { amount }).catch(() => {
+        setBusy(false);
+        showToast('Die Verbindung zur Bank ist fehlgeschlagen.', false);
+    });
+}
+
 document.getElementById('close').addEventListener('click', () => post('close'));
 document.getElementById('refresh').addEventListener('click', () => {
     if (!busy) post('refresh');
 });
 document.getElementById('deposit').addEventListener('click', () => cashOperation('deposit'));
 document.getElementById('withdraw').addEventListener('click', () => cashOperation('withdraw'));
+companyDeposit.addEventListener('click', () => companyOperation('companyDeposit'));
+companyWithdraw.addEventListener('click', () => companyOperation('companyWithdraw'));
 
 document.getElementById('transferForm').addEventListener('submit', (event) => {
     event.preventDefault();
@@ -163,12 +237,7 @@ document.querySelectorAll('.quick-values button').forEach((button) => {
 });
 
 document.querySelectorAll('.tab').forEach((button) => {
-    button.addEventListener('click', () => {
-        document.querySelectorAll('.tab').forEach((tab) => tab.classList.remove('active'));
-        document.querySelectorAll('.panel').forEach((panel) => panel.classList.remove('active'));
-        button.classList.add('active');
-        document.getElementById(`${button.dataset.tab}Form`).classList.add('active');
-    });
+    button.addEventListener('click', () => selectTab(button.dataset.tab));
 });
 
 document.getElementById('copyAccount').addEventListener('click', async () => {
