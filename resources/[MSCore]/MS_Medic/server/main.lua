@@ -557,6 +557,9 @@ local function completeTreatment(medicSource, targetSource, actionType, actionKe
 
     medic:save()
     target:save()
+    if actionType == 'care' and actionKey == 'revive' then
+        TriggerEvent('MS_Medic:server:playerRevived', targetSource, 'medic')
+    end
     clearBusy(medicSource, targetSource)
     notify(medicSource, resultMessage or 'Behandlung abgeschlossen.')
     TriggerClientEvent('ms_medic:client:treatmentFinished', medicSource, {
@@ -742,6 +745,7 @@ local function handleTxAdminHeal(targetSource, author)
     target:setMetadata('health', 200)
     target:save()
     TriggerClientEvent('ms_medic:client:restoreHealth', targetSource, true, 200)
+    TriggerEvent('MS_Medic:server:playerRevived', targetSource, 'txadmin')
     TriggerEvent('MS_Medic:server:txAdminHealed', {
         targetSource = targetSource,
         targetCharacterId = target.characterId,

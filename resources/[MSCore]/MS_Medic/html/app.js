@@ -20,13 +20,20 @@ const examinationPatientName = document.querySelector('#examination-patient-name
 const examinationContent = document.querySelector('#examination-content');
 const examinationCloseButton = document.querySelector('#examination-close');
 const examinationTreatmentButton = document.querySelector('#examination-treatment');
+const unconsciousScreen = document.querySelector('#unconscious-screen');
+const unconsciousTimerNode = document.querySelector('#unconscious-timer');
+const emergencyButton = document.querySelector('#emergency-button');
+const emergencyStatus = document.querySelector('#emergency-status');
 
 const state = {
     mode: null,
     payload: null,
     selectedSource: null,
     examination: null,
-    progressTimer: null
+    progressTimer: null,
+    unconsciousTimer: null,
+    unconsciousDeadline: 0,
+    emergencyCalled: false
 };
 
 function post(name, data = {}) {
@@ -78,6 +85,66 @@ function closeShell() {
     state.payload = null;
     state.selectedSource = null;
     state.examination = null;
+}
+
+function formatCountdown(seconds) {
+    const remaining = Math.max(0, Math.ceil(Number(seconds) || 0));
+    const minutes = Math.floor(remaining / 60);
+    return `${String(minutes).padStart(2, '0')}:${String(remaining % 60).padStart(2, '0')}`;
+}
+
+function updateUnconsciousTimer() {
+    const remaining = Math.max(0, (state.unconsciousDeadline - Date.now()) / 1000);
+    unconsciousTimerNode.textContent = formatCountdown(remaining);
+    if (remaining <= 0) {
+        emergencyStatus.textContent = 'Du wirst jetzt in die nächste Stadt gebracht …';
+        clearInterval(state.unconsciousTimer);
+        state.unconsciousTimer = null;
+    }
+}
+
+function renderEmergencyState() {
+    emergencyButton.disabled = state.emergencyCalled;
+    emergencyButton.classList.toggle('sent', state.emergencyCalled);
+    emergencyButton.querySelector('strong').textContent = state.emergencyCalled
+        ? 'Notruf gesendet'
+        : 'Notruf senden';
+    emergencyButton.querySelector('small').textContent = state.emergencyCalled
+        ? 'Alle diensthabenden Medics wurden alarmiert'
+        : 'Diensthabende Medics alarmieren';
+    emergencyStatus.textContent = state.emergencyCalled
+        ? 'Medics alarmiert · Standortmarkierung mit 15 Meter Radius aktiv'
+        : 'Der Notruf setzt die Wartezeit auf 20 Minuten und markiert deinen Standort.';
+}
+
+function applyUnconsciousPayload(payload = {}) {
+    const remainingSeconds = Math.max(0, Number(payload.remainingSeconds) || 0);
+    state.unconsciousDeadline = Date.now() + (remainingSeconds * 1000);
+    state.emergencyCalled = payload.emergencyCalled === true;
+    clearInterval(state.unconsciousTimer);
+    renderEmergencyState();
+    updateUnconsciousTimer();
+    if (remainingSeconds > 0) {
+        state.unconsciousTimer = setInterval(updateUnconsciousTimer, 250);
+    }
+}
+
+function openUnconsciousScreen(payload) {
+    closeShell();
+    clearTimeout(state.progressTimer);
+    progressNode.classList.add('hidden');
+    unconsciousScreen.classList.remove('hidden');
+    unconsciousScreen.setAttribute('aria-hidden', 'false');
+    applyUnconsciousPayload(payload);
+}
+
+function closeUnconsciousScreen() {
+    clearInterval(state.unconsciousTimer);
+    state.unconsciousTimer = null;
+    state.unconsciousDeadline = 0;
+    state.emergencyCalled = false;
+    unconsciousScreen.classList.add('hidden');
+    unconsciousScreen.setAttribute('aria-hidden', 'true');
 }
 
 function openPatientContext(patient, anchorRect) {
@@ -352,8 +419,19 @@ window.addEventListener('message', (event) => {
         showProgress(message.payload);
     } else if (message.action === 'treatmentFinished') {
         finishProgress(message.payload);
+    } else if (message.action === 'unconsciousOpen') {
+        openUnconsciousScreen(message.payload || {});
+    } else if (message.action === 'unconsciousUpdate') {
+        if (unconsciousScreen.classList.contains('hidden')) {
+            openUnconsciousScreen(message.payload || {});
+        } else {
+            applyUnconsciousPayload(message.payload || {});
+        }
+    } else if (message.action === 'unconsciousClose') {
+        closeUnconsciousScreen();
     } else if (message.action === 'reset') {
         closeShell();
+        closeUnconsciousScreen();
         clearTimeout(state.progressTimer);
         progressNode.classList.add('hidden');
         progressBar.classList.remove('running');
@@ -371,6 +449,19 @@ contextExamineButton.addEventListener('click', () => {
 });
 examinationCloseButton.addEventListener('click', closeExaminationWindow);
 examinationTreatmentButton.addEventListener('click', closeExaminationWindow);
+emergencyButton.addEventListener('click', async () => {
+    if (state.emergencyCalled || emergencyButton.disabled) return;
+    emergencyButton.disabled = true;
+    emergencyButton.classList.add('pending');
+    emergencyButton.querySelector('strong').textContent = 'Notruf wird gesendet …';
+    const result = await post('emergency');
+    emergencyButton.classList.remove('pending');
+    if (!result?.ok) {
+        emergencyButton.disabled = false;
+        emergencyButton.querySelector('strong').textContent = 'Notruf senden';
+        emergencyStatus.textContent = 'Der Notruf konnte nicht gesendet werden. Bitte versuche es erneut.';
+    }
+});
 examinationModal.addEventListener('click', (event) => {
     if (event.target === examinationModal) closeExaminationWindow();
 });

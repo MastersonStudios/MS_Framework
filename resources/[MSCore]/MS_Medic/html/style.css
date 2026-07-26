@@ -462,9 +462,221 @@ footer {
 
 @keyframes treatment-progress { to { width: 100%; } }
 
+.unconscious-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    color: var(--paper);
+    background:
+        radial-gradient(circle at 50% 45%, rgba(92, 22, 20, .22) 0, rgba(11, 8, 7, .86) 48%, #050404 100%),
+        linear-gradient(135deg, rgba(142, 48, 44, .14), transparent 42%);
+}
+
+.unconscious-haze,
+.unconscious-grain {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+.unconscious-haze {
+    background:
+        radial-gradient(ellipse at center, transparent 25%, rgba(0, 0, 0, .78) 83%),
+        linear-gradient(90deg, rgba(70, 9, 8, .22), transparent 28%, transparent 72%, rgba(70, 9, 8, .22));
+    animation: unconscious-breathe 5s ease-in-out infinite;
+}
+
+.unconscious-grain {
+    opacity: .12;
+    background-image: repeating-linear-gradient(
+        0deg,
+        transparent 0,
+        transparent 2px,
+        rgba(255, 255, 255, .055) 3px
+    );
+}
+
+.unconscious-card {
+    position: relative;
+    z-index: 1;
+    width: min(520px, 92vw);
+    padding: 38px 42px 34px;
+    text-align: center;
+    background:
+        linear-gradient(145deg, rgba(197, 155, 88, .07), transparent 38%),
+        rgba(17, 13, 12, .94);
+    border: 1px solid rgba(197, 155, 88, .46);
+    border-radius: 12px;
+    box-shadow:
+        0 28px 100px rgba(0, 0, 0, .82),
+        inset 0 0 0 3px rgba(0, 0, 0, .32);
+}
+
+.unconscious-card::before,
+.unconscious-card::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    width: 92px;
+    height: 1px;
+    background: var(--gold);
+    transform: translateX(-50%);
+    opacity: .55;
+}
+
+.unconscious-card::before { top: 18px; }
+.unconscious-card::after { bottom: 18px; }
+
+.unconscious-pulse {
+    position: relative;
+    width: 78px;
+    height: 78px;
+    display: grid;
+    place-items: center;
+    margin: 0 auto 19px;
+    color: #f1d2cf;
+    background: rgba(142, 48, 44, .23);
+    border: 1px solid rgba(183, 74, 67, .72);
+    border-radius: 50%;
+}
+
+.unconscious-pulse i {
+    position: absolute;
+    inset: -1px;
+    border: 1px solid rgba(183, 74, 67, .7);
+    border-radius: 50%;
+    animation: unconscious-pulse 2s ease-out infinite;
+}
+
+.unconscious-pulse span {
+    font: 400 42px/1 Arial, sans-serif;
+    transform: translateY(-2px);
+}
+
+.unconscious-card .eyebrow {
+    margin-bottom: 8px;
+    color: #c96b64;
+}
+
+.unconscious-card h1 {
+    margin-bottom: 11px;
+    font-size: clamp(30px, 4vw, 42px);
+    font-weight: 400;
+}
+
+.unconscious-copy {
+    max-width: 420px;
+    margin: 0 auto 24px;
+    color: var(--paper-muted);
+    font: 14px/1.6 Arial, sans-serif;
+}
+
+.unconscious-timer {
+    display: grid;
+    gap: 3px;
+    margin: 0 0 24px;
+    padding: 18px;
+    background: rgba(0, 0, 0, .24);
+    border-top: 1px solid rgba(232, 220, 195, .11);
+    border-bottom: 1px solid rgba(232, 220, 195, .11);
+}
+
+.unconscious-timer span {
+    color: var(--paper-muted);
+    font: 700 10px/1.2 Arial, sans-serif;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+}
+
+.unconscious-timer strong {
+    color: #f2e7cf;
+    font: 400 clamp(42px, 7vw, 62px)/1.05 Georgia, "Times New Roman", serif;
+    letter-spacing: .08em;
+    text-shadow: 0 0 26px rgba(183, 74, 67, .34);
+}
+
+.emergency-button {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 44px 1fr;
+    align-items: center;
+    gap: 13px;
+    padding: 12px 15px;
+    text-align: left;
+    color: #fff1e2;
+    background: linear-gradient(180deg, #9e3833, #74231f);
+    border: 1px solid #c05b54;
+    border-radius: 8px;
+    box-shadow: 0 8px 22px rgba(71, 13, 11, .36);
+    cursor: pointer;
+    transition: transform .16s ease, filter .16s ease, opacity .16s ease;
+}
+
+.emergency-button:hover:not(:disabled) {
+    filter: brightness(1.14);
+    transform: translateY(-1px);
+}
+
+.emergency-button:disabled {
+    cursor: default;
+    opacity: .72;
+}
+
+.emergency-button.sent {
+    color: #dbe8de;
+    background: linear-gradient(180deg, #496d55, #304b39);
+    border-color: #6d9478;
+}
+
+.emergency-button.pending .emergency-button-icon {
+    animation: emergency-turn 1s linear infinite;
+}
+
+.emergency-button-icon {
+    width: 38px;
+    height: 38px;
+    display: grid;
+    place-items: center;
+    background: rgba(0, 0, 0, .21);
+    border-radius: 50%;
+    font: 400 30px/1 Arial, sans-serif;
+}
+
+.emergency-button > span:last-child {
+    min-width: 0;
+    display: grid;
+    gap: 3px;
+}
+
+.emergency-button strong { font: 700 14px/1.2 Arial, sans-serif; }
+.emergency-button small { opacity: .73; font: 11px/1.25 Arial, sans-serif; }
+
+.emergency-status {
+    min-height: 30px;
+    margin: 11px 0 0;
+    color: #a99c84;
+    font: 11px/1.4 Arial, sans-serif;
+}
+
+@keyframes unconscious-breathe {
+    0%, 100% { opacity: .76; }
+    50% { opacity: 1; }
+}
+
+@keyframes unconscious-pulse {
+    0% { opacity: .75; transform: scale(1); }
+    75%, 100% { opacity: 0; transform: scale(1.5); }
+}
+
+@keyframes emergency-turn { to { transform: rotate(360deg); } }
+
 @media (max-width: 850px) {
     .panel { width: 95vw; height: 91vh; }
     .layout { grid-template-columns: 280px 1fr; }
     .action-grid, .disease-list { grid-template-columns: 1fr; }
     .examination-disease { grid-template-columns: 1fr; }
+    .unconscious-card { padding: 34px 24px 28px; }
 }

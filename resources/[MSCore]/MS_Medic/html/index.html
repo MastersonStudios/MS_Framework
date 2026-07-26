@@ -82,6 +82,36 @@
         </div>
     </section>
 
+    <section id="unconscious-screen" class="unconscious-screen hidden" aria-hidden="true">
+        <div class="unconscious-haze"></div>
+        <div class="unconscious-grain"></div>
+        <article class="unconscious-card">
+            <div class="unconscious-pulse" aria-hidden="true">
+                <i></i>
+                <span>+</span>
+            </div>
+            <p class="eyebrow">Medizinischer Notfall</p>
+            <h1>Du bist bewusstlos</h1>
+            <p class="unconscious-copy">
+                Ohne medizinische Hilfe wachst du nach Ablauf der Zeit in der nächsten Stadt wieder auf.
+            </p>
+            <div class="unconscious-timer" aria-live="polite">
+                <span>Verbleibende Zeit</span>
+                <strong id="unconscious-timer">10:00</strong>
+            </div>
+            <button id="emergency-button" class="emergency-button" type="button">
+                <span class="emergency-button-icon">+</span>
+                <span>
+                    <strong>Notruf senden</strong>
+                    <small>Diensthabende Medics alarmieren</small>
+                </span>
+            </button>
+            <p id="emergency-status" class="emergency-status">
+                Der Notruf setzt die Wartezeit auf 20 Minuten und markiert deinen Standort.
+            </p>
+        </article>
+    </section>
+
     <script src="app.js"></script>
 </body>
 </html>

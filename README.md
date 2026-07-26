@@ -30,7 +30,7 @@ Aktuelle Framework-Version: `0.0.2`
 - serverautoritatives Spieler-Presence-Sync für bis zu 64 Slots
 - `MS_mechat` mit räumlichem `/me`-Chat und 3D-Text über dem Charakter
 - `MS_pointing` mit frei belegbarer Finger-Zeigegeste auf der Taste `B`
-- `MS_Medic` mit Krankheiten, Knochenbruch-Effekten, Behandlungen und Wiederbelebung
+- `MS_Medic` mit Krankheiten, Behandlungen, Bewusstlos-Screen, Medic-Notruf und Wiederbelebung
 - `MS_Crime` mit gefesselter Spielersuche, Raubinventar und geschützter Crime-Stadt Van Horn
 - `MS_RestrictedAreas` mit Jobgebieten, Komplettsperren und mexikanischen 5:1-Wachen
 - `MS_Permadeath` mit dauerhaftem Todesrisiko und filmischer Finalszene
@@ -598,6 +598,15 @@ Behandlungsmenü. Jeder Charakter kann mit `/healthstatus` seine Gesundheitsakte
 Patienten zu untersuchen, Wunden zu versorgen, Krankheiten zu behandeln oder
 verstorbene Spieler wiederzubeleben.
 
+Bei einem normalen Tod erscheint ein eigener Bewusstlos-Screen mit einem
+serverseitigen Countdown von standardmäßig zehn Minuten. Der Notruf-Button
+alarmiert alle diensthabenden Medics, setzt den Countdown auf zwanzig Minuten
+und legt ihnen einen Einsatzmarker mit 15 Metern Radius auf die Karte. Der
+Zustand bleibt beim Ausloggen erhalten. Nach Ablauf des Countdowns wacht der
+Charakter in der vom Todesort aus nächstgelegenen konfigurierten Stadt auf.
+Inhaftierte Charaktere bleiben dabei in Sisika; permanente Charaktertode
+werden nicht wiederbelebt.
+
 Die vorkonfigurierten Krankheiten und Verletzungen Grippe, Lungenentzündung,
 Vergiftung, Wundinfektion, Knochenbruch und Schusswunde besitzen jeweils eigene
 Wahrscheinlichkeiten, Schweregrade, Symptome und Behandlungen. Ein Wert von
@@ -623,7 +632,9 @@ kann ihn beispielsweise mit `/setjob 12 medic 0` vergeben.
 Sämtliche Krankheiten, Wahrscheinlichkeiten, Intervalle, Mindestgesundheit,
 Medic-Jobs, Reichweiten, Items und Behandlungswerte befinden sich in
 `resources/[MSCore]/MS_Medic/config.lua`. Der Test- und Supportbefehl
-`/medicdisease` benötigt `mscore.admin`.
+`/medicdisease` benötigt `mscore.admin`. Timer, Notrufradius,
+Aufwachgesundheit, Kartenmarker und Stadtpositionen werden im Abschnitt
+`MSMedicConfig.Unconscious` derselben Datei konfiguriert.
 
 ## MS Permadeath
 

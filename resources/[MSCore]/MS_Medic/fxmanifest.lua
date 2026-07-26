@@ -2,8 +2,8 @@ fx_version 'cerulean'
 game 'rdr3'
 
 author 'Masterson Studios'
-description 'Persistent diseases, medic treatments and revival for MSCore Framework'
-version '1.0.0'
+description 'Diseases, treatments, unconsciousness and Medic emergencies for MSCore Framework'
+version '1.1.0'
 
 lua54 'yes'
 
@@ -13,10 +13,14 @@ shared_script 'config.lua'
 
 server_scripts {
     '@oxmysql/lib/MySQL.lua',
-    'server/main.lua'
+    'server/main.lua',
+    'server/unconscious.lua'
 }
 
-client_script 'client/main.lua'
+client_scripts {
+    'client/main.lua',
+    'client/unconscious.lua'
+}
 
 files {
     'html/index.html',
@@ -36,11 +40,15 @@ server_exports {
     'GetDiseases',
     'AddDisease',
     'RemoveDisease',
-    'IsMedic'
+    'IsMedic',
+    'GetUnconsciousState',
+    'IsUnconscious'
 }
 
 client_exports {
     'GetDiseases',
     'HasDisease',
-    'IsMedicMenuOpen'
+    'IsMedicMenuOpen',
+    'GetUnconsciousState',
+    'IsUnconscious'
 }

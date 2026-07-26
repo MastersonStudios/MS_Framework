@@ -10,6 +10,67 @@ MSMedicConfig.MedicJobs = {
     medic = 0
 }
 
+MSMedicConfig.Unconscious = {
+    Enabled = true,
+    InitialSeconds = 10 * 60,
+    EmergencySeconds = 20 * 60,
+    EmergencyRadius = 15.0,
+    ServerCheckIntervalMs = 1000,
+    ClientCheckIntervalMs = 250,
+    ReportIntervalMs = 2000,
+    DetectionDelayMs = 1500,
+    SyncIntervalSeconds = 30,
+    WakeHealth = 100,
+    RespectJail = true,
+    FadeOutMs = 500,
+    CollisionWaitMs = 1000,
+    FadeInMs = 650,
+    EmergencyBlip = {
+        Style = 'BLIP_STYLE_CREATOR_DEFAULT',
+        Sprite = 'blip_ambient_doctor',
+        RadiusSprite = 'blip_mission_area_bounty',
+        Scale = 0.9
+    },
+    RespawnCities = {
+        {
+            label = 'Valentine',
+            coords = vector4(-280.47, 806.17, 119.38, 100.0)
+        },
+        {
+            label = 'Blackwater',
+            coords = vector4(-876.89, -1332.38, 43.96, 180.0)
+        },
+        {
+            label = 'Rhodes',
+            coords = vector4(1232.78, -1305.29, 76.90, 240.0)
+        },
+        {
+            label = 'Saint Denis',
+            coords = vector4(2683.06, -1365.81, 47.47, 90.0)
+        },
+        {
+            label = 'Strawberry',
+            coords = vector4(-1801.75, -374.64, 161.15, 150.0)
+        },
+        {
+            label = 'Annesburg',
+            coords = vector4(2934.42, 1283.26, 44.65, 70.0)
+        },
+        {
+            label = 'Van Horn',
+            coords = vector4(2982.50, 561.70, 44.80, 170.0)
+        },
+        {
+            label = 'Armadillo',
+            coords = vector4(-3686.15, -2623.25, -13.43, 275.0)
+        },
+        {
+            label = 'Tumbleweed',
+            coords = vector4(-5516.65, -2941.37, -1.87, 30.0)
+        }
+    }
+}
+
 MSMedicConfig.SearchDistance = 8.0
 MSMedicConfig.TreatmentDistance = 3.0
 MSMedicConfig.ActionCooldownMs = 1000
