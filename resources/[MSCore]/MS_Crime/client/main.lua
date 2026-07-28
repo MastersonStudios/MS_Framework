@@ -1,3 +1,8 @@
+local PlatformRegisterKeyMapping = RegisterKeyMapping
+local RegisterKeyMapping = type(PlatformRegisterKeyMapping) == 'function'
+    and PlatformRegisterKeyMapping
+    or function(...) return exports.MSCore:RegisterKeyMappingCompat(...) end
+
 local Config = MSCrimeConfig
 local SET_RANDOM_OUTFIT_VARIATION = 0x283978A15512B2FE
 local CrimeUiOpen = false

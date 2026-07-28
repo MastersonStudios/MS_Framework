@@ -9,12 +9,166 @@ local CreatorCameraDirection = nil
 local CreatorZoom = 0.5
 local CreatorPlayerWasVisible = false
 
+local RawKeyBindings = {}
+local RegisteredRawCommands = {}
+local RawKeymapFallbackAnnounced = false
+local RAW_KEY_CODES = {
+    BACK = 0x08,
+    BACKSPACE = 0x08,
+    TAB = 0x09,
+    RETURN = 0x0D,
+    ENTER = 0x0D,
+    SHIFT = 0x10,
+    CONTROL = 0x11,
+    CTRL = 0x11,
+    MENU = 0x12,
+    ALT = 0x12,
+    PAUSE = 0x13,
+    CAPSLOCK = 0x14,
+    ESC = 0x1B,
+    ESCAPE = 0x1B,
+    SPACE = 0x20,
+    PAGEUP = 0x21,
+    PAGEDOWN = 0x22,
+    END = 0x23,
+    HOME = 0x24,
+    LEFT = 0x25,
+    UP = 0x26,
+    RIGHT = 0x27,
+    DOWN = 0x28,
+    INSERT = 0x2D,
+    DELETE = 0x2E,
+    MULTIPLY = 0x6A,
+    ADD = 0x6B,
+    SUBTRACT = 0x6D,
+    DECIMAL = 0x6E,
+    DIVIDE = 0x6F,
+    LSHIFT = 0xA0,
+    RSHIFT = 0xA1,
+    LCONTROL = 0xA2,
+    LCTRL = 0xA2,
+    RCONTROL = 0xA3,
+    RCTRL = 0xA3,
+    LMENU = 0xA4,
+    LALT = 0xA4,
+    RMENU = 0xA5,
+    RALT = 0xA5
+}
+
+for keyCode = string.byte('0'), string.byte('9') do
+    RAW_KEY_CODES[string.char(keyCode)] = keyCode
+end
+for keyCode = string.byte('A'), string.byte('Z') do
+    RAW_KEY_CODES[string.char(keyCode)] = keyCode
+end
+for index = 0, 9 do
+    RAW_KEY_CODES['NUMPAD' .. index] = 0x60 + index
+end
+for index = 1, 24 do
+    RAW_KEY_CODES['F' .. index] = 0x6F + index
+end
+
 local SET_RANDOM_OUTFIT_VARIATION = 0x283978A15512B2FE
 local ADD_META_PED_COMPONENT = 0xA5BAE410B03E7371
 local APPLY_SHOP_ITEM_TO_PED = 0xD3A7B003ED343FD9
 local UPDATE_PED_VARIATION = 0xCC8CA3E88256E58F
 local IS_PED_READY_TO_RENDER = 0xA0BC8FAED8CFEB3C
 local FINALIZE_PED_VARIATION = 0xAAB86462966168CE
+
+function MSCore.RegisterKeyMappingCompat(command, description, mapper, defaultKey)
+    if type(command) ~= 'string' or command == '' then
+        return false
+    end
+
+    if type(RegisterKeyMapping) == 'function' then
+        RegisterKeyMapping(command, description or command, mapper or 'keyboard', defaultKey or '')
+        return true
+    end
+
+    if type(RegisterRawKeymap) ~= 'function' then
+        print(('[MSCore] Tastenbelegung fuer "%s" fehlgeschlagen: RegisterRawKeymap ist nicht verfuegbar.'):format(command))
+        return false
+    end
+
+    if type(mapper) == 'string' and mapper:lower() ~= 'keyboard' then
+        print(('[MSCore] Tastenbelegung fuer "%s" fehlgeschlagen: RedM-Fallback unterstuetzt nur Tastaturbelegungen.'):format(command))
+        return false
+    end
+
+    local normalizedKey = tostring(defaultKey or ''):upper():gsub('%s+', '')
+    local keyCode = RAW_KEY_CODES[normalizedKey]
+    if not keyCode then
+        print(('[MSCore] Tastenbelegung fuer "%s" fehlgeschlagen: Taste "%s" ist unbekannt.'):format(command, normalizedKey))
+        return false
+    end
+
+    local owner = type(GetInvokingResource) == 'function' and GetInvokingResource() or nil
+    owner = type(owner) == 'string' and owner or 'MSCore'
+    local commandKey = ('%s:%s:%d'):format(owner, command, keyCode)
+    if RegisteredRawCommands[commandKey] then
+        return true
+    end
+
+    local binding = RawKeyBindings[keyCode]
+    if not binding then
+        binding = { commands = {} }
+        RawKeyBindings[keyCode] = binding
+
+        local registered, errorMessage = pcall(
+            RegisterRawKeymap,
+            ('mscore_key_%02x'):format(keyCode),
+            function()
+                for index = 1, #binding.commands do
+                    ExecuteCommand(binding.commands[index].down)
+                end
+            end,
+            function()
+                for index = 1, #binding.commands do
+                    local releaseCommand = binding.commands[index].up
+                    if releaseCommand then
+                        ExecuteCommand(releaseCommand)
+                    end
+                end
+            end,
+            keyCode,
+            true
+        )
+
+        if not registered then
+            RawKeyBindings[keyCode] = nil
+            print(('[MSCore] Tastenbelegung fuer "%s" fehlgeschlagen: %s'):format(command, tostring(errorMessage)))
+            return false
+        end
+    end
+
+    binding.commands[#binding.commands + 1] = {
+        down = command,
+        key = commandKey,
+        owner = owner,
+        up = command:sub(1, 1) == '+' and ('-' .. command:sub(2)) or nil
+    }
+    RegisteredRawCommands[commandKey] = true
+
+    if not RawKeymapFallbackAnnounced then
+        RawKeymapFallbackAnnounced = true
+        print('[MSCore] RedM Raw-Keymap-Kompatibilitaet ist aktiv.')
+    end
+
+    return true
+end
+exports('RegisterKeyMappingCompat', MSCore.RegisterKeyMappingCompat)
+
+AddEventHandler('onClientResourceStop', function(resourceName)
+    for _, binding in pairs(RawKeyBindings) do
+        for index = #binding.commands, 1, -1 do
+            local command = binding.commands[index]
+            if command.owner == resourceName then
+                RegisteredRawCommands[command.key] = nil
+                table.remove(binding.commands, index)
+            end
+        end
+    end
+end)
 
 function MSCore.TriggerCallback(name, callback, ...)
     NextRequest = NextRequest + 1

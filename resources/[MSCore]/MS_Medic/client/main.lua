@@ -1,3 +1,8 @@
+local PlatformRegisterKeyMapping = RegisterKeyMapping
+local RegisterKeyMapping = type(PlatformRegisterKeyMapping) == 'function'
+    and PlatformRegisterKeyMapping
+    or function(...) return exports.MSCore:RegisterKeyMappingCompat(...) end
+
 local Config = MSMedicConfig
 local RESURRECT_PED = 0x71BC8E838B9C6035
 local TASK_START_SCENARIO_IN_PLACE = 0x524B54361229154F

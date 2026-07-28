@@ -1,3 +1,8 @@
+local PlatformRegisterKeyMapping = RegisterKeyMapping
+local RegisterKeyMapping = type(PlatformRegisterKeyMapping) == 'function'
+    and PlatformRegisterKeyMapping
+    or function(...) return exports.MSCore:RegisterKeyMappingCompat(...) end
+
 local Config = MSPointingConfig
 local TASK_EMOTE_NATIVE = 0xB31A277C1AC7B7FF
 local UNARMED_WEAPON = GetHashKey('WEAPON_UNARMED')

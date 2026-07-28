@@ -325,7 +325,10 @@ Alle Mapeditor-Befehle sind nur ingame verfügbar und benötigen das ACE-Recht
 
 ### Standardtasten
 
-Alle Keymappings können Spieler in den RedM-Tastatureinstellungen ändern.
+RedM stellt `RegisterKeyMapping` nicht bereit. MSCore registriert die
+konfigurierten Standardtasten deshalb zentral über `RegisterRawKeymap`.
+Tasten werden in der jeweiligen `config.lua` geändert und nach einem
+Resource- oder Serverneustart übernommen.
 
 | Taste | Funktion |
 | --- | --- |

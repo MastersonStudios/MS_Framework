@@ -1,3 +1,8 @@
+local PlatformRegisterKeyMapping = RegisterKeyMapping
+local RegisterKeyMapping = type(PlatformRegisterKeyMapping) == 'function'
+    and PlatformRegisterKeyMapping
+    or function(...) return exports.MSCore:RegisterKeyMappingCompat(...) end
+
 local SellerEntities = {}
 local SellerLoading = {}
 local SellerFailures = {}
