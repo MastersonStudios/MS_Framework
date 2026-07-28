@@ -1783,13 +1783,15 @@ AddEventHandler('mscore:server:onboardingCompleted', function(source)
     end)
 end)
 
-AddEventHandler('mscore:server:playerUnloaded', function(source)
-    local player = exports.MSCore:GetPlayer(source)
+AddEventHandler('mscore:server:playerUnloaded', function(playerSource)
+    playerSource = tonumber(playerSource)
+    if not playerSource then return end
+    local player = exports.MSCore:GetPlayer(playerSource)
     if player then RecentKills[player.characterId] = nil end
-    FrozenPlayers[source] = nil
-    if GhostPlayers[source] then setGhostMode(source, false) end
-    CraftingLocks[source] = nil
-    TriggerClientEvent('ms_adminmenu:client:setFrozen', source, false)
+    FrozenPlayers[playerSource] = nil
+    if GhostPlayers[playerSource] then setGhostMode(playerSource, false) end
+    CraftingLocks[playerSource] = nil
+    TriggerClientEvent('ms_adminmenu:client:setFrozen', playerSource, false)
     refreshAllMenus()
 end)
 

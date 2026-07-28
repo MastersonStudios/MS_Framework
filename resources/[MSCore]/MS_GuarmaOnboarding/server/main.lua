@@ -176,10 +176,12 @@ RegisterCommand(GuarmaConfig.ResetCommand, function(source, args)
     notify(source, ('Guarma-Tutorial für %s gestartet.'):format(player:getName()))
 end, false)
 
-AddEventHandler('mscore:server:playerUnloaded', function(source)
-    ActiveOnboardings[source] = nil
-    BeachNotifications[source] = nil
-    TriggerClientEvent('ms_guarma:client:forceStop', source)
+AddEventHandler('mscore:server:playerUnloaded', function(playerSource)
+    playerSource = tonumber(playerSource)
+    if not playerSource then return end
+    ActiveOnboardings[playerSource] = nil
+    BeachNotifications[playerSource] = nil
+    TriggerClientEvent('ms_guarma:client:forceStop', playerSource)
 end)
 
 AddEventHandler('playerDropped', function()

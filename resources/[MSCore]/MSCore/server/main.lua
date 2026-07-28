@@ -204,9 +204,16 @@ local function saveAllPlayers()
 end
 
 AddEventHandler('playerDropped', function()
-    savePlayer(source)
-    TriggerEvent('mscore:server:playerUnloaded', source, Players[source])
-    Players[source] = nil
+    -- Das globale Cfx-`source` darf nicht über ein DB-await hinweg verwendet
+    -- werden. Nach player:save() kann es bereits nil oder neu belegt sein.
+    local playerSource = tonumber(source)
+    local player = playerSource and Players[playerSource]
+    if not playerSource or not player then return end
+
+    player:save()
+    if Players[playerSource] ~= player then return end
+    TriggerEvent('mscore:server:playerUnloaded', playerSource, player)
+    Players[playerSource] = nil
 end)
 
 CreateThread(function()

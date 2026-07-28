@@ -300,6 +300,8 @@ AddEventHandler('mscore:server:itemCatalogUpdated', function()
 end)
 
 AddEventHandler('mscore:server:playerUnloaded', function(playerSource)
+    playerSource = tonumber(playerSource)
+    if not playerSource then return end
     Sessions[playerSource] = nil
     BusyPlayers[playerSource] = nil
 end)

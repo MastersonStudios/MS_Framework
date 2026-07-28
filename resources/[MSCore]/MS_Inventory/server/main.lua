@@ -388,6 +388,8 @@ AddEventHandler('mscore:server:playerLoaded', function(playerSource, player)
 end)
 
 AddEventHandler('mscore:server:playerUnloaded', function(playerSource)
+    playerSource = tonumber(playerSource)
+    if not playerSource then return end
     OpenInventories[playerSource] = nil
     BusyPlayers[playerSource] = nil
     RefreshScheduled[playerSource] = nil

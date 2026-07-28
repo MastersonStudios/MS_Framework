@@ -509,6 +509,8 @@ AddEventHandler('mscore:server:playerLoaded', function(playerSource, player)
 end)
 
 local function clearPlayerState(playerSource)
+    playerSource = tonumber(playerSource)
+    if not playerSource then return end
     Sessions[playerSource] = nil
     BusyPlayers[playerSource] = nil
     for key in pairs(LastActions) do

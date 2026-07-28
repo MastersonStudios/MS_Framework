@@ -662,6 +662,8 @@ RegisterNetEvent('ms_stables:server:dismissAsset', function(kind)
 end)
 
 AddEventHandler('mscore:server:playerUnloaded', function(playerSource)
+    playerSource = tonumber(playerSource)
+    if not playerSource then return end
     Sessions[playerSource] = nil
     PendingSpawns[playerSource] = nil
     deleteActive(playerSource)

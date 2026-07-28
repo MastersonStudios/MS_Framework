@@ -164,7 +164,9 @@ AddEventHandler('playerDropped', function()
 end)
 
 AddEventHandler('mscore:server:playerUnloaded', function(playerSource)
-    LastMessages[tonumber(playerSource)] = nil
+    playerSource = tonumber(playerSource)
+    if not playerSource then return end
+    LastMessages[playerSource] = nil
 end)
 
 exports('SendAction', SendAction)

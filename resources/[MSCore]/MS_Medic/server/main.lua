@@ -781,6 +781,7 @@ end)
 
 local function clearPlayerState(playerSource, player)
     playerSource = tonumber(playerSource)
+    if not playerSource then return end
     local characterId = player and player.characterId or SourceCharacters[playerSource]
     if characterId then
         DiseaseStates[characterId] = nil
