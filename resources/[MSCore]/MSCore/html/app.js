@@ -7,6 +7,8 @@ const creator = document.getElementById('creator');
 const creatorForm = document.getElementById('creator-form');
 const cancelCreate = document.getElementById('cancel-create');
 const submitCreate = document.getElementById('submit-create');
+const firstname = document.getElementById('firstname');
+const lastname = document.getElementById('lastname');
 const birthdate = document.getElementById('birthdate');
 const confirmation = document.getElementById('confirmation');
 const confirmationText = document.getElementById('confirmation-text');
@@ -27,6 +29,28 @@ const post = async (endpoint, body = {}) => {
         body: JSON.stringify(body)
     });
     return response.json();
+};
+
+const requestFocus = async centerCursor => {
+    window.focus();
+    try {
+        await post('requestFocus', { centerCursor: centerCursor === true });
+    } catch {
+        // Die lokale HTML-Vorschau besitzt keinen NUI-Callback.
+    }
+};
+
+const focusFirstname = () => {
+    requestAnimationFrame(() => {
+        firstname.focus({ preventScroll: true });
+        firstname.select();
+    });
+};
+
+const openCreator = () => {
+    creator.classList.remove('hidden');
+    void requestFocus(false);
+    focusFirstname();
 };
 
 const showError = message => {
@@ -130,7 +154,7 @@ const renderCharacters = () => {
             makeElement('strong', '', 'Neuer Charakter'),
             makeElement('small', '', 'Eine neue Geschichte beginnen')
         );
-        createCard.addEventListener('click', () => creator.classList.remove('hidden'));
+        createCard.addEventListener('click', openCreator);
         grid.append(createCard);
     }
 };
@@ -166,6 +190,7 @@ window.addEventListener('message', ({ data }) => {
     renderCharacters();
     loading.classList.add('hidden');
     grid.classList.remove('hidden');
+    void requestFocus(true);
 });
 
 creatorForm.addEventListener('submit', async event => {
@@ -190,7 +215,10 @@ creatorForm.addEventListener('submit', async event => {
     }
 });
 
-cancelCreate.addEventListener('click', () => creator.classList.add('hidden'));
+cancelCreate.addEventListener('click', () => {
+    creator.classList.add('hidden');
+    creatorForm.reset();
+});
 cancelDelete.addEventListener('click', () => {
     pendingDelete = null;
     confirmation.classList.add('hidden');
@@ -227,6 +255,20 @@ document.addEventListener('keydown', event => {
         creator.classList.add('hidden');
     } else if (!closeButton.classList.contains('hidden')) {
         closeButton.click();
+    }
+});
+
+firstname.addEventListener('keydown', event => {
+    if (event.key === 'Enter') {
+        event.preventDefault();
+        lastname.focus();
+    }
+});
+
+lastname.addEventListener('keydown', event => {
+    if (event.key === 'Enter') {
+        event.preventDefault();
+        birthdate.focus();
     }
 });
 

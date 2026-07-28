@@ -12,9 +12,19 @@ exports('TriggerCallback', MSCore.TriggerCallback)
 function MSCore.GetPlayerData() return PlayerData end
 exports('GetPlayerData', MSCore.GetPlayerData)
 
+local function setSelectorInputFocus(focused, centerCursor)
+    SetNuiFocus(focused, focused)
+    if type(SetNuiFocusKeepInput) == 'function' then
+        SetNuiFocusKeepInput(false)
+    end
+    if focused and centerCursor and type(SetCursorLocation) == 'function' then
+        SetCursorLocation(0.5, 0.5)
+    end
+end
+
 local function setSelectorVisible(visible)
     SelectorOpen = visible
-    SetNuiFocus(visible, visible)
+    setSelectorInputFocus(visible, false)
     if not visible then
         SendNUIMessage({ action = 'close' })
         FreezeEntityPosition(PlayerPedId(), false)
@@ -23,12 +33,13 @@ end
 
 local function openCharacterSelector()
     if SelectorOpen then
+        setSelectorInputFocus(true, false)
         SendNUIMessage({ action = 'loading' })
     else
         SelectorOpen = true
         FreezeEntityPosition(PlayerPedId(), true)
         if not PlayerData.characterId then SetEntityVisible(PlayerPedId(), false, false) end
-        SetNuiFocus(true, true)
+        setSelectorInputFocus(true, true)
         SendNUIMessage({ action = 'loading' })
     end
 
@@ -46,6 +57,9 @@ local function openCharacterSelector()
             minBirthDate = Config.CharacterBirthDateMin,
             maxBirthDate = Config.CharacterBirthDateMax
         })
+        SetTimeout(50, function()
+            if SelectorOpen then setSelectorInputFocus(true, false) end
+        end)
     end)
 end
 
@@ -129,6 +143,14 @@ RegisterNUICallback('closeCharacters', function(_, cb)
     cb({ ok = true })
 end)
 
+RegisterNUICallback('requestFocus', function(data, cb)
+    if not SelectorOpen then
+        return cb({ ok = false, error = 'Charakterauswahl ist geschlossen.' })
+    end
+    setSelectorInputFocus(true, data and data.centerCursor == true)
+    cb({ ok = true })
+end)
+
 RegisterCommand('selectchar', function(_, args)
     local id = tonumber(args[1])
     if not id then return end
@@ -175,7 +197,7 @@ end)
 
 AddEventHandler('onResourceStop', function(resource)
     if resource ~= GetCurrentResourceName() then return end
-    SetNuiFocus(false, false)
+    setSelectorInputFocus(false, false)
     FreezeEntityPosition(PlayerPedId(), false)
     SetEntityVisible(PlayerPedId(), true, false)
 end)
