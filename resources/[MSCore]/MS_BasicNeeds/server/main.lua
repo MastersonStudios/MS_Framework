@@ -56,10 +56,12 @@ local function publish(playerSource, player, needs, saveNow, reason)
     needs.hunger = clamp(needs.hunger)
     needs.thirst = clamp(needs.thirst)
 
-    player.metadata.hunger = needs.hunger
-    player.metadata.thirst = needs.thirst
-    player.dirty = true
-    player:sync()
+    if not player:setMetadataValues({
+        hunger = needs.hunger,
+        thirst = needs.thirst
+    }) then
+        return false
+    end
     if saveNow == true then player:save() end
 
     local payload = clientPayload(needs)

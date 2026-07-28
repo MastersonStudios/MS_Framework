@@ -361,9 +361,19 @@ local player = exports.MSCore:GetPlayer(source)
 player:addMoney('cash', 10, 'mission_reward')
 player:addItem('water', 1, 'mission_reward')
 player:setJob('sheriff', 0)
+player:setMetadataValues({
+    hunger = 100,
+    thirst = 100
+})
 
 local player = exports.MSCore:GetPlayerFromCharacterId(characterId)
 ```
+
+Die Player-Methoden sind an das kanonische Core-Objekt gebunden und können
+deshalb sicher aus anderen Server-Resources sowie aus Core-Event-Handlern
+aufgerufen werden. Mehrere Metadatenwerte sollten mit `setMetadataValues`
+gemeinsam aktualisiert werden; dadurch erfolgen Synchronisierung und
+Dirty-Markierung nur einmal.
 
 Weitere Beispiele stehen in `resources/[MSCore]/MS_Example`.
 

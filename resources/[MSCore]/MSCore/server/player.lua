@@ -1,6 +1,20 @@
 local Player = {}
 Player.__index = Player
 
+local function bindPlayerMethods(instance)
+    -- Cfx überträgt Tabellen zwischen Resources, aber nicht deren Metatabelle.
+    -- Gebundene Funktionsreferenzen halten alle bestehenden player:method()-
+    -- Aufrufe auf dem kanonischen MSCore-Spielerobjekt funktionsfähig.
+    for methodName, method in pairs(Player) do
+        if methodName ~= 'new' and type(method) == 'function' then
+            local boundMethod = method
+            instance[methodName] = function(_, ...)
+                return boundMethod(instance, ...)
+            end
+        end
+    end
+end
+
 function Player:new(source, row)
     local instance = setmetatable({}, self)
     instance.source = source
@@ -17,6 +31,7 @@ function Player:new(source, row)
     instance.metadata = json.decode(row.metadata or '{}') or {}
     instance.coords = json.decode(row.coords or 'null')
     instance.dirty = false
+    bindPlayerMethods(instance)
     return instance
 end
 
@@ -158,6 +173,25 @@ end
 function Player:setMetadata(key, value)
     if type(key) ~= 'string' or #key > 64 then return false end
     self.metadata[key], self.dirty = value, true
+    self:sync()
+    return true
+end
+
+function Player:setMetadataValues(values)
+    if type(values) ~= 'table' then return false end
+
+    local entries = {}
+    for key, value in pairs(values) do
+        if type(key) ~= 'string' or #key < 1 or #key > 64 then return false end
+        entries[#entries + 1] = { key = key, value = value }
+        if #entries > 64 then return false end
+    end
+    if #entries == 0 then return false end
+
+    for _, entry in ipairs(entries) do
+        self.metadata[entry.key] = entry.value
+    end
+    self.dirty = true
     self:sync()
     return true
 end
