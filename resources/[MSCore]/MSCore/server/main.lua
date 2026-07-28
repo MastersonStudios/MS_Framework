@@ -44,6 +44,34 @@ local function validBirthDate(value)
     return value
 end
 
+local function normalizeCharacterAppearance(sex, raw)
+    local creator = type(Config.CharacterCreator) == 'table' and Config.CharacterCreator or {}
+    local defaults = type(creator.Defaults) == 'table' and creator.Defaults or {}
+    local faceOptions = type(creator.FaceOptions) == 'table' and creator.FaceOptions[sex] or nil
+    local bodyOptions = type(creator.BodyOptions) == 'table' and creator.BodyOptions[sex] or nil
+    local outfits = type(creator.Outfits) == 'table' and creator.Outfits or {}
+    raw = type(raw) == 'table' and raw or {}
+
+    local faceMaximum = math.max(1, math.floor(tonumber(faceOptions and faceOptions.count) or 1))
+    local bodyMaximum = math.max(1, math.floor(tonumber(bodyOptions and bodyOptions.count) or 1))
+    local face = math.floor(tonumber(raw.face) or tonumber(defaults.face) or 1)
+    local body = math.floor(tonumber(raw.body) or tonumber(defaults.body) or 1)
+    local outfit = type(raw.outfit) == 'string' and raw.outfit or defaults.outfit
+
+    face = math.max(1, math.min(faceMaximum, face))
+    body = math.max(1, math.min(bodyMaximum, body))
+    if type(outfit) ~= 'string' or type(outfits[outfit]) ~= 'table' then
+        outfit = type(defaults.outfit) == 'string' and defaults.outfit or next(outfits)
+    end
+
+    return {
+        version = 1,
+        face = face,
+        body = body,
+        outfit = outfit
+    }
+end
+
 local function createCharacter(userId, data)
     if not MSCore.ValidName(data.firstname) or not MSCore.ValidName(data.lastname) then
         return nil, 'Ungültiger Name.'
@@ -53,13 +81,16 @@ local function createCharacter(userId, data)
     if birthDate == false then return nil, 'Ungültiges Geburtsdatum.' end
 
     local defaults = Config.DefaultCharacter
+    local metadata = {
+        appearance = normalizeCharacterAppearance(data.sex, data.appearance)
+    }
     return MySQL.insert.await([[
         INSERT INTO mscore_characters
             (user_id, firstname, lastname, date_of_birth, sex, job, job_grade, group_name, cash, bank, metadata)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ]], {
         userId, MSCore.Trim(data.firstname), MSCore.Trim(data.lastname), birthDate, data.sex,
-        defaults.job, defaults.jobGrade, defaults.group, defaults.cash, defaults.bank, '{}'
+        defaults.job, defaults.jobGrade, defaults.group, defaults.cash, defaults.bank, json.encode(metadata)
     })
 end
 
@@ -77,9 +108,21 @@ local function loadCharacter(source, characterId)
         TriggerEvent('mscore:server:playerUnloaded', source, Players[source])
     end
     Players[source] = MSCore.Player:new(source, row)
-    Players[source]:sync()
-    TriggerClientEvent('mscore:client:spawn', source, Players[source].coords or Config.Spawn)
-    TriggerEvent('mscore:server:playerLoaded', source, Players[source])
+    local player = Players[source]
+    local currentAppearance = player.metadata.appearance
+    local appearance = normalizeCharacterAppearance(player.sex, currentAppearance)
+    if type(currentAppearance) ~= 'table'
+        or tonumber(currentAppearance.version) ~= appearance.version
+        or tonumber(currentAppearance.face) ~= appearance.face
+        or tonumber(currentAppearance.body) ~= appearance.body
+        or currentAppearance.outfit ~= appearance.outfit
+    then
+        player.metadata.appearance = appearance
+        player.dirty = true
+    end
+    player:sync()
+    TriggerClientEvent('mscore:client:spawn', source, player.coords or Config.Spawn)
+    TriggerEvent('mscore:server:playerLoaded', source, player)
     return true
 end
 

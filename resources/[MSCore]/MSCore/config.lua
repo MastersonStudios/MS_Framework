@@ -24,6 +24,80 @@ Config.DefaultCharacter = {
     group = 'user'
 }
 
+Config.CharacterCreator = {
+    Enabled = true,
+    ModelLoadTimeoutMs = 10000,
+    Models = {
+        male = 'mp_male',
+        female = 'mp_female'
+    },
+    FaceOptions = {
+        male = { first = 110, count = 14 },
+        female = { first = 96, count = 14 }
+    },
+    BodyOptions = {
+        male = { first = 124, count = 5 },
+        female = { first = 110, count = 6 }
+    },
+    Defaults = {
+        face = 1,
+        body = 1,
+        outfit = 'frontier'
+    },
+    Preview = {
+        coords = vector4(-277.65, 803.78, 119.39, 105.0),
+        cameraDistance = 2.45,
+        cameraHeight = 0.72,
+        cameraFov = 38.0,
+        minZoom = 1.35,
+        maxZoom = 3.20,
+        rotationStep = 18.0
+    },
+    -- Die Presets verwenden die bereits in Config.Items definierten
+    -- Bekleidungskomponenten. Item-Namen können hier frei ausgetauscht werden.
+    Outfits = {
+        work = {
+            order = 1,
+            label = 'Arbeit',
+            description = 'Schlicht, robust und bereit für den ersten Arbeitstag.',
+            items = {
+                male = { 'tailor_shirt_male', 'tailor_pants_male', 'tailor_boots_male' },
+                female = { 'tailor_shirt_female', 'tailor_pants_female', 'tailor_boots_female' }
+            }
+        },
+        traveler = {
+            order = 2,
+            label = 'Reise',
+            description = 'Ein warmer Mantel für lange Wege durch den Westen.',
+            items = {
+                male = {
+                    'tailor_shirt_male', 'tailor_coat_male',
+                    'tailor_pants_male', 'tailor_boots_male'
+                },
+                female = {
+                    'tailor_shirt_female', 'tailor_coat_female',
+                    'tailor_pants_female', 'tailor_boots_female'
+                }
+            }
+        },
+        frontier = {
+            order = 3,
+            label = 'Frontier',
+            description = 'Das vollständige Startoutfit für eine neue Geschichte.',
+            items = {
+                male = {
+                    'tailor_hat_male', 'tailor_shirt_male', 'tailor_coat_male',
+                    'tailor_pants_male', 'tailor_boots_male'
+                },
+                female = {
+                    'tailor_hat_female', 'tailor_shirt_female', 'tailor_coat_female',
+                    'tailor_pants_female', 'tailor_boots_female'
+                }
+            }
+        }
+    }
+}
+
 Config.Spawn = vector4(-275.14, 805.09, 119.38, 282.0)
 Config.SaveInterval = 60 * 1000
 Config.PaycheckCheckIntervalMs = 30 * 1000

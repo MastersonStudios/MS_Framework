@@ -34,37 +34,71 @@
         </footer>
     </main>
 
-    <div id="creator" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="creator-title">
-        <form id="creator-form">
-            <p class="eyebrow">NEUER ANFANG</p>
-            <h2 id="creator-title">Charakter erstellen</h2>
-            <p class="form-intro">Gib deiner neuen Geschichte ein Gesicht.</p>
+    <div id="creator" class="modal creator-modal hidden" role="dialog" aria-modal="true" aria-labelledby="creator-title">
+        <aside class="preview-panel" aria-label="Charaktervorschau">
+            <p class="eyebrow">LIVE-VORSCHAU</p>
+            <h2>Dein Charakter</h2>
+            <p>Drehe die Vorschau und prüfe dein Aussehen vor dem Start.</p>
+            <div class="preview-actions">
+                <button id="rotate-left" class="preview-button" type="button" aria-label="Nach links drehen">↶</button>
+                <label class="zoom-control">
+                    <span>Zoom</span>
+                    <input id="creator-zoom" type="range" min="0" max="100" value="50">
+                </label>
+                <button id="rotate-right" class="preview-button" type="button" aria-label="Nach rechts drehen">↷</button>
+            </div>
+        </aside>
 
-            <div class="field-row">
-                <label>
-                    <span>Vorname</span>
-                    <input id="firstname" name="firstname" type="text" minlength="2" maxlength="32"
-                        autocomplete="off" autocapitalize="words" enterkeyhint="next" spellcheck="false" required>
-                </label>
-                <label>
-                    <span>Nachname</span>
-                    <input id="lastname" name="lastname" type="text" minlength="2" maxlength="32"
-                        autocomplete="off" autocapitalize="words" enterkeyhint="next" spellcheck="false" required>
-                </label>
+        <form id="creator-form">
+            <div class="creator-heading">
+                <p class="eyebrow">NEUER ANFANG</p>
+                <h2 id="creator-title">Charakter erstellen</h2>
+                <p class="form-intro">Gib deiner neuen Geschichte ein Gesicht.</p>
             </div>
 
-            <label>
-                <span>Geburtsdatum</span>
-                <input id="birthdate" name="dateOfBirth" type="date" required>
-            </label>
+            <div class="creator-scroll">
+                <div class="field-row">
+                    <label>
+                        <span>Vorname</span>
+                        <input id="firstname" name="firstname" type="text" minlength="2" maxlength="32"
+                            autocomplete="off" autocapitalize="words" enterkeyhint="next" spellcheck="false" required>
+                    </label>
+                    <label>
+                        <span>Nachname</span>
+                        <input id="lastname" name="lastname" type="text" minlength="2" maxlength="32"
+                            autocomplete="off" autocapitalize="words" enterkeyhint="next" spellcheck="false" required>
+                    </label>
+                </div>
 
-            <fieldset>
-                <legend>Geschlecht</legend>
-                <label class="choice"><input type="radio" name="sex" value="male" checked><span>Männlich</span></label>
-                <label class="choice"><input type="radio" name="sex" value="female"><span>Weiblich</span></label>
-            </fieldset>
+                <label>
+                    <span>Geburtsdatum</span>
+                    <input id="birthdate" name="dateOfBirth" type="date" required>
+                </label>
 
-            <div class="form-actions">
+                <fieldset>
+                    <legend>Geschlecht</legend>
+                    <label class="choice"><input type="radio" name="sex" value="male" checked><span>Männlich</span></label>
+                    <label class="choice"><input type="radio" name="sex" value="female"><span>Weiblich</span></label>
+                </fieldset>
+
+                <div class="appearance-row">
+                    <label class="range-field">
+                        <span>Gesicht <output id="face-value">01 / 14</output></span>
+                        <input id="face" name="face" type="range" min="1" max="14" value="1">
+                    </label>
+                    <label class="range-field">
+                        <span>Körperbau <output id="body-value">01 / 05</output></span>
+                        <input id="body-shape" name="body" type="range" min="1" max="5" value="1">
+                    </label>
+                </div>
+
+                <fieldset class="outfit-fieldset">
+                    <legend>Startoutfit</legend>
+                    <div id="outfit-options" class="outfit-options"></div>
+                </fieldset>
+            </div>
+
+            <div class="form-actions creator-actions">
                 <button id="cancel-create" class="button secondary" type="button">Zurück</button>
                 <button id="submit-create" class="button primary" type="submit">Geschichte beginnen</button>
             </div>

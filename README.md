@@ -7,7 +7,7 @@ Aktuelle Framework-Version: `0.0.2`
 ## Enthalten
 
 - persistente Benutzer und mehrere Charaktere
-- grafische Charakterauswahl und Charaktererstellung
+- grafische Charakterauswahl mit vollständigem Charakter-Creator und Live-Vorschau
 - Geldkonten (`cash`, `bank`) mit serverseitiger Validierung
 - `MS_Banking` mit Privat-, Firmen- und Adminkonten sowie konfigurierbarer Transaktionssteuer
 - `MS_BossMenu` mit Dienstzeiterfassung, Job-Punkten, Neueinstellungen, Entlassungen und Firmenkonto
@@ -112,6 +112,23 @@ Server neu starten.
 Beim ersten Beitritt öffnet sich die Charaktererstellung. In
 `MSCore/config.lua` kann optional die automatische Erstellung eines
 Platzhalter-Charakters aktiviert werden.
+
+### Charakter-Creator
+
+Über `Neuer Charakter` öffnet sich der Creator automatisch. Neben Vorname,
+Nachname, Geburtsdatum und Geschlecht können Gesicht, Körperbau und eines der
+konfigurierten Startoutfits ausgewählt werden. Die Spielfigur wird dabei live
+angezeigt, gedreht und gezoomt. Beim Abschluss speichert MSCore die serverseitig
+validierte Auswahl unter `metadata.appearance` und stellt Modell, Körper,
+Gesicht und Startoutfit bei jedem Spawn wieder her.
+
+Modelle, Komponentenbereiche, Standardwerte, Vorschaustandort, Kamera und
+Outfit-Presets werden unter `Config.CharacterCreator` in
+`resources/[MSCore]/MSCore/config.lua` konfiguriert. Die Presets referenzieren
+vorhandene Kleidungsitems aus `Config.Items`, sodass deren
+`metadata.componentHash` zentral gepflegt bleibt. Eine zusätzliche
+Datenbankmigration ist nicht erforderlich. Bereits vorhandene Charaktere
+erhalten beim nächsten Laden automatisch die konfigurierten Standardwerte.
 
 Die manuelle Beispielkonfiguration enthält die offiziellen RedM-Systemresources
 und feste Beispielwerte. Für txAdmin darf sie nicht anstelle von

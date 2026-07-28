@@ -10,6 +10,14 @@ const submitCreate = document.getElementById('submit-create');
 const firstname = document.getElementById('firstname');
 const lastname = document.getElementById('lastname');
 const birthdate = document.getElementById('birthdate');
+const faceInput = document.getElementById('face');
+const bodyInput = document.getElementById('body-shape');
+const faceValue = document.getElementById('face-value');
+const bodyValue = document.getElementById('body-value');
+const outfitOptions = document.getElementById('outfit-options');
+const rotateLeft = document.getElementById('rotate-left');
+const rotateRight = document.getElementById('rotate-right');
+const creatorZoom = document.getElementById('creator-zoom');
 const confirmation = document.getElementById('confirmation');
 const confirmationText = document.getElementById('confirmation-text');
 const cancelDelete = document.getElementById('cancel-delete');
@@ -21,8 +29,20 @@ let maxCharacters = 3;
 let activeCharacterId = null;
 let pendingDelete = null;
 let busy = false;
+let previewTimer = null;
+let zoomTimer = null;
+let creatorSettings = {
+    enabled: true,
+    defaults: { sex: 'male', face: 1, body: 1, outfit: 'frontier' },
+    limits: {
+        male: { face: 14, body: 5 },
+        female: { face: 14, body: 6 }
+    },
+    outfits: []
+};
 
 const post = async (endpoint, body = {}) => {
+    if (typeof GetParentResourceName !== 'function') return { ok: true };
     const response = await fetch(`https://${GetParentResourceName()}/${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json; charset=UTF-8' },
@@ -47,12 +67,6 @@ const focusFirstname = () => {
     });
 };
 
-const openCreator = () => {
-    creator.classList.remove('hidden');
-    void requestFocus(false);
-    focusFirstname();
-};
-
 const showError = message => {
     toast.textContent = message || 'Ein unbekannter Fehler ist aufgetreten.';
     toast.classList.remove('hidden');
@@ -65,6 +79,132 @@ const setBusy = value => {
     submitCreate.disabled = value;
     confirmDelete.disabled = value;
     grid.querySelectorAll('button').forEach(button => { button.disabled = value; });
+    creatorForm.querySelectorAll('input, button').forEach(control => { control.disabled = value; });
+    document.querySelectorAll('.preview-panel button, .preview-panel input')
+        .forEach(control => { control.disabled = value; });
+};
+
+const selectedSex = () =>
+    creatorForm.querySelector('input[name="sex"]:checked')?.value === 'female' ? 'female' : 'male';
+
+const selectedOutfit = () =>
+    creatorForm.querySelector('input[name="outfit"]:checked')?.value || creatorSettings.defaults.outfit;
+
+const currentAppearance = () => ({
+    sex: selectedSex(),
+    face: Number(faceInput.value || 1),
+    body: Number(bodyInput.value || 1),
+    outfit: selectedOutfit()
+});
+
+const updateRangeLabels = () => {
+    faceValue.textContent =
+        `${String(faceInput.value).padStart(2, '0')} / ${String(faceInput.max).padStart(2, '0')}`;
+    bodyValue.textContent =
+        `${String(bodyInput.value).padStart(2, '0')} / ${String(bodyInput.max).padStart(2, '0')}`;
+};
+
+const updateAppearanceLimits = () => {
+    const limits = creatorSettings.limits[selectedSex()] || { face: 1, body: 1 };
+    faceInput.max = Math.max(1, Number(limits.face || 1));
+    bodyInput.max = Math.max(1, Number(limits.body || 1));
+    faceInput.value = Math.min(Number(faceInput.value || 1), Number(faceInput.max));
+    bodyInput.value = Math.min(Number(bodyInput.value || 1), Number(bodyInput.max));
+    updateRangeLabels();
+};
+
+const renderOutfits = () => {
+    outfitOptions.replaceChildren();
+    creatorSettings.outfits.forEach(outfit => {
+        const label = makeElement('label', 'outfit-card');
+        const input = document.createElement('input');
+        const copy = makeElement('span', 'outfit-copy');
+        input.type = 'radio';
+        input.name = 'outfit';
+        input.value = outfit.key;
+        input.checked = outfit.key === creatorSettings.defaults.outfit;
+        copy.append(
+            makeElement('strong', '', outfit.label || outfit.key),
+            makeElement('small', '', outfit.description || '')
+        );
+        label.append(input, copy);
+        outfitOptions.append(label);
+    });
+};
+
+const configureCreator = settings => {
+    if (settings && typeof settings === 'object') {
+        creatorSettings = {
+            enabled: settings.enabled !== false,
+            defaults: { ...creatorSettings.defaults, ...(settings.defaults || {}) },
+            limits: { ...creatorSettings.limits, ...(settings.limits || {}) },
+            outfits: Array.isArray(settings.outfits) ? settings.outfits : []
+        };
+    }
+    renderOutfits();
+};
+
+const resetCreatorForm = () => {
+    creatorForm.reset();
+    const defaults = creatorSettings.defaults;
+    const sex = defaults.sex === 'female' ? 'female' : 'male';
+    const sexInput = creatorForm.querySelector(`input[name="sex"][value="${sex}"]`);
+    if (sexInput) sexInput.checked = true;
+    faceInput.value = Number(defaults.face || 1);
+    bodyInput.value = Number(defaults.body || 1);
+    const outfit = creatorForm.querySelector(
+        `input[name="outfit"][value="${CSS.escape(String(defaults.outfit || ''))}"]`
+    );
+    if (outfit) outfit.checked = true;
+    creatorZoom.value = 50;
+    updateAppearanceLimits();
+};
+
+const queueAppearancePreview = () => {
+    clearTimeout(previewTimer);
+    previewTimer = setTimeout(async () => {
+        try {
+            const result = await post('previewAppearance', { appearance: currentAppearance() });
+            if (!result.ok) showError(result.error);
+        } catch {
+            showError('Die Charaktervorschau konnte nicht aktualisiert werden.');
+        }
+    }, 70);
+};
+
+const closeCreator = async () => {
+    clearTimeout(previewTimer);
+    clearTimeout(zoomTimer);
+    creator.classList.add('hidden');
+    app.classList.remove('creator-mode');
+    try {
+        await post('cancelCreator');
+    } catch {
+        // Beim Schließen der Resource kann der Callback bereits entfernt sein.
+    }
+    resetCreatorForm();
+};
+
+const openCreator = async () => {
+    if (busy || creatorSettings.enabled === false) {
+        if (creatorSettings.enabled === false) showError('Der Charakter-Creator ist deaktiviert.');
+        return;
+    }
+    resetCreatorForm();
+    creator.classList.remove('hidden');
+    app.classList.add('creator-mode');
+    void requestFocus(false);
+    try {
+        const result = await post('beginCreator', { appearance: currentAppearance() });
+        if (!result.ok) {
+            await closeCreator();
+            return showError(result.error);
+        }
+    } catch {
+        await closeCreator();
+        return showError('Die Charaktervorschau konnte nicht gestartet werden.');
+    }
+    focusFirstname();
 };
 
 const displayDate = value => {
@@ -164,6 +304,7 @@ window.addEventListener('message', ({ data }) => {
 
     if (data.action === 'close') {
         app.classList.add('hidden');
+        app.classList.remove('creator-mode');
         creator.classList.add('hidden');
         confirmation.classList.add('hidden');
         return;
@@ -186,6 +327,7 @@ window.addEventListener('message', ({ data }) => {
     activeCharacterId = data.activeCharacterId || null;
     birthdate.min = data.minBirthDate || '';
     birthdate.max = data.maxBirthDate || '';
+    configureCreator(data.creator);
     closeButton.classList.toggle('hidden', !data.canClose);
     renderCharacters();
     loading.classList.add('hidden');
@@ -203,11 +345,13 @@ creatorForm.addEventListener('submit', async event => {
             firstname: String(form.get('firstname') || '').trim(),
             lastname: String(form.get('lastname') || '').trim(),
             dateOfBirth: form.get('dateOfBirth'),
-            sex: form.get('sex')
+            sex: form.get('sex'),
+            appearance: currentAppearance()
         });
         if (!result.ok) return showError(result.error);
         creator.classList.add('hidden');
-        creatorForm.reset();
+        app.classList.remove('creator-mode');
+        resetCreatorForm();
     } catch {
         showError('Der Charakter konnte nicht erstellt werden.');
     } finally {
@@ -215,10 +359,7 @@ creatorForm.addEventListener('submit', async event => {
     }
 });
 
-cancelCreate.addEventListener('click', () => {
-    creator.classList.add('hidden');
-    creatorForm.reset();
-});
+cancelCreate.addEventListener('click', () => { void closeCreator(); });
 cancelDelete.addEventListener('click', () => {
     pendingDelete = null;
     confirmation.classList.add('hidden');
@@ -252,7 +393,7 @@ document.addEventListener('keydown', event => {
         pendingDelete = null;
         confirmation.classList.add('hidden');
     } else if (!creator.classList.contains('hidden')) {
-        creator.classList.add('hidden');
+        if (!busy) void closeCreator();
     } else if (!closeButton.classList.contains('hidden')) {
         closeButton.click();
     }
@@ -272,6 +413,55 @@ lastname.addEventListener('keydown', event => {
     }
 });
 
+creatorForm.querySelectorAll('input[name="sex"]').forEach(input => {
+    input.addEventListener('change', () => {
+        updateAppearanceLimits();
+        queueAppearancePreview();
+    });
+});
+
+faceInput.addEventListener('input', () => {
+    updateRangeLabels();
+    queueAppearancePreview();
+});
+
+bodyInput.addEventListener('input', () => {
+    updateRangeLabels();
+    queueAppearancePreview();
+});
+
+outfitOptions.addEventListener('change', queueAppearancePreview);
+
+rotateLeft.addEventListener('click', async () => {
+    try {
+        const result = await post('rotateCreator', { direction: -1 });
+        if (!result.ok) showError(result.error);
+    } catch {
+        showError('Die Charaktervorschau konnte nicht gedreht werden.');
+    }
+});
+
+rotateRight.addEventListener('click', async () => {
+    try {
+        const result = await post('rotateCreator', { direction: 1 });
+        if (!result.ok) showError(result.error);
+    } catch {
+        showError('Die Charaktervorschau konnte nicht gedreht werden.');
+    }
+});
+
+creatorZoom.addEventListener('input', () => {
+    clearTimeout(zoomTimer);
+    zoomTimer = setTimeout(async () => {
+        try {
+            const result = await post('zoomCreator', { zoom: Number(creatorZoom.value) / 100 });
+            if (!result.ok) showError(result.error);
+        } catch {
+            showError('Der Vorschau-Zoom konnte nicht aktualisiert werden.');
+        }
+    }, 35);
+});
+
 if (new URLSearchParams(window.location.search).has('preview')) {
     window.dispatchEvent(new MessageEvent('message', {
         data: {
@@ -281,6 +471,31 @@ if (new URLSearchParams(window.location.search).has('preview')) {
             canClose: true,
             minBirthDate: '1800-01-01',
             maxBirthDate: '1905-12-31',
+            creator: {
+                enabled: true,
+                defaults: { sex: 'male', face: 1, body: 1, outfit: 'frontier' },
+                limits: {
+                    male: { face: 14, body: 5 },
+                    female: { face: 14, body: 6 }
+                },
+                outfits: [
+                    {
+                        key: 'work',
+                        label: 'Arbeit',
+                        description: 'Schlicht, robust und bereit für den ersten Arbeitstag.'
+                    },
+                    {
+                        key: 'traveler',
+                        label: 'Reise',
+                        description: 'Ein warmer Mantel für lange Wege durch den Westen.'
+                    },
+                    {
+                        key: 'frontier',
+                        label: 'Frontier',
+                        description: 'Das vollständige Startoutfit für eine neue Geschichte.'
+                    }
+                ]
+            },
             characters: [
                 {
                     id: 1,
