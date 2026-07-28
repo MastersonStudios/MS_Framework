@@ -7,29 +7,35 @@ version: 0.0.2
 author: Masterson Studios
 description: Vollständiges MSCore Roleplay-Framework für RedM mit automatischer Datenbank- und Dependency-Installation.
 
-tasks:
-  # Datenbankverbindung früh prüfen und eine neue Datenbank anlegen, falls nötig.
-  - action: connect_database
+variables:
+  mysqlSlowQueryWarning: 500
 
-  # Framework laden. main ist der stabile, öffentlich installierbare Stand.
+tasks:
+  # Framework zuerst laden, damit vor Datenbankänderungen alle Installationsdateien vorliegen.
   - action: download_github
     src: https://github.com/MastersonStudios/MS_Framework
     ref: main
     dest: ./tmp/mscore
+    timeoutSeconds: 300
+
+  # Datenbankverbindung prüfen, bei Bedarf eine Datenbank anlegen und das Schema importieren.
+  - action: connect_database
 
   - action: query_database
     file: ./tmp/mscore/database/schema.sql
+    timeoutSeconds: 180
 
-  # Offizielle RedM-Basisresources entsprechend dem Cfx-Standardrezept.
+  # Offizielle RedM-Basisresources getrennt von Framework-Resources installieren.
   - action: download_github
     src: https://github.com/citizenfx/cfx-server-data
     ref: master
     subpath: resources
-    dest: ./resources
+    dest: ./resources/[cfx-default]
+    timeoutSeconds: 300
 
   # FXServer stellt den aktuellen System-Chat bereit.
   - action: remove_path
-    path: ./resources/[gameplay]/chat
+    path: ./resources/[cfx-default]/[gameplay]/chat
 
   - action: ensure_dir
     path: ./resources/[standalone]
@@ -38,10 +44,12 @@ tasks:
   - action: download_file
     url: https://github.com/overextended/oxmysql/releases/download/v2.14.1/oxmysql.zip
     path: ./tmp/oxmysql.zip
+    timeoutSeconds: 180
 
   - action: unzip
     src: ./tmp/oxmysql.zip
     dest: ./resources/[standalone]
+    timeoutSeconds: 180
 
   # MSCore-Resources, Dokumentation und txAdmin-Konfiguration installieren.
   - action: move_path
@@ -65,6 +73,21 @@ tasks:
   - action: copy_path
     src: ./tmp/mscore/database
     dest: ./MSCore/database
+    overwrite: true
+
+  - action: copy_path
+    src: ./tmp/mscore/recipe.yaml
+    dest: ./MSCore/recipe.yaml
+    overwrite: true
+
+  - action: copy_path
+    src: ./tmp/mscore/server.cfg.example
+    dest: ./MSCore/server.cfg.example
+    overwrite: true
+
+  - action: copy_path
+    src: ./tmp/mscore/version.json
+    dest: ./MSCore/version.json
     overwrite: true
 
   - action: move_path

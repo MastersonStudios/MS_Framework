@@ -19,11 +19,14 @@ sv_maxclients {{maxClients}}
 {{serverEndpoints}}
 set steam_webApiKey "none"
 set resources_useSystemChat true
+set chat_showJoins false
+set chat_showQuits false
 set onesync on
 set sv_stateBagStrictMode true
 
 # Datenbank – wird vom txAdmin-Datenbankschritt erzeugt.
 set mysql_connection_string "{{dbConnectionString}}"
+set mysql_slow_query_warning {{mysqlSlowQueryWarning}}
 
 # Offizielle RedM-Basisresources
 ensure mapmanager

@@ -71,11 +71,17 @@ https://raw.githubusercontent.com/MastersonStudios/MS_Framework/main/recipe.yaml
    eintragen.
 4. Das Recipe ausführen und den Server nach erfolgreichem Abschluss starten.
 
-Das Recipe installiert die offiziellen RedM-Basisresources, die gepinnte
-`oxmysql`-Release `2.14.1`, sämtliche MSCore-Resources, die
-[txAdmin-Serverkonfiguration](server.cfg.txadmin) und das vollständige
-Datenbankschema. Die Platzhalter für Endpoints, Slots, Lizenz, Datenbank und
-den ersten Master-Admin werden ausschließlich durch txAdmin ausgefüllt.
+Das Recipe installiert die offiziellen RedM-Basisresources isoliert unter
+`resources/[cfx-default]`, die gepinnte `oxmysql`-Release `2.14.1`, sämtliche
+MSCore-Resources, die [txAdmin-Serverkonfiguration](server.cfg.txadmin) und das
+vollständige Datenbankschema. Größere Downloads besitzen feste Zeitlimits.
+Die Platzhalter für Endpoints, Slots, Lizenz, Datenbank und den ersten
+Master-Admin werden ausschließlich durch txAdmin ausgefüllt.
+
+In der erzeugten `server.cfg` werden SQL-Abfragen ab `500` Millisekunden als
+langsam protokolliert. Der Grenzwert stammt aus `mysqlSlowQueryWarning` in
+`recipe.yaml` und kann dort vor der Installation oder anschließend direkt in
+der `server.cfg` angepasst werden.
 
 Die URL-Installation ist für eine neue MSCore-Datenbank vorgesehen. Für eine
 bestehende Frontier-Installation gilt weiterhin der nachfolgend beschriebene
