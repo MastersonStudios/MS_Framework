@@ -4,86 +4,32 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="color-scheme" content="dark">
-    <title>Masterson Studios · Loading</title>
+    <title>MSCore · Wird geladen</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <main class="loading-screen" aria-label="Server wird geladen">
-        <video
-            id="cutscene"
-            class="cutscene"
-            autoplay
-            playsinline
-            loop
-            preload="auto"
-            aria-label="Ladebildschirm-Video"
-        ></video>
+        <div class="backdrop" aria-hidden="true"></div>
+        <div class="grain" aria-hidden="true"></div>
 
-        <div class="fallback-scene" id="fallbackScene" aria-hidden="true">
-            <div class="lightning lightning-one"></div>
-            <div class="lightning lightning-two"></div>
-            <div class="cloud cloud-one"></div>
-            <div class="cloud cloud-two"></div>
-            <div class="cloud cloud-three"></div>
-            <div class="rain rain-back"></div>
-            <div class="horizon"></div>
-            <div class="ship">
-                <span class="mast"></span>
-                <span class="yard yard-top"></span>
-                <span class="yard yard-lower"></span>
-                <span class="sail sail-left"></span>
-                <span class="sail sail-right"></span>
-                <span class="hull"></span>
-            </div>
-            <div class="sea sea-back"></div>
-            <div class="sea sea-front"></div>
-            <div class="rain rain-front"></div>
-            <div class="vignette"></div>
-        </div>
-
-        <div class="film-grain" aria-hidden="true"></div>
-        <div class="shade" aria-hidden="true"></div>
-
-        <header class="topbar">
-            <div class="brand">
-                <span class="brand-mark" aria-hidden="true">MS</span>
-                <span>
-                    <strong id="brandName">MASTERSON STUDIOS</strong>
-                    <small id="serverName">MS FRAMEWORK · REDM</small>
-                </span>
-            </div>
-
-            <button
-                id="soundToggle"
-                class="sound-toggle"
-                type="button"
-                aria-pressed="false"
-                aria-label="Ton stummschalten"
-            >
-                <span class="sound-bars" aria-hidden="true">
-                    <i></i><i></i><i></i><i></i>
-                </span>
-                <span id="soundLabel">Ton an</span>
-                <kbd>M</kbd>
-            </button>
+        <header class="brand">
+            <span class="brand-mark" aria-hidden="true">MS</span>
+            <span>
+                <strong id="brandName">MASTERSON STUDIOS</strong>
+                <small id="serverName">MSCORE · REDM</small>
+            </span>
         </header>
 
-        <section class="title-card" aria-labelledby="sceneTitle">
-            <p id="eyebrow" class="eyebrow">EINE MASTERSON STUDIOS PRODUKTION</p>
-            <h1 id="sceneTitle">RING DANG DOO</h1>
-            <p id="sceneSubtitle" class="subtitle">Die Grenze wartet auf dich.</p>
-            <button id="playButton" class="play-button" type="button" hidden>
-                Video und Ton starten
-            </button>
-            <p id="mediaNotice" class="media-notice" role="status" hidden>
-                Animierte Ersatzszene aktiv
-            </p>
+        <section class="welcome">
+            <p id="eyebrow" class="eyebrow">WILLKOMMEN IM WESTEN</p>
+            <h1 id="screenTitle">Deine Geschichte wartet.</h1>
+            <p id="screenSubtitle">Die Verbindung zum Server wird vorbereitet.</p>
         </section>
 
         <footer class="loading-footer">
             <div class="tip">
-                <span class="tip-label">Hinweis</span>
-                <p id="tipText">Respektiere andere Spieler und ihre Geschichten.</p>
+                <span>Hinweis</span>
+                <p id="tipText">Nach der Charaktererstellung startest du am Bahnhof von Valentine.</p>
             </div>
 
             <div class="progress-block">
@@ -100,8 +46,7 @@
                     aria-valuemax="100"
                     aria-valuenow="0"
                 >
-                    <span id="progressFill" class="progress-fill"></span>
-                    <span class="progress-glow"></span>
+                    <span id="progressFill"></span>
                 </div>
             </div>
         </footer>

@@ -19,7 +19,7 @@ Aktuelle Framework-Version: `0.0.2`
 - SQL-Schema und Beispiel-Resource
 - persistenter Ingame-Mapeditor mit Objekt-Streaming
 - Admin-Logout zurück zur Charakterauswahl
-- Guarma-Onboarding mit Sturm-Cinematic und Bewegungstutorial
+- Charakterspawn am Bahnhof von Valentine
 - grafisches ACP mit Rechte-, Wetter-, Spieler-, Geld- und Itemverwaltung
 - Support Admin mit persistenten Verbindungs-, Spawn-, Schadens- und Tötungslogs
 - persistentes ACP-Adminlog für administrative Aktionen mit Admin, Ziel und Details
@@ -44,7 +44,7 @@ Aktuelle Framework-Version: `0.0.2`
 - `MS_Stables` mit Pferde-, Ausrüstungs-, Fellfarben- und Kutschenhandel
 - `MS_Trains` mit fahrbaren Zügen und konfigurierbaren Bahnhof-NPCs
 - `MS_Telegrams` mit persönlichen Telegrammnummern und persistenten Nachrichten
-- `MS_LoadingScreen` mit Video-Cutscene, animierter Ersatzszene und Mute-Funktion
+- `MS_LoadingScreen` mit statischem Verbindungsbildschirm, Fortschritt und Hinweisen
 
 ## Voraussetzungen
 
@@ -100,7 +100,8 @@ Server neu starten.
 2. Die Ordner aus `resources/` in den `resources`-Ordner des Servers kopieren.
 3. `server.cfg.example` nach `server.cfg` kopieren und Connection-String sowie
    Lizenzschlüssel anpassen.
-4. In der Konsole zuerst `ensure MS_LoadingScreen` und `ensure MSCore`,
+4. In der Konsole zuerst `ensure MS_LoadingScreen`, `ensure MS_GuarmaLoader`
+   und `ensure MSCore`,
    danach
    `ensure MS_Banking`, `ensure MS_BossMenu`, `ensure MS_PlayerSync`, `ensure MS_mechat`, `ensure MS_pointing`,
    `ensure MS_Permadeath`, `ensure MS_Inventory`, `ensure MS_Crime`,
@@ -109,8 +110,7 @@ Server neu starten.
    `ensure MS_ClothingShop`, `ensure MS_Stables`, `ensure MS_Trains`,
    `ensure MS_Telegrams`,
    `ensure MS_WorldBuilder`, `ensure MS_ResourceGuard`,
-   `ensure MS_AdminMenu`,
-   `ensure MS_GuarmaOnboarding`, `ensure MS_MapEditor`,
+   `ensure MS_AdminMenu`, `ensure MS_MapEditor`,
    `ensure MS_AdminLogout` sowie `ensure MS_Example` ausführen
    (oder den Server neu starten).
 5. Zum Testen verbinden und `/characters` verwenden.
@@ -122,19 +122,28 @@ Platzhalter-Charakters aktiviert werden.
 ### Charakter-Creator
 
 Über `Neuer Charakter` öffnet sich der Creator automatisch. Neben Vorname,
-Nachname, Geburtsdatum und Geschlecht können Gesicht, Körperbau und eines der
-konfigurierten Startoutfits ausgewählt werden. Die Spielfigur wird dabei live
-angezeigt, gedreht und gezoomt. Beim Abschluss speichert MSCore die serverseitig
-validierte Auswahl unter `metadata.appearance` und stellt Modell, Körper,
-Gesicht und Startoutfit bei jedem Spawn wieder her.
+Nachname, Spitzname, Geburtsdatum, Beschreibung und Geschlecht können Herkunft,
+Körperbau, Haare, Bart, Augen, Größe und ein Startoutfit ausgewählt werden. Die
+Spielfigur wird bereits in der Charakterauswahl live angezeigt und kann im
+Creator gedreht und gezoomt werden. Beim Abschluss validiert der Server
+sämtliche Eingaben, begrenzt Profiltexte, prüft gesperrte Namen und schützt die
+Erstellung mit einer kurzen Wiederholungssperre.
 
-Modelle, Komponentenbereiche, Standardwerte, Vorschaustandort, Kamera und
-Outfit-Presets werden unter `Config.CharacterCreator` in
-`resources/[MSCore]/MSCore/config.lua` konfiguriert. Die Presets referenzieren
-vorhandene Kleidungsitems aus `Config.Items`, sodass deren
-`metadata.componentHash` zentral gepflegt bleibt. Eine zusätzliche
-Datenbankmigration ist nicht erforderlich. Bereits vorhandene Charaktere
-erhalten beim nächsten Laden automatisch die konfigurierten Standardwerte.
+MSCore speichert Profil und Aussehen versioniert unter `metadata.profile` und
+`metadata.appearance`. Das gewählte Startoutfit wird zusätzlich als
+itembezogene Ausrüstung unter `metadata.outfit` angelegt und anschließend vom
+Bekleidungsinventar verwaltet. Dadurch lassen sich die Startteile später normal
+ablegen, wechseln oder ersetzen.
+
+Modelle, Komponenten, Profilgrenzen, gesperrte Namen, Standardwerte,
+Vorschaustandort, Kamera und Outfit-Presets werden unter
+`Config.CharacterCreator` in `resources/[MSCore]/MSCore/config.lua`
+konfiguriert. Komponenten dürfen als RedM-Modellname oder numerischer Hash
+eingetragen werden. Die Outfit-Presets referenzieren vorhandene Kleidungsitems
+aus `Config.Items`, sodass deren `metadata.componentHash` zentral gepflegt
+bleibt. Eine zusätzliche Datenbankmigration ist nicht erforderlich. Vorhandene
+Charaktere werden beim nächsten Laden automatisch auf die aktuelle
+Metadatenstruktur ergänzt.
 
 Die manuelle Beispielkonfiguration enthält die offiziellen RedM-Systemresources
 und feste Beispielwerte. Für txAdmin darf sie nicht anstelle von
@@ -200,8 +209,6 @@ werden hier nicht aufgeführt.
 | `/worldbuilder` | `mscore.worldbuilder` | Öffnet oder schließt den World Builder. |
 | `/logout [Server-ID]` | `mscore.admin.logout` | Meldet den eigenen oder angegebenen Charakter ab und öffnet dessen Charakterauswahl. |
 | `/charlogout [Server-ID]` | `mscore.admin.logout` | Alias für `/logout`. |
-| `/guarmaadmin` | `mscore.admin.guarma` | Öffnet das Guarma-Teleport- und Neueinsteigermenü. |
-| `/guarmareset [Server-ID]` | `mscore.admin.guarma` | Setzt das Guarma-Tutorial zurück und startet es erneut; ohne ID für den eigenen Charakter. |
 | `/frameworkversion check` | `mscore.version.check` | Erzwingt unter Beachtung des konfigurierten Mindestintervalls eine neue Versionsabfrage. |
 | `/resourceguard status` | `mscore.resourceguard` | Führt eine Prüfung aus und zeigt die Resource-Zusammenfassung im Chat beziehungsweise in der Serverkonsole. |
 | `/resourceguard enable\|disable` | `mscore.resourceguard` | Aktiviert oder pausiert die passive Resource-Überwachung. |
@@ -217,10 +224,10 @@ werden hier nicht aufgeführt.
 | `/weapondamage reset <WEAPON_NAME>` | `mscore.weapon.damage` | Entfernt die Laufzeitänderung einer Waffe. |
 | `/weapondamage resetall` | `mscore.weapon.damage` | Entfernt alle Laufzeitänderungen am Waffenschaden. |
 
-`setjob`, `givemoney`, `logout`, `charlogout`, `guarmareset`,
+`setjob`, `givemoney`, `logout`, `charlogout`,
 `frameworkversion`, `medicdisease`, `permadeath`, `jail`, `unjail`, `jailstatus` und
 `weapondamage` können auch in der Serverkonsole
-verwendet werden. Bei `logout`, `charlogout` und `guarmareset` ist dort eine
+verwendet werden. Bei `logout` und `charlogout` ist dort eine
 Server-ID erforderlich; bei `permadeath` und `jailstatus` ebenfalls.
 Beispielzuweisungen für
 alle ACE-Rechte stehen in `server.cfg.example`.
@@ -347,7 +354,6 @@ Resource- oder Serverneustart übernommen.
 | `E` | Händler, Dienst-/Boss-Punkt, Stall, Bahnhof, Telegrafenamt, Crafting-Punkt, Storage oder Tür benutzen. |
 | `W` / `S` | Zug beschleunigen oder bremsen. |
 | `R` / `Leertaste` | Zug im Stand wenden oder Notbremsung auslösen. |
-| `M` | Ton des Loading Screens stummschalten oder aktivieren. |
 
 Die vollständige Mapeditor-Steuerung steht im Abschnitt
 [Mapeditor](#mapeditor).
@@ -905,22 +911,14 @@ werden beim Resource-Start automatisch erstellt und sind zusätzlich in
 
 ## MS Loading Screen
 
-`MS_LoadingScreen` zeigt beim Verbinden eine filmische Ladeszene, den echten
-RedM-Ladefortschritt, wechselnde Hinweise und eine Mute-Funktion. Der Ton wird
-über den Button rechts oben oder die Taste `M` ein- und ausgeschaltet.
-
-Die Original-Cutscene und Musik aus Red Dead Redemption 2 werden nicht
-mitgeliefert. Eine rechtmäßig verwendbare, browserkompatible Videodatei kann
-als
-`resources/[MSCore]/MS_LoadingScreen/html/media/ring_dang_doo.mp4`
-hinterlegt werden. Ohne diese Datei startet automatisch die integrierte
-animierte Sturm- und Schiffszene, sodass die Resource trotzdem vollständig
-funktioniert.
-
-Titel, Servername, Untertitel, Videopfad, Lautstärke, Start-Mute und Hinweise
-werden in `resources/[MSCore]/MS_LoadingScreen/html/config.js` konfiguriert.
+`MS_LoadingScreen` zeigt beim Verbinden ausschließlich einen ruhigen statischen
+MSCore-Bildschirm mit echtem RedM-Ladefortschritt und wechselnden Hinweisen.
+Video, Musik, Mute-Funktion sowie die frühere Sturm- und Schiffbruchszene wurden
+vollständig entfernt. Titel, Servername, Untertitel und Hinweise werden in
+`resources/[MSCore]/MS_LoadingScreen/html/config.js` konfiguriert.
 Die Resource muss vor den Framework-Resources mit `ensure MS_LoadingScreen`
-gestartet werden; `server.cfg.example` enthält die passende Reihenfolge.
+gestartet werden. Direkt danach folgt `ensure MS_GuarmaLoader`; die
+`server.cfg.example` enthält die passende Reihenfolge.
 
 ## MS Weapon Damage
 
@@ -1111,27 +1109,26 @@ Streamingdistanzen stehen in `MS_WorldBuilder/config.lua`. Die Resource
 erstellt ihre Tabellen bei Bedarf selbst; sie sind zusätzlich in
 `database/schema.sql` enthalten.
 
-## Guarma-Onboarding
+## Charakterspawn
 
-Neue Charaktere erleben einmalig eine geskriptete Sturm- und
-Schiffbruch-Cinematic. Danach beginnt am Strand von Bahia de la Paz ein
-Bewegungstutorial für Laufen, Sprinten, Springen und Ducken, das am Hafen endet.
-Der Abschluss wird in den Charakter-Metadaten gespeichert.
+Neue Charaktere spawnen am Bahnhof von Valentine bei
+`vector4(-169.47, 629.38, 114.03, 236.72)`. Das frühere
+`MS_GuarmaOnboarding` wurde vollständig entfernt. Charaktere mit einer
+gespeicherten Position innerhalb der alten Guarma-Grenzen werden beim nächsten
+Laden einmalig zum Bahnhof versetzt; dabei werden auch die veralteten
+Onboarding-Metadaten entfernt. Die Migration kann über
+`Config.LegacySpawnMigration.Enabled` in `MSCore/config.lua` deaktiviert werden.
 
-Die Cinematic versetzt den unsichtbaren Spieler bereits während der
-Ausblendung nach Guarma, wartet begrenzt auf Inselkollision und startet erst
-danach Kamerafahrt und animierte Sturm-/Schiffbruch-Ebene. Zeitlimits für
-Bildschirm-Fades, Streaming und NUI-Bereitschaft befinden sich in
-`MS_GuarmaOnboarding/config.lua`. Schlägt eine Kamera oder Oberfläche fehl,
-setzt ein abgesicherter Strand-Fallback Sichtbarkeit, Steuerung und Bildschirm
-wieder her und führt anschließend mit dem Tutorial fort.
+Der unabhängige `MS_GuarmaLoader` bleibt für ausdrücklich angeforderte
+Teleportationen nach Guarma verfügbar, beeinflusst den Valentine-Spawn jedoch
+nicht.
 
-Admins mit dem ACE-Recht `mscore.admin.guarma` werden bei der Strandankunft
-benachrichtigt. `/guarmaadmin` öffnet das Teleportmenü, dessen Ziele vollständig
-in `MS_GuarmaOnboarding/config.lua` konfiguriert werden. Mit
-`/guarmareset [Server-ID]` kann das Tutorial für Support oder Tests neu gestartet
-werden. Strand, Hafen, Kamerafahrten, Tutorialpunkte, Inselgrenzen und sämtliche
-Admin-Teleportziele lassen sich in derselben Konfigurationsdatei ändern.
+Die Erstellung läuft in drei Schritten: Charakterdaten und Aussehen eingeben,
+die Zusammenfassung bestätigen und anschließend kurz den Ladebildschirm
+„Charakter wird erstellt“ anzeigen. Erst nachdem Modell, Position und Kollision
+vorbereitet sind, wird die Charakteroberfläche geschlossen und der Spieler am
+Bahnhof eingeblendet. Die Mindestdauer dieser Ladephase wird über
+`Config.CharacterCreator.SpawnLoadingMs` konfiguriert.
 
 ## Sicherheit
 

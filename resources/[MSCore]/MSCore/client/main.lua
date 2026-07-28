@@ -8,6 +8,9 @@ local CreatorAppearance = nil
 local CreatorCameraDirection = nil
 local CreatorZoom = 0.5
 local CreatorPlayerWasVisible = false
+local SelectionPreviewOpen = false
+local SelectorPlayerWasVisible = false
+local APPEARANCE_KEYS = { 'head', 'body', 'hair', 'beard', 'eyes', 'height' }
 
 local RawKeyBindings = {}
 local RegisteredRawCommands = {}
@@ -69,11 +72,13 @@ for index = 1, 24 do
 end
 
 local SET_RANDOM_OUTFIT_VARIATION = 0x283978A15512B2FE
-local ADD_META_PED_COMPONENT = 0xA5BAE410B03E7371
+local EQUIP_META_PED_OUTFIT_PRESET = 0x77FF8D35EEC6BBC4
+local EQUIP_META_PED_OUTFIT_EXTRA = 0xA5BAE410B03E7371
 local APPLY_SHOP_ITEM_TO_PED = 0xD3A7B003ED343FD9
 local UPDATE_PED_VARIATION = 0xCC8CA3E88256E58F
 local IS_PED_READY_TO_RENDER = 0xA0BC8FAED8CFEB3C
 local FINALIZE_PED_VARIATION = 0xAAB86462966168CE
+local SET_PED_SCALE = 0x25ACFC650B65C538
 
 function MSCore.RegisterKeyMappingCompat(command, description, mapper, defaultKey)
     if type(command) ~= 'string' or command == '' then
@@ -194,8 +199,9 @@ local function creatorConfig()
     return type(Config.CharacterCreator) == 'table' and Config.CharacterCreator or {}
 end
 
-local function creatorOptions(kind, sex)
-    local options = creatorConfig()[kind]
+local function creatorOptions(key, sex)
+    local options = creatorConfig().AppearanceOptions
+    options = type(options) == 'table' and options[key] or nil
     return type(options) == 'table' and type(options[sex]) == 'table' and options[sex] or {}
 end
 
@@ -206,37 +212,46 @@ local function normalizeCreatorAppearance(raw)
     raw = type(raw) == 'table' and raw or {}
 
     local sex = raw.sex == 'female' and 'female' or 'male'
-    local faceOptions = creatorOptions('FaceOptions', sex)
-    local bodyOptions = creatorOptions('BodyOptions', sex)
-    local faceMaximum = math.max(1, math.floor(tonumber(faceOptions.count) or 1))
-    local bodyMaximum = math.max(1, math.floor(tonumber(bodyOptions.count) or 1))
-    local face = math.floor(tonumber(raw.face) or tonumber(defaults.face) or 1)
-    local body = math.floor(tonumber(raw.body) or tonumber(defaults.body) or 1)
+    local appearance = { sex = sex }
+    for _, key in ipairs(APPEARANCE_KEYS) do
+        local options = creatorOptions(key, sex)
+        local legacyValue = key == 'head' and raw.face or nil
+        local value = math.floor(tonumber(raw[key]) or tonumber(legacyValue) or tonumber(defaults[key]) or 1)
+        appearance[key] = math.max(1, math.min(math.max(1, #options), value))
+    end
+
     local outfit = type(raw.outfit) == 'string' and raw.outfit or defaults.outfit
 
-    face = math.max(1, math.min(faceMaximum, face))
-    body = math.max(1, math.min(bodyMaximum, body))
     if type(outfit) ~= 'string' or type(outfits[outfit]) ~= 'table' then
         outfit = type(defaults.outfit) == 'string' and defaults.outfit or next(outfits)
     end
-
-    return {
-        sex = sex,
-        face = face,
-        body = body,
-        outfit = outfit
-    }
+    appearance.outfit = outfit
+    return appearance
 end
 
 local function creatorUiData()
     local config = creatorConfig()
     local defaults = normalizeCreatorAppearance({
         sex = Config.DefaultCharacter.sex,
-        face = config.Defaults and config.Defaults.face,
+        head = config.Defaults and config.Defaults.head,
         body = config.Defaults and config.Defaults.body,
+        hair = config.Defaults and config.Defaults.hair,
+        beard = config.Defaults and config.Defaults.beard,
+        eyes = config.Defaults and config.Defaults.eyes,
+        height = config.Defaults and config.Defaults.height,
         outfit = config.Defaults and config.Defaults.outfit
     })
     local outfits = {}
+    local options = { male = {}, female = {} }
+
+    for _, sex in ipairs({ 'male', 'female' }) do
+        for _, key in ipairs(APPEARANCE_KEYS) do
+            options[sex][key] = {}
+            for index, option in ipairs(creatorOptions(key, sex)) do
+                options[sex][key][index] = tostring(option.label or ('Option ' .. index))
+            end
+        end
+    end
 
     for key, outfit in pairs(type(config.Outfits) == 'table' and config.Outfits or {}) do
         outfits[#outfits + 1] = {
@@ -254,15 +269,10 @@ local function creatorUiData()
     return {
         enabled = config.Enabled ~= false,
         defaults = defaults,
-        limits = {
-            male = {
-                face = math.max(1, math.floor(tonumber(creatorOptions('FaceOptions', 'male').count) or 1)),
-                body = math.max(1, math.floor(tonumber(creatorOptions('BodyOptions', 'male').count) or 1))
-            },
-            female = {
-                face = math.max(1, math.floor(tonumber(creatorOptions('FaceOptions', 'female').count) or 1)),
-                body = math.max(1, math.floor(tonumber(creatorOptions('BodyOptions', 'female').count) or 1))
-            }
+        options = options,
+        profile = {
+            nicknameMaxLength = tonumber(config.Profile and config.Profile.NicknameMaxLength) or 32,
+            descriptionMaxLength = tonumber(config.Profile and config.Profile.DescriptionMaxLength) or 280
         },
         outfits = outfits
     }
@@ -295,13 +305,41 @@ local function applyCreatorOutfit(ped, appearance)
     end
 end
 
-local function applyCreatorAppearance(ped, rawAppearance)
+local function creatorOption(key, appearance)
+    local options = creatorOptions(key, appearance.sex)
+    return options[appearance[key]]
+end
+
+local function componentHash(component)
+    if type(component) == 'number' then return component end
+    if type(component) == 'string' and component ~= '' then return GetHashKey(component) end
+end
+
+local function applyCreatorOption(ped, key, appearance)
+    local option = creatorOption(key, appearance)
+    local components = type(option) == 'table' and option.components or nil
+    for _, component in ipairs(type(components) == 'table' and components or {}) do
+        local hash = componentHash(component)
+        if hash and hash ~= 0 then
+            Citizen.InvokeNative(EQUIP_META_PED_OUTFIT_EXTRA, ped, hash, 0, 0, 0)
+        end
+    end
+end
+
+local function resetCreatorPed(ped, sex)
+    local success = pcall(
+        Citizen.InvokeNative,
+        EQUIP_META_PED_OUTFIT_PRESET,
+        ped,
+        sex == 'female' and 7 or 3
+    )
+    if success then return end
+    Citizen.InvokeNative(SET_RANDOM_OUTFIT_VARIATION, ped, true)
+end
+
+local function applyCreatorAppearance(ped, rawAppearance, includeOutfit)
     if not ped or ped == 0 or not DoesEntityExist(ped) then return nil end
     local appearance = normalizeCreatorAppearance(rawAppearance)
-    local faceOptions = creatorOptions('FaceOptions', appearance.sex)
-    local bodyOptions = creatorOptions('BodyOptions', appearance.sex)
-    local faceComponent = math.floor(tonumber(faceOptions.first) or 0) + appearance.face - 1
-    local bodyComponent = math.floor(tonumber(bodyOptions.first) or 0) + appearance.body - 1
 
     local readyExpires = GetGameTimer() + 2500
     while not Citizen.InvokeNative(IS_PED_READY_TO_RENDER, ped)
@@ -309,24 +347,28 @@ local function applyCreatorAppearance(ped, rawAppearance)
     do
         Wait(0)
     end
-    Citizen.InvokeNative(SET_RANDOM_OUTFIT_VARIATION, ped, true)
-    Citizen.InvokeNative(ADD_META_PED_COMPONENT, ped, faceComponent, 0, 0, 0)
-    Citizen.InvokeNative(ADD_META_PED_COMPONENT, ped, bodyComponent, 0, 0, 0)
-    applyCreatorOutfit(ped, appearance)
+    resetCreatorPed(ped, appearance.sex)
+    for _, key in ipairs({ 'head', 'body', 'hair', 'beard', 'eyes' }) do
+        applyCreatorOption(ped, key, appearance)
+    end
+    if includeOutfit ~= false then applyCreatorOutfit(ped, appearance) end
     Citizen.InvokeNative(UPDATE_PED_VARIATION, ped, false, true, true, true, false)
     Citizen.InvokeNative(FINALIZE_PED_VARIATION, ped, true)
+
+    local heightOption = creatorOption('height', appearance)
+    local scale = type(heightOption) == 'table' and tonumber(heightOption.scale) or 1.0
+    Citizen.InvokeNative(SET_PED_SCALE, ped, scale or 1.0)
     return appearance
 end
 
 local function applyAppearanceToPlayer()
     local config = creatorConfig()
     local metadata = type(PlayerData.metadata) == 'table' and PlayerData.metadata or {}
-    local appearance = normalizeCreatorAppearance({
-        sex = PlayerData.sex,
-        face = metadata.appearance and metadata.appearance.face,
-        body = metadata.appearance and metadata.appearance.body,
-        outfit = metadata.appearance and metadata.appearance.outfit
-    })
+    local rawAppearance = { sex = PlayerData.sex }
+    for key, value in pairs(type(metadata.appearance) == 'table' and metadata.appearance or {}) do
+        rawAppearance[key] = value
+    end
+    local appearance = normalizeCreatorAppearance(rawAppearance)
     if config.Enabled == false then return PlayerPedId() end
 
     local models = type(config.Models) == 'table' and config.Models or {}
@@ -340,7 +382,7 @@ local function applyAppearanceToPlayer()
     SetModelAsNoLongerNeeded(model)
 
     local ped = PlayerPedId()
-    applyCreatorAppearance(ped, appearance)
+    applyCreatorAppearance(ped, appearance, GetResourceState('MS_Inventory') ~= 'started')
     return ped
 end
 
@@ -448,6 +490,35 @@ local function createCreatorPed(appearance)
     return true
 end
 
+local function startSelectionPreview(rawAppearance)
+    local preview = type(creatorConfig().Preview) == 'table' and creatorConfig().Preview or {}
+    if preview.selectorEnabled == false or CreatorOpen then return false end
+
+    local appearance = normalizeCreatorAppearance(rawAppearance)
+    SelectionPreviewOpen = true
+    CreatorZoom = 0.5
+    DisplayRadar(false)
+
+    if CreatorPed and DoesEntityExist(CreatorPed)
+        and CreatorAppearance and CreatorAppearance.sex == appearance.sex
+    then
+        CreatorAppearance = appearance
+        applyCreatorAppearance(CreatorPed, appearance)
+        updateCreatorCamera()
+        return true
+    end
+
+    CreatorAppearance = appearance
+    local success, err = createCreatorPed(appearance)
+    if not success then
+        SelectionPreviewOpen = false
+        CreatorAppearance = nil
+        ClearFocus()
+        return false, err
+    end
+    return true
+end
+
 local function startCharacterCreator(rawAppearance)
     if creatorConfig().Enabled == false then return false, 'Charakter-Creator ist deaktiviert.' end
     local appearance = normalizeCreatorAppearance(rawAppearance)
@@ -458,6 +529,7 @@ local function startCharacterCreator(rawAppearance)
         CreatorZoom = 0.5
     end
     CreatorOpen = true
+    SelectionPreviewOpen = false
     CreatorAppearance = appearance
     FreezeEntityPosition(playerPed, true)
     SetEntityVisible(playerPed, false, false)
@@ -467,6 +539,7 @@ local function startCharacterCreator(rawAppearance)
     if not success then
         CreatorOpen = false
         SetEntityVisible(playerPed, CreatorPlayerWasVisible, false)
+        ClearFocus()
         return false, err
     end
     return true
@@ -500,6 +573,7 @@ local function stopCharacterCreator(restorePlayer)
         SetEntityVisible(PlayerPedId(), CreatorPlayerWasVisible, false)
     end
     CreatorOpen = false
+    SelectionPreviewOpen = false
     CreatorAppearance = nil
     CreatorZoom = 0.5
     ClearFocus()
@@ -512,18 +586,24 @@ local function setSelectorVisible(visible)
     if not visible then
         stopCharacterCreator(true)
         SendNUIMessage({ action = 'close' })
-        FreezeEntityPosition(PlayerPedId(), false)
+        local ped = PlayerPedId()
+        FreezeEntityPosition(ped, false)
+        SetEntityVisible(ped, PlayerData.characterId ~= nil or SelectorPlayerWasVisible, false)
     end
 end
 
 local function openCharacterSelector()
+    if type(ShutdownLoadingScreen) == 'function' then ShutdownLoadingScreen() end
+    if type(ShutdownLoadingScreenNui) == 'function' then ShutdownLoadingScreenNui() end
     if SelectorOpen then
         setSelectorInputFocus(true, false)
         SendNUIMessage({ action = 'loading' })
     else
         SelectorOpen = true
-        FreezeEntityPosition(PlayerPedId(), true)
-        if not PlayerData.characterId then SetEntityVisible(PlayerPedId(), false, false) end
+        local ped = PlayerPedId()
+        SelectorPlayerWasVisible = IsEntityVisible(ped)
+        FreezeEntityPosition(ped, true)
+        SetEntityVisible(ped, false, false)
         setSelectorInputFocus(true, true)
         SendNUIMessage({ action = 'loading' })
     end
@@ -577,21 +657,63 @@ end)
 RegisterNetEvent('mscore:client:spawn', function(coords)
     local x, y, z = tonumber(coords.x), tonumber(coords.y), tonumber(coords.z)
     if not x or not y or not z then return end
-    DoScreenFadeOut(500)
-    while not IsScreenFadedOut() do Wait(0) end
+    local spawnStartedAt = GetGameTimer()
+
+    -- Die Charakter-NUI zeigt bereits den kurzen Ladehinweis. Ein zusätzlicher
+    -- Screen-Fade konnte bei RedM dauerhaft schwarz bleiben, deshalb wird ein
+    -- eventuell noch aktiver Fade vor dem Spawn sofort aufgehoben.
+    DoScreenFadeIn(0)
     stopCharacterCreator(false)
     local ped, appearanceError = applyAppearanceToPlayer()
     if appearanceError then
         TriggerEvent('mscore:client:notify', appearanceError)
     end
+
     RequestCollisionAtCoord(x, y, z)
     SetEntityCoords(ped, x, y, z, false, false, false, false)
     SetEntityHeading(ped, tonumber(coords.w) or 0.0)
     SetEntityVisible(ped, true, false)
+    SetEntityInvincible(ped, false)
     FreezeEntityPosition(ped, true)
-    Wait(1000)
+
+    local collisionDeadline = GetGameTimer() + 5000
+    while type(HasCollisionLoadedAroundEntity) == 'function'
+        and not HasCollisionLoadedAroundEntity(ped)
+        and GetGameTimer() < collisionDeadline
+    do
+        RequestCollisionAtCoord(x, y, z)
+        Wait(50)
+    end
+
+    local minimumLoadingMs = math.max(
+        0,
+        math.floor(tonumber(
+            Config.CharacterCreator and Config.CharacterCreator.SpawnLoadingMs
+        ) or 1500)
+    )
+    local remainingLoadingMs = minimumLoadingMs - (GetGameTimer() - spawnStartedAt)
+    if remainingLoadingMs > 0 then Wait(remainingLoadingMs) end
     setSelectorVisible(false)
-    DoScreenFadeIn(500)
+    if type(ShutdownLoadingScreen) == 'function' then ShutdownLoadingScreen() end
+    if type(ShutdownLoadingScreenNui) == 'function' then ShutdownLoadingScreenNui() end
+    SetEntityVisible(ped, true, false)
+    SetEntityInvincible(ped, false)
+    FreezeEntityPosition(ped, false)
+    DisplayRadar(true)
+    DoScreenFadeIn(0)
+
+    -- Schutz gegen fremde oder verspätete Fade-/Freeze-Aufrufe während des
+    -- ersten Spawns. Nach geschlossener Charakterauswahl muss der Spieler
+    -- sichtbar und steuerbar bleiben.
+    SetTimeout(1000, function()
+        if SelectorOpen then return end
+        local activePed = PlayerPedId()
+        SetEntityVisible(activePed, true, false)
+        SetEntityInvincible(activePed, false)
+        FreezeEntityPosition(activePed, false)
+        local fadingOut = type(IsScreenFadingOut) == 'function' and IsScreenFadingOut()
+        if IsScreenFadedOut() or fadingOut then DoScreenFadeIn(0) end
+    end)
     if GetResourceState('MS_Inventory') == 'started' then
         TriggerServerEvent('ms_inventory:server:requestOutfit')
     end
@@ -611,10 +733,11 @@ end)
 RegisterNUICallback('createCharacter', function(data, cb)
     MSCore.TriggerCallback('mscore:createCharacter', function(success, err)
         cb({ ok = success == true, error = err })
-        if success then setSelectorVisible(false) end
     end, {
         firstname = data and data.firstname,
         lastname = data and data.lastname,
+        nickname = data and data.nickname,
+        description = data and data.description,
         dateOfBirth = data and data.dateOfBirth,
         sex = data and data.sex,
         appearance = data and data.appearance
@@ -634,8 +757,20 @@ RegisterNUICallback('previewAppearance', function(data, cb)
     cb({ ok = success == true, error = err })
 end)
 
+RegisterNUICallback('previewSelectedCharacter', function(data, cb)
+    if not SelectorOpen or CreatorOpen then
+        return cb({ ok = false, error = 'Die Charaktervorschau ist nicht verfügbar.' })
+    end
+    local appearance = type(data and data.appearance) == 'table' and data.appearance or {}
+    appearance.sex = data and data.sex
+    local success, err = startSelectionPreview(appearance)
+    cb({ ok = success == true, error = err })
+end)
+
 RegisterNUICallback('rotateCreator', function(data, cb)
-    if not CreatorOpen or not CreatorPed or not DoesEntityExist(CreatorPed) then
+    if (not CreatorOpen and not SelectionPreviewOpen)
+        or not CreatorPed or not DoesEntityExist(CreatorPed)
+    then
         return cb({ ok = false, error = 'Charakter-Creator ist nicht geöffnet.' })
     end
     local direction = tonumber(data and data.direction) or 0
@@ -652,7 +787,7 @@ RegisterNUICallback('rotateCreator', function(data, cb)
 end)
 
 RegisterNUICallback('zoomCreator', function(data, cb)
-    if not CreatorOpen then
+    if not CreatorOpen and not SelectionPreviewOpen then
         return cb({ ok = false, error = 'Charakter-Creator ist nicht geöffnet.' })
     end
     CreatorZoom = math.max(0.0, math.min(1.0, tonumber(data and data.zoom) or 0.5))

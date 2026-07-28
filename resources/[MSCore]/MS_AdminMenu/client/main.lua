@@ -58,12 +58,6 @@ exports('IsUiOpen', function()
     return MenuOpen or CraftingOpen
 end)
 
-local function isOnGuarma(coords)
-    local bounds = AdminMenuConfig.GuarmaBounds
-    return coords.x >= bounds.minX and coords.x <= bounds.maxX
-        and coords.y >= bounds.minY and coords.y <= bounds.maxY
-end
-
 local function teleport(coords)
     local x, y, z = tonumber(coords.x), tonumber(coords.y), tonumber(coords.z)
     if not x or not y or not z then return end
@@ -74,13 +68,17 @@ local function teleport(coords)
     local ped = PlayerPedId()
     DoScreenFadeOut(350)
     while not IsScreenFadedOut() do Wait(0) end
+    if GetResourceState('MS_GuarmaLoader') == 'started' then
+        pcall(function()
+            exports.MS_GuarmaLoader:PrepareSpawn(coords)
+        end)
+    end
     RequestCollisionAtCoord(x, y, z)
     SetEntityCoords(ped, x, y, z, false, false, false, false)
     SetEntityHeading(ped, tonumber(coords.w) or 0.0)
     FreezeEntityPosition(ped, true)
     Wait(800)
     FreezeEntityPosition(ped, Frozen)
-    TriggerEvent('ms_guarma:client:setIslandMode', isOnGuarma({ x = x, y = y }))
     DoScreenFadeIn(500)
 end
 
@@ -183,14 +181,6 @@ local function applyGhostSnapshot(snapshot)
     end
 end
 
-local function guarmaOnboardingActive()
-    if GetResourceState('MS_GuarmaOnboarding') ~= 'started' then return false end
-    local success, active = pcall(function()
-        return exports.MS_GuarmaOnboarding:IsOnboardingActive()
-    end)
-    return success and active == true
-end
-
 local function toggleAcp()
     if MenuOpen or CraftingOpen then
         closeUi()
@@ -246,7 +236,6 @@ RegisterNetEvent('ms_adminmenu:client:forceClose', closeUi)
 
 RegisterNetEvent('ms_adminmenu:client:applyWeather', function(data)
     if type(data) ~= 'table' or not tonumber(data.hash) then return end
-    if guarmaOnboardingActive() then return end
     Citizen.InvokeNative(
         SET_WEATHER_TYPE,
         tonumber(data.hash),

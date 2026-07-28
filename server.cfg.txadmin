@@ -41,6 +41,7 @@ ensure oxmysql
 
 # MSCore Framework
 ensure MS_LoadingScreen
+ensure MS_GuarmaLoader
 ensure MSCore
 ensure MS_Banking
 ensure MS_BossMenu
@@ -63,7 +64,6 @@ ensure MS_Telegrams
 ensure MS_WorldBuilder
 ensure MS_ResourceGuard
 ensure MS_AdminMenu
-ensure MS_GuarmaOnboarding
 ensure MS_MapEditor
 ensure MS_AdminLogout
 ensure MS_Example
@@ -76,7 +76,6 @@ add_ace group.admin mscore.admin.menu allow
 add_ace group.admin mscore.worldbuilder allow
 add_ace group.admin mscore.mapeditor allow
 add_ace group.admin mscore.admin.logout allow
-add_ace group.admin mscore.admin.guarma allow
 add_ace group.admin mscore.admin.jail allow
 add_ace group.admin mscore.admin.permadeath allow
 add_ace group.admin mscore.weapon.damage allow

@@ -1,6 +1,14 @@
 local Player = {}
 Player.__index = Player
 
+local function decodeJson(value, fallback)
+    if type(value) == 'table' then return value end
+    if type(value) ~= 'string' or value == '' then return fallback end
+
+    local success, decoded = pcall(json.decode, value)
+    return success and decoded ~= nil and decoded or fallback
+end
+
 local function bindPlayerMethods(instance)
     -- Cfx überträgt Tabellen zwischen Resources, aber nicht deren Metatabelle.
     -- Gebundene Funktionsreferenzen halten alle bestehenden player:method()-
@@ -28,8 +36,9 @@ function Player:new(source, row)
     instance.jobGrade = row.job_grade
     instance.group = row.group_name
     instance.money = { cash = row.cash, bank = row.bank }
-    instance.metadata = json.decode(row.metadata or '{}') or {}
-    instance.coords = json.decode(row.coords or 'null')
+    instance.metadata = decodeJson(row.metadata, {})
+    if type(instance.metadata) ~= 'table' then instance.metadata = {} end
+    instance.coords = decodeJson(row.coords, nil)
     instance.dirty = false
     bindPlayerMethods(instance)
     return instance

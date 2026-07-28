@@ -26,6 +26,11 @@
         </section>
 
         <section id="characters" class="character-grid hidden"></section>
+        <aside id="selection-preview" class="selection-preview hidden" aria-live="polite">
+            <p class="eyebrow">CHARAKTERVORSCHAU</p>
+            <h2 id="selection-preview-name"></h2>
+            <p id="selection-preview-profile"></p>
+        </aside>
         <div id="toast" class="toast hidden" role="alert"></div>
 
         <footer>
@@ -70,9 +75,22 @@
                     </label>
                 </div>
 
+                <div class="field-row">
+                    <label>
+                        <span>Spitzname (optional)</span>
+                        <input id="nickname" name="nickname" type="text" maxlength="32"
+                            autocomplete="off" autocapitalize="words" spellcheck="false">
+                    </label>
+                    <label>
+                        <span>Geburtsdatum</span>
+                        <input id="birthdate" name="dateOfBirth" type="date" required>
+                    </label>
+                </div>
+
                 <label>
-                    <span>Geburtsdatum</span>
-                    <input id="birthdate" name="dateOfBirth" type="date" required>
+                    <span>Charakterbeschreibung (optional)</span>
+                    <textarea id="description" name="description" maxlength="280" rows="3"
+                        placeholder="Herkunft, Auftreten oder besondere Merkmale"></textarea>
                 </label>
 
                 <fieldset>
@@ -83,12 +101,28 @@
 
                 <div class="appearance-row">
                     <label class="range-field">
-                        <span>Gesicht <output id="face-value">01 / 14</output></span>
-                        <input id="face" name="face" type="range" min="1" max="14" value="1">
+                        <span>Kopf / Herkunft <output id="head-value">Herkunft 01</output></span>
+                        <input id="head" name="head" type="range" min="1" max="6" value="1">
                     </label>
                     <label class="range-field">
-                        <span>Körperbau <output id="body-value">01 / 05</output></span>
-                        <input id="body-shape" name="body" type="range" min="1" max="5" value="1">
+                        <span>Körperbau <output id="body-value">Schlank</output></span>
+                        <input id="body-shape" name="body" type="range" min="1" max="3" value="1">
+                    </label>
+                    <label class="range-field">
+                        <span>Haare <output id="hair-value">Kurz</output></span>
+                        <input id="hair" name="hair" type="range" min="1" max="4" value="1">
+                    </label>
+                    <label id="beard-field" class="range-field">
+                        <span>Bart <output id="beard-value">Kein Bart</output></span>
+                        <input id="beard" name="beard" type="range" min="1" max="4" value="1">
+                    </label>
+                    <label class="range-field">
+                        <span>Augen <output id="eyes-value">Braun</output></span>
+                        <input id="eyes" name="eyes" type="range" min="1" max="4" value="1">
+                    </label>
+                    <label class="range-field">
+                        <span>Größe <output id="height-value">Normal</output></span>
+                        <input id="height" name="height" type="range" min="1" max="3" value="2">
                     </label>
                 </div>
 
@@ -100,9 +134,32 @@
 
             <div class="form-actions creator-actions">
                 <button id="cancel-create" class="button secondary" type="button">Zurück</button>
-                <button id="submit-create" class="button primary" type="submit">Geschichte beginnen</button>
+                <button id="submit-create" class="button primary" type="submit">Daten prüfen</button>
             </div>
         </form>
+    </div>
+
+    <div id="creation-confirmation" class="modal hidden" role="dialog" aria-modal="true"
+        aria-labelledby="creation-confirmation-title">
+        <div class="creation-confirm-box">
+            <p class="eyebrow">CHARAKTER BESTÄTIGEN</p>
+            <h2 id="creation-confirmation-title">Neue Geschichte beginnen?</h2>
+            <p id="creation-summary" class="creation-summary"></p>
+            <p class="creation-destination">Dein Charakter startet am Bahnhof von Valentine.</p>
+            <div class="form-actions">
+                <button id="cancel-creation-confirm" class="button secondary" type="button">Zurück</button>
+                <button id="confirm-creation" class="button primary" type="button">Bestätigen &amp; starten</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="creation-loading" class="modal creation-loading hidden" role="status" aria-live="polite">
+        <div class="creation-loading-box">
+            <span class="creation-spinner" aria-hidden="true"></span>
+            <p class="eyebrow">CHARAKTER WIRD ERSTELLT</p>
+            <h2>Deine Reise beginnt.</h2>
+            <p>Daten werden gespeichert und Valentine wird geladen …</p>
+        </div>
     </div>
 
     <div id="confirmation" class="modal hidden" role="dialog" aria-modal="true">

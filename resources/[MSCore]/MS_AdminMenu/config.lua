@@ -145,13 +145,6 @@ AdminMenuConfig.ItemProps = {
     { label = 'Eimer', model = 'p_bucket01x', category = 'Weltobjekte' }
 }
 
-AdminMenuConfig.GuarmaBounds = {
-    minX = 0.0,
-    maxX = 2500.0,
-    minY = -8000.0,
-    maxY = -5000.0
-}
-
 AdminMenuConfig.Weathers = {
     {
         id = 'sunny',

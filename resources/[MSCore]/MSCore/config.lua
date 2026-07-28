@@ -27,21 +27,149 @@ Config.DefaultCharacter = {
 Config.CharacterCreator = {
     Enabled = true,
     ModelLoadTimeoutMs = 10000,
+    CreateCooldownMs = 3000,
+    SpawnLoadingMs = 1500,
     Models = {
         male = 'mp_male',
         female = 'mp_female'
     },
-    FaceOptions = {
-        male = { first = 110, count = 14 },
-        female = { first = 96, count = 14 }
+    Profile = {
+        NicknameMaxLength = 32,
+        DescriptionMaxLength = 280,
+        BannedNames = {
+            'admin',
+            'administrator',
+            'moderator'
+        }
     },
-    BodyOptions = {
-        male = { first = 124, count = 5 },
-        female = { first = 110, count = 6 }
+    -- Die Einträge sind absichtlich vollständig konfigurierbar. Komponenten
+    -- dürfen als Modellname oder als bereits berechneter Hash angegeben werden.
+    AppearanceOptions = {
+        head = {
+            male = {
+                { label = 'Herkunft 01', components = { 'CLOTHING_ITEM_M_HEAD_001_V_001' } },
+                { label = 'Herkunft 02', components = { 'CLOTHING_ITEM_M_HEAD_002_V_001' } },
+                { label = 'Herkunft 03', components = { 'CLOTHING_ITEM_M_HEAD_003_V_001' } },
+                { label = 'Herkunft 04', components = { 'CLOTHING_ITEM_M_HEAD_004_V_001' } },
+                { label = 'Herkunft 05', components = { 'CLOTHING_ITEM_M_HEAD_005_V_001' } },
+                { label = 'Herkunft 06', components = { 'CLOTHING_ITEM_M_HEAD_006_V_001' } }
+            },
+            female = {
+                { label = 'Herkunft 01', components = { 'CLOTHING_ITEM_F_HEAD_001_V_001' } },
+                { label = 'Herkunft 02', components = { 'CLOTHING_ITEM_F_HEAD_002_V_001' } },
+                { label = 'Herkunft 03', components = { 'CLOTHING_ITEM_F_HEAD_003_V_001' } },
+                { label = 'Herkunft 04', components = { 'CLOTHING_ITEM_F_HEAD_004_V_001' } },
+                { label = 'Herkunft 05', components = { 'CLOTHING_ITEM_F_HEAD_005_V_001' } },
+                { label = 'Herkunft 06', components = { 'CLOTHING_ITEM_F_HEAD_006_V_001' } }
+            }
+        },
+        body = {
+            male = {
+                {
+                    label = 'Schlank',
+                    components = {
+                        'CLOTHING_ITEM_M_BODIES_UPPER_001_V_001',
+                        'CLOTHING_ITEM_M_BODIES_LOWER_001_V_001'
+                    }
+                },
+                {
+                    label = 'Durchschnittlich',
+                    components = {
+                        'CLOTHING_ITEM_M_BODIES_UPPER_002_V_001',
+                        'CLOTHING_ITEM_M_BODIES_LOWER_002_V_001'
+                    }
+                },
+                {
+                    label = 'Kräftig',
+                    components = {
+                        'CLOTHING_ITEM_M_BODIES_UPPER_003_V_001',
+                        'CLOTHING_ITEM_M_BODIES_LOWER_003_V_001'
+                    }
+                }
+            },
+            female = {
+                {
+                    label = 'Schlank',
+                    components = {
+                        'CLOTHING_ITEM_F_BODIES_UPPER_001_V_001',
+                        'CLOTHING_ITEM_F_BODIES_LOWER_001_V_001'
+                    }
+                },
+                {
+                    label = 'Durchschnittlich',
+                    components = {
+                        'CLOTHING_ITEM_F_BODIES_UPPER_002_V_001',
+                        'CLOTHING_ITEM_F_BODIES_LOWER_002_V_001'
+                    }
+                },
+                {
+                    label = 'Kräftig',
+                    components = {
+                        'CLOTHING_ITEM_F_BODIES_UPPER_003_V_001',
+                        'CLOTHING_ITEM_F_BODIES_LOWER_003_V_001'
+                    }
+                }
+            }
+        },
+        hair = {
+            male = {
+                { label = 'Kurz', components = { 'CLOTHING_ITEM_M_HAIR_001_BLONDE' } },
+                { label = 'Seitenscheitel', components = { 'CLOTHING_ITEM_M_HAIR_002_BLONDE' } },
+                { label = 'Mittellang', components = { 'CLOTHING_ITEM_M_HAIR_003_BLONDE' } },
+                { label = 'Lang', components = { 'CLOTHING_ITEM_M_HAIR_004_BLONDE' } }
+            },
+            female = {
+                { label = 'Kurz', components = { 'CLOTHING_ITEM_F_HAIR_001_BLONDE' } },
+                { label = 'Gebunden', components = { 'CLOTHING_ITEM_F_HAIR_002_BLONDE' } },
+                { label = 'Mittellang', components = { 'CLOTHING_ITEM_F_HAIR_003_BLONDE' } },
+                { label = 'Lang', components = { 'CLOTHING_ITEM_F_HAIR_004_BLONDE' } }
+            }
+        },
+        beard = {
+            male = {
+                { label = 'Kein Bart', components = {} },
+                { label = 'Kurzer Bart', components = { 'CLOTHING_ITEM_M_BEARD_001_BLONDE' } },
+                { label = 'Vollbart', components = { 'CLOTHING_ITEM_M_BEARD_002_BLONDE' } },
+                { label = 'Langer Bart', components = { 'CLOTHING_ITEM_M_BEARD_003_BLONDE' } }
+            },
+            female = {
+                { label = 'Nicht verfügbar', components = {} }
+            }
+        },
+        eyes = {
+            male = {
+                { label = 'Braun', components = { 'CLOTHING_ITEM_M_EYES_001_TINT_001' } },
+                { label = 'Grün', components = { 'CLOTHING_ITEM_M_EYES_001_TINT_005' } },
+                { label = 'Blau', components = { 'CLOTHING_ITEM_M_EYES_001_TINT_009' } },
+                { label = 'Grau', components = { 'CLOTHING_ITEM_M_EYES_001_TINT_014' } }
+            },
+            female = {
+                { label = 'Braun', components = { 'CLOTHING_ITEM_F_EYES_001_TINT_001' } },
+                { label = 'Grün', components = { 'CLOTHING_ITEM_F_EYES_001_TINT_005' } },
+                { label = 'Blau', components = { 'CLOTHING_ITEM_F_EYES_001_TINT_009' } },
+                { label = 'Grau', components = { 'CLOTHING_ITEM_F_EYES_001_TINT_014' } }
+            }
+        },
+        height = {
+            male = {
+                { label = 'Klein', scale = 0.94 },
+                { label = 'Normal', scale = 1.00 },
+                { label = 'Groß', scale = 1.04 }
+            },
+            female = {
+                { label = 'Klein', scale = 0.94 },
+                { label = 'Normal', scale = 1.00 },
+                { label = 'Groß', scale = 1.04 }
+            }
+        }
     },
     Defaults = {
-        face = 1,
+        head = 1,
         body = 1,
+        hair = 1,
+        beard = 1,
+        eyes = 1,
+        height = 2,
         outfit = 'frontier'
     },
     Preview = {
@@ -51,7 +179,8 @@ Config.CharacterCreator = {
         cameraFov = 38.0,
         minZoom = 1.35,
         maxZoom = 3.20,
-        rotationStep = 18.0
+        rotationStep = 18.0,
+        selectorEnabled = true
     },
     -- Die Presets verwenden die bereits in Config.Items definierten
     -- Bekleidungskomponenten. Item-Namen können hier frei ausgetauscht werden.
@@ -98,7 +227,20 @@ Config.CharacterCreator = {
     }
 }
 
-Config.Spawn = vector4(-275.14, 805.09, 119.38, 282.0)
+-- Neue Charaktere starten vor dem Bahnhof von Valentine.
+Config.Spawn = vector4(-169.47, 629.38, 114.03, 236.72)
+
+-- Charaktere, deren letzte Position noch vom entfernten Guarma-Onboarding
+-- stammt, werden beim nächsten Laden einmalig zum neuen Standardspawn versetzt.
+Config.LegacySpawnMigration = {
+    Enabled = true,
+    GuarmaBounds = {
+        minX = 0.0,
+        maxX = 2500.0,
+        minY = -8000.0,
+        maxY = -5000.0
+    }
+}
 Config.SaveInterval = 60 * 1000
 Config.PaycheckCheckIntervalMs = 30 * 1000
 Config.IdentifierType = 'license'

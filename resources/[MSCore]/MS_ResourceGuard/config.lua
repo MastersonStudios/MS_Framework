@@ -55,7 +55,7 @@ ResourceGuardConfig.ExpectedResources = {
     'MS_WorldBuilder',
     'MS_ResourceGuard',
     'MS_AdminMenu',
-    'MS_GuarmaOnboarding',
+    'MS_GuarmaLoader',
     'MS_MapEditor',
     'MS_AdminLogout',
     'MS_Example'
