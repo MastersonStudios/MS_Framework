@@ -40,6 +40,7 @@ ensure oxmysql
 ensure MS_LoadingScreen
 ensure MSCore
 ensure MS_Banking
+ensure MS_BossMenu
 ensure MS_PlayerSync
 ensure MS_mechat
 ensure MS_pointing

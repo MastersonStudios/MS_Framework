@@ -110,6 +110,10 @@ local function conflictingUiIsOpen()
         local success, open = pcall(function() return exports.MS_AdminMenu:IsUiOpen() end)
         if success and open == true then return true end
     end
+    if GetResourceState('MS_BossMenu') == 'started' then
+        local success, open = pcall(function() return exports.MS_BossMenu:IsBossMenuOpen() end)
+        if success and open == true then return true end
+    end
     return false
 end
 

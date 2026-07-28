@@ -10,6 +10,7 @@ Aktuelle Framework-Version: `0.0.2`
 - grafische Charakterauswahl und Charaktererstellung
 - Geldkonten (`cash`, `bank`) mit serverseitiger Validierung
 - `MS_Banking` mit Privat-, Firmen- und Adminkonten sowie konfigurierbarer Transaktionssteuer
+- `MS_BossMenu` mit Dienstzeiterfassung, Job-Punkten, Neueinstellungen, Entlassungen und Firmenkonto
 - Jobs, Gruppen und Metadaten
 - server- und clientseitige Player-API
 - Callback-System zwischen Client und Server
@@ -80,6 +81,13 @@ Die URL-Installation ist für eine neue MSCore-Datenbank vorgesehen. Für eine
 bestehende Frontier-Installation gilt weiterhin der nachfolgend beschriebene
 Migrationsweg.
 
+Alle mitgelieferten RedM-Resources enthalten die von aktuellen FXServer-
+Artifacts verlangte `rdr3_warning`-Bestätigung. Erscheint beim Aktualisieren
+dennoch `Resource MSCore does not contain the RedM pre-release warning`, liegt
+auf dem Server noch eine ältere Kopie der Resource. In diesem Fall den
+Resource-Ordner vollständig durch die aktuelle Version ersetzen und den
+Server neu starten.
+
 ### Manuelle Installation
 
 1. `database/schema.sql` in eine leere Datenbank importieren.
@@ -88,7 +96,7 @@ Migrationsweg.
    Lizenzschlüssel anpassen.
 4. In der Konsole zuerst `ensure MS_LoadingScreen` und `ensure MSCore`,
    danach
-   `ensure MS_Banking`, `ensure MS_PlayerSync`, `ensure MS_mechat`, `ensure MS_pointing`,
+   `ensure MS_Banking`, `ensure MS_BossMenu`, `ensure MS_PlayerSync`, `ensure MS_mechat`, `ensure MS_pointing`,
    `ensure MS_Permadeath`, `ensure MS_Inventory`, `ensure MS_Crime`,
    `ensure MS_RestrictedAreas`, `ensure MS_BasicNeeds`,
    `ensure MS_Medic`, `ensure MS_WeaponDamage`, `ensure MS_HUD`, `ensure MS_Jail`,
@@ -214,8 +222,9 @@ Schweregrad angegeben, verwendet das System Stufe `1`.
 
 ### Stündliche Jobgehälter
 
-Die folgenden Jobgehälter werden nach jeweils 60 Minuten ununterbrochener
-Online-Dienstzeit serverseitig auf das Bankkonto ausgezahlt:
+Die folgenden Jobgehälter werden nach jeweils 60 Minuten aktiv erfasster
+Dienstzeit serverseitig auf das Bankkonto ausgezahlt. Spieler melden sich am
+konfigurierten Dienstpunkt mit `E` im Bereich `Dienst` an oder ab:
 
 | Job | Grad | Rang | Stundenlohn |
 | --- | ---: | --- | ---: |
@@ -225,8 +234,10 @@ Online-Dienstzeit serverseitig auf das Bankkonto ausgezahlt:
 | `sheriff` | `0` | Deputy | `$10` |
 | `sheriff` | `1` | Sheriff | `$12` |
 
-Ein Charakter-Logout sowie ein Job- oder Rangwechsel starten den
-Auszahlungszeitraum neu. Intervall, Zielkonto und Löhne befinden sich in
+Beim Charakter-Logout oder Serverstopp endet der Dienst automatisch. Die
+bereits geleistete Zeit bleibt am Charakter gespeichert und läuft erst nach
+der nächsten Dienstanmeldung weiter. Ein Job- oder Rangwechsel setzt den
+Auszahlungszeitraum zurück. Intervall, Zielkonto und Löhne befinden sich in
 `resources/[MSCore]/MSCore/config.lua`.
 
 ### Native-Job
@@ -265,11 +276,11 @@ Der Jobschlüssel `law` besitzt zwei stündlich bezahlte Ränge:
 | `1` | Marschall | `$20` |
 
 Admins weisen den Job mit `/setjob 12 law 0` beziehungsweise
-`/setjob 12 law 1` zu. Nach jeweils 60 Minuten ununterbrochener
-Online-Dienstzeit wird der Ranglohn serverseitig auf das Bankkonto überwiesen.
-Ein Charakter-Logout sowie ein Job- oder Rangwechsel starten den
-Auszahlungszeitraum neu. Intervall, Zielkonto und Löhne befinden sich in
-`resources/[MSCore]/MSCore/config.lua`.
+`/setjob 12 law 1` zu. Nach jeweils 60 Minuten aktiv erfasster Dienstzeit wird
+der Ranglohn serverseitig auf das Bankkonto überwiesen. Logout und Serverstopp
+beenden den Dienst, ohne die bereits geleistete Zeit zu löschen. Ein Job- oder
+Rangwechsel setzt den Auszahlungszeitraum zurück. Intervall, Zielkonto und
+Löhne befinden sich in `resources/[MSCore]/MSCore/config.lua`.
 
 ### Crime-Job
 
@@ -307,7 +318,7 @@ Alle Keymappings können Spieler in den RedM-Tastatureinstellungen ändern.
 | `I` | Inventar öffnen oder schließen. |
 | `H` | Als Crime-Mitglied die nächste gefesselte Person durchsuchen. |
 | `B` | Mit dem Finger nach vorne zeigen. |
-| `E` | Händler, Stall, Bahnhof, Telegrafenamt, Crafting-Punkt, Storage oder Tür benutzen. |
+| `E` | Händler, Dienst-/Boss-Punkt, Stall, Bahnhof, Telegrafenamt, Crafting-Punkt, Storage oder Tür benutzen. |
 | `W` / `S` | Zug beschleunigen oder bremsen. |
 | `R` / `Leertaste` | Zug im Stand wenden oder Notbremsung auslösen. |
 | `M` | Ton des Loading Screens stummschalten oder aktivieren. |
@@ -671,9 +682,35 @@ vor `MS_Medic` gestartet werden; die passende Reihenfolge steht in
 `server.cfg.example`. Die Todeserkennung benötigt keine GTA-spezifische
 `baseevents`-Resource.
 
+## MS Boss Menu
+
+Aktuelle Resource-Version: `1.1.0`
+
+`MS_BossMenu` stellt für `law`, `sheriff` und `medic` konfigurierbare
+Dienst- und Leitungspunkte bereit. Alle konfigurierten Jobränge können sich im
+Bereich `Dienst` an- und abmelden. Die aktive Dienstzeit wird serverseitig
+erfasst und löst erst nach dem vollständigen Gehaltsintervall eine Auszahlung
+aus. Leitungsrechte liegen standardmäßig bei Marschall, Sheriff und Chefarzt;
+nur diese Ränge sehen zusätzlich `Einstellen`, `Entlassen` und `Firmenkonto`.
+
+Beim Einstellen werden standardmäßig nur arbeitslose Spieler innerhalb von
+fünf Metern angeboten und mit Jobgrad `0` übernommen. Die Mitarbeiterliste
+enthält auch Offline-Charaktere. Entlassungen wirken deshalb ohne erneute
+Anmeldung; Selbstentlassungen und Eingriffe in gleich- oder höherrangige
+Mitarbeiter sind standardmäßig gesperrt.
+
+Das Firmenkonto verwendet direkt `MS_Banking`. Saldo, Sperren, sofortige
+Speicherung, Transaktionshistorie und die konfigurierte Steuer bleiben damit
+identisch zur Bankfiliale. Dienstgrade, Leitungsgrade, Einstiegsgrade,
+beliebig viele Dienstpositionen, Reichweiten, Marker und Verwaltungsregeln befinden sich in
+`resources/[MSCore]/MS_BossMenu/config.lua`.
+
+`MS_BossMenu` wird nach `MS_Banking` gestartet. Die Reihenfolge ist bereits in
+beiden Serverkonfigurationen und im txAdmin-Recipe berücksichtigt.
+
 ## MS Banking
 
-Aktuelle Resource-Version: `1.2.0`
+Aktuelle Resource-Version: `1.3.0`
 
 `MS_Banking` erstellt für jeden Charakter beim ersten Bankbesuch automatisch
 ein persönliches Konto mit eindeutiger Kontonummer. Der Saldo verwendet direkt

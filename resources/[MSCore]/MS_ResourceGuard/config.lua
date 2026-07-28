@@ -35,6 +35,7 @@ ResourceGuardConfig.ExpectedResources = {
     'oxmysql',
     'MSCore',
     'MS_Banking',
+    'MS_BossMenu',
     'MS_PlayerSync',
     'MS_mechat',
     'MS_pointing',

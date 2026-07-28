@@ -3,6 +3,7 @@ local LastActions = {}
 local OperationLocks = {}
 local AccountLocks = {}
 local CompanyLocks = {}
+local CompanySessions = {}
 local Ready = false
 
 local function debugLog(message, ...)
@@ -583,6 +584,221 @@ local function runCompanyOperation(playerSource, action, permission, handler)
     end)
 end
 
+local function depositCompanyFunds(playerSource, player, jobName, config, rawAmount)
+    local amount = validAmount(rawAmount)
+    if not amount then
+        return false, 'Gib einen gültigen ganzzahligen Betrag ein.'
+    end
+    local taxAmount, netAmount = calculateTax('companyDeposit', amount)
+    if not taxAmount then
+        return false, 'Der Betrag ist nach Abzug der Steuer zu niedrig.'
+    end
+    if not ensureCompanyAccount(jobName, config) then
+        return false, 'Das Firmenkonto konnte nicht geladen werden.'
+    end
+    if not player:removeMoney('cash', amount, 'company_bank_deposit') then
+        return false, 'Du hast nicht genug Bargeld.'
+    end
+
+    local affected = MySQL.update.await([[
+        UPDATE ms_bank_company_accounts
+        SET balance = balance + ?
+        WHERE job_name = ?
+    ]], { netAmount, jobName })
+    if tonumber(affected) ~= 1 then
+        player:addMoney('cash', amount, 'company_bank_deposit_rollback')
+        return false, 'Die Firmeneinzahlung konnte nicht gebucht werden.'
+    end
+    local taxCredited = creditAdminTax(
+        playerSource,
+        player,
+        'companyDeposit',
+        ('company:%s'):format(jobName),
+        amount,
+        taxAmount
+    )
+    if not taxCredited then
+        MySQL.update.await([[
+            UPDATE ms_bank_company_accounts
+            SET balance = balance - ?
+            WHERE job_name = ? AND balance >= ?
+        ]], { netAmount, jobName, netAmount })
+        player:addMoney('cash', amount, 'company_bank_deposit_rollback')
+        return false, 'Die Transaktionssteuer konnte nicht gebucht werden.'
+    end
+
+    local companyBalance = tonumber(MySQL.scalar.await(
+        'SELECT balance FROM ms_bank_company_accounts WHERE job_name = ?',
+        { jobName }
+    )) or 0
+    player:save()
+    recordCompanyTransaction(
+        jobName,
+        player,
+        'company_deposit',
+        netAmount,
+        companyBalance,
+        ('Einzahlung von %s; Steuer $%d'):format(player:getName(), taxAmount)
+    )
+    TriggerEvent(
+        'ms_banking:server:companyDeposited',
+        playerSource,
+        player.characterId,
+        jobName,
+        amount,
+        taxAmount,
+        netAmount
+    )
+    return true, ('$%d auf %s eingezahlt · $%d Steuer · $%d gutgeschrieben.'):format(
+        amount,
+        config.label or jobName,
+        taxAmount,
+        netAmount
+    )
+end
+
+local function withdrawCompanyFunds(playerSource, player, jobName, config, rawAmount)
+    local amount = validAmount(rawAmount)
+    if not amount then
+        return false, 'Gib einen gültigen ganzzahligen Betrag ein.'
+    end
+    local taxAmount, netAmount = calculateTax('companyWithdrawal', amount)
+    if not taxAmount then
+        return false, 'Der Betrag ist nach Abzug der Steuer zu niedrig.'
+    end
+    if not ensureCompanyAccount(jobName, config) then
+        return false, 'Das Firmenkonto konnte nicht geladen werden.'
+    end
+
+    local affected = MySQL.update.await([[
+        UPDATE ms_bank_company_accounts
+        SET balance = balance - ?
+        WHERE job_name = ? AND balance >= ?
+    ]], { amount, jobName, amount })
+    if tonumber(affected) ~= 1 then
+        return false, 'Das Firmenkonto besitzt nicht genug Guthaben.'
+    end
+    local taxCredited, taxTransactionId = creditAdminTax(
+        playerSource,
+        player,
+        'companyWithdrawal',
+        ('company:%s'):format(jobName),
+        amount,
+        taxAmount
+    )
+    if not taxCredited then
+        MySQL.update.await([[
+            UPDATE ms_bank_company_accounts
+            SET balance = balance + ?
+            WHERE job_name = ?
+        ]], { amount, jobName })
+        return false, 'Die Transaktionssteuer konnte nicht gebucht werden.'
+    end
+    if not player:addMoney('cash', netAmount, 'company_bank_withdrawal') then
+        rollbackAdminTax(taxAmount, taxTransactionId)
+        MySQL.update.await([[
+            UPDATE ms_bank_company_accounts
+            SET balance = balance + ?
+            WHERE job_name = ?
+        ]], { amount, jobName })
+        return false, 'Die Firmenauszahlung konnte nicht gebucht werden.'
+    end
+
+    local companyBalance = tonumber(MySQL.scalar.await(
+        'SELECT balance FROM ms_bank_company_accounts WHERE job_name = ?',
+        { jobName }
+    )) or 0
+    player:save()
+    recordCompanyTransaction(
+        jobName,
+        player,
+        'company_withdrawal',
+        -amount,
+        companyBalance,
+        ('Auszahlung an %s; Steuer $%d'):format(player:getName(), taxAmount)
+    )
+    TriggerEvent(
+        'ms_banking:server:companyWithdrawn',
+        playerSource,
+        player.characterId,
+        jobName,
+        amount,
+        taxAmount,
+        netAmount
+    )
+    return true, ('$%d von %s abgehoben · $%d Steuer · $%d ausgezahlt.'):format(
+        amount,
+        config.label or jobName,
+        taxAmount,
+        netAmount
+    )
+end
+
+local function activeCompanySession(playerSource)
+    playerSource = tonumber(playerSource)
+    local session = playerSource and CompanySessions[playerSource]
+    local player = playerSource and getPlayer(playerSource)
+    if not session or not player
+        or session.characterId ~= player.characterId
+        or session.job ~= player.job
+        or GetGameTimer() > session.expiresAt
+        or distanceTo(playerSource, session.coords) > session.maxDistance then
+        if playerSource then CompanySessions[playerSource] = nil end
+        return nil, nil
+    end
+    session.expiresAt = GetGameTimer() + session.durationMs
+    return session, player
+end
+
+local function runCompanySessionOperation(playerSource, action, permission, handler)
+    if not Ready then return false, 'Die Bank ist noch nicht verfügbar.' end
+    local session, player = activeCompanySession(playerSource)
+    if not session or not player then
+        return false, 'Du bist bei keinem gültigen Boss-Menü.'
+    end
+    local jobName, config = companyConfigFor(player)
+    if not jobName then
+        return false, 'Für deinen Job ist kein Firmenkonto eingerichtet.'
+    end
+    local requiredGrade = permission == 'withdraw'
+        and math.max(0, math.floor(tonumber(config.minWithdrawGrade) or 0))
+        or math.max(0, math.floor(tonumber(config.minDepositGrade) or 0))
+    if (tonumber(player.jobGrade) or -1) < requiredGrade then
+        return false, ('Für diese Firmenbuchung wird mindestens Jobgrad %d benötigt.'):format(
+            requiredGrade
+        )
+    end
+    if OperationLocks[playerSource] then
+        return false, 'Dein letzter Bankauftrag wird noch verarbeitet.'
+    end
+    if AccountLocks[player.characterId] then
+        return false, 'Dieses Konto verarbeitet bereits einen Bankauftrag.'
+    end
+    if CompanyLocks[jobName] then
+        return false, 'Das Firmenkonto verarbeitet bereits einen Auftrag.'
+    end
+    if onCooldown(playerSource, action) then
+        return false, 'Bitte warte kurz vor dem nächsten Bankauftrag.'
+    end
+
+    OperationLocks[playerSource] = true
+    AccountLocks[player.characterId] = true
+    CompanyLocks[jobName] = true
+    local executed, success, message = pcall(handler, player, jobName, config)
+    CompanyLocks[jobName] = nil
+    AccountLocks[player.characterId] = nil
+    OperationLocks[playerSource] = nil
+    if not executed then
+        print(('[MS_Banking] Boss-Firmenbuchung %s für Spieler %d fehlgeschlagen: %s'):format(
+            action,
+            playerSource,
+            tostring(success)
+        ))
+        return false, 'Der Bankauftrag konnte nicht verarbeitet werden.'
+    end
+    return success == true, message
+end
+
 RegisterNetEvent('ms_banking:server:open', function(bankerId)
     local playerSource = source
     if not Ready then return result(playerSource, false, 'Die Bank wird noch vorbereitet.') end
@@ -740,158 +956,30 @@ end)
 RegisterNetEvent('ms_banking:server:companyDeposit', function(rawAmount)
     local playerSource = source
     runCompanyOperation(playerSource, 'company_deposit', 'deposit', function(player, _, jobName, config)
-        local amount = validAmount(rawAmount)
-        if not amount then
-            return result(playerSource, false, 'Gib einen gültigen ganzzahligen Betrag ein.')
-        end
-        local taxAmount, netAmount = calculateTax('companyDeposit', amount)
-        if not taxAmount then
-            return result(playerSource, false, 'Der Betrag ist nach Abzug der Steuer zu niedrig.')
-        end
-        if not ensureCompanyAccount(jobName, config) then
-            return result(playerSource, false, 'Das Firmenkonto konnte nicht geladen werden.')
-        end
-        if not player:removeMoney('cash', amount, 'company_bank_deposit') then
-            return result(playerSource, false, 'Du hast nicht genug Bargeld.')
-        end
-
-        local affected = MySQL.update.await([[
-            UPDATE ms_bank_company_accounts
-            SET balance = balance + ?
-            WHERE job_name = ?
-        ]], { netAmount, jobName })
-        if tonumber(affected) ~= 1 then
-            player:addMoney('cash', amount, 'company_bank_deposit_rollback')
-            return result(playerSource, false, 'Die Firmeneinzahlung konnte nicht gebucht werden.')
-        end
-        local taxCredited = creditAdminTax(
+        local success, message = depositCompanyFunds(
             playerSource,
             player,
-            'companyDeposit',
-            ('company:%s'):format(jobName),
-            amount,
-            taxAmount
-        )
-        if not taxCredited then
-            MySQL.update.await([[
-                UPDATE ms_bank_company_accounts
-                SET balance = balance - ?
-                WHERE job_name = ? AND balance >= ?
-            ]], { netAmount, jobName, netAmount })
-            player:addMoney('cash', amount, 'company_bank_deposit_rollback')
-            return result(playerSource, false, 'Die Transaktionssteuer konnte nicht gebucht werden.')
-        end
-
-        local companyBalance = tonumber(MySQL.scalar.await(
-            'SELECT balance FROM ms_bank_company_accounts WHERE job_name = ?',
-            { jobName }
-        )) or 0
-        player:save()
-        recordCompanyTransaction(
             jobName,
-            player,
-            'company_deposit',
-            netAmount,
-            companyBalance,
-            ('Einzahlung von %s; Steuer $%d'):format(player:getName(), taxAmount)
+            config,
+            rawAmount
         )
-        TriggerEvent(
-            'ms_banking:server:companyDeposited',
-            playerSource,
-            player.characterId,
-            jobName,
-            amount,
-            taxAmount,
-            netAmount
-        )
-        result(playerSource, true, ('$%d auf %s eingezahlt · $%d Steuer · $%d gutgeschrieben.'):format(
-            amount,
-            config.label or jobName,
-            taxAmount,
-            netAmount
-        ))
-        refreshClient(playerSource)
+        result(playerSource, success, message)
+        if success then refreshClient(playerSource) end
     end)
 end)
 
 RegisterNetEvent('ms_banking:server:companyWithdraw', function(rawAmount)
     local playerSource = source
     runCompanyOperation(playerSource, 'company_withdraw', 'withdraw', function(player, _, jobName, config)
-        local amount = validAmount(rawAmount)
-        if not amount then
-            return result(playerSource, false, 'Gib einen gültigen ganzzahligen Betrag ein.')
-        end
-        local taxAmount, netAmount = calculateTax('companyWithdrawal', amount)
-        if not taxAmount then
-            return result(playerSource, false, 'Der Betrag ist nach Abzug der Steuer zu niedrig.')
-        end
-        if not ensureCompanyAccount(jobName, config) then
-            return result(playerSource, false, 'Das Firmenkonto konnte nicht geladen werden.')
-        end
-
-        local affected = MySQL.update.await([[
-            UPDATE ms_bank_company_accounts
-            SET balance = balance - ?
-            WHERE job_name = ? AND balance >= ?
-        ]], { amount, jobName, amount })
-        if tonumber(affected) ~= 1 then
-            return result(playerSource, false, 'Das Firmenkonto besitzt nicht genug Guthaben.')
-        end
-        local taxCredited, taxTransactionId = creditAdminTax(
+        local success, message = withdrawCompanyFunds(
             playerSource,
             player,
-            'companyWithdrawal',
-            ('company:%s'):format(jobName),
-            amount,
-            taxAmount
-        )
-        if not taxCredited then
-            MySQL.update.await([[
-                UPDATE ms_bank_company_accounts
-                SET balance = balance + ?
-                WHERE job_name = ?
-            ]], { amount, jobName })
-            return result(playerSource, false, 'Die Transaktionssteuer konnte nicht gebucht werden.')
-        end
-        if not player:addMoney('cash', netAmount, 'company_bank_withdrawal') then
-            rollbackAdminTax(taxAmount, taxTransactionId)
-            MySQL.update.await([[
-                UPDATE ms_bank_company_accounts
-                SET balance = balance + ?
-                WHERE job_name = ?
-            ]], { amount, jobName })
-            return result(playerSource, false, 'Die Firmenauszahlung konnte nicht gebucht werden.')
-        end
-
-        local companyBalance = tonumber(MySQL.scalar.await(
-            'SELECT balance FROM ms_bank_company_accounts WHERE job_name = ?',
-            { jobName }
-        )) or 0
-        player:save()
-        recordCompanyTransaction(
             jobName,
-            player,
-            'company_withdrawal',
-            -amount,
-            companyBalance,
-            ('Auszahlung an %s; Steuer $%d'):format(player:getName(), taxAmount)
+            config,
+            rawAmount
         )
-        TriggerEvent(
-            'ms_banking:server:companyWithdrawn',
-            playerSource,
-            player.characterId,
-            jobName,
-            amount,
-            taxAmount,
-            netAmount
-        )
-        result(playerSource, true, ('$%d von %s abgehoben · $%d Steuer · $%d ausgezahlt.'):format(
-            amount,
-            config.label or jobName,
-            taxAmount,
-            netAmount
-        ))
-        refreshClient(playerSource)
+        result(playerSource, success, message)
+        if success then refreshClient(playerSource) end
     end)
 end)
 
@@ -1013,12 +1101,14 @@ AddEventHandler('mscore:server:playerUnloaded', function(playerSource)
     playerSource = tonumber(playerSource)
     if not playerSource then return end
     Sessions[playerSource] = nil
+    CompanySessions[playerSource] = nil
     OperationLocks[playerSource] = nil
 end)
 
 AddEventHandler('playerDropped', function()
     local playerSource = source
     Sessions[playerSource] = nil
+    CompanySessions[playerSource] = nil
     OperationLocks[playerSource] = nil
     for key in pairs(LastActions) do
         if key:match(('^%d:'):format(playerSource)) then LastActions[key] = nil end
@@ -1150,11 +1240,91 @@ function GetCompanyAccount(jobName)
         label = company.label,
         balance = tonumber(company.balance) or 0,
         minDepositGrade = math.max(0, math.floor(tonumber(config.minDepositGrade) or 0)),
-        minWithdrawGrade = math.max(0, math.floor(tonumber(config.minWithdrawGrade) or 0))
+        minWithdrawGrade = math.max(0, math.floor(tonumber(config.minWithdrawGrade) or 0)),
+        tax = taxEnvelope()
     }
 end
 
 exports('GetCompanyAccount', GetCompanyAccount)
+
+local function bossMenuCaller()
+    return GetInvokingResource() == 'MS_BossMenu'
+end
+
+function OpenCompanySession(playerSource, jobName, rawCoords, rawDistance, rawDurationMs)
+    if not bossMenuCaller() then return false, 'Nicht autorisierte Resource.' end
+    if not Ready then return false, 'Die Bank ist noch nicht verfügbar.' end
+
+    playerSource = tonumber(playerSource)
+    local player = playerSource and getPlayer(playerSource)
+    local x = type(rawCoords) == 'table' and tonumber(rawCoords.x)
+    local y = type(rawCoords) == 'table' and tonumber(rawCoords.y)
+    local z = type(rawCoords) == 'table' and tonumber(rawCoords.z)
+    if not player or player.job ~= jobName or not x or not y or not z then
+        return false, 'Das Firmenkonto konnte nicht autorisiert werden.'
+    end
+    if not companyConfigByJob(jobName) then
+        return false, 'Für diesen Job ist kein Firmenkonto eingerichtet.'
+    end
+
+    local maxDistance = math.max(1.0, math.min(20.0, tonumber(rawDistance) or 5.0))
+    local coords = { x = x, y = y, z = z }
+    if distanceTo(playerSource, coords) > maxDistance then
+        return false, 'Du bist zu weit vom Boss-Menü entfernt.'
+    end
+
+    local durationMs = math.max(
+        10000,
+        math.min(3600000, math.floor(tonumber(rawDurationMs) or 900000))
+    )
+    CompanySessions[playerSource] = {
+        characterId = player.characterId,
+        job = jobName,
+        coords = coords,
+        maxDistance = maxDistance,
+        durationMs = durationMs,
+        expiresAt = GetGameTimer() + durationMs
+    }
+    return true
+end
+
+function CloseCompanySession(playerSource)
+    if not bossMenuCaller() then return false end
+    playerSource = tonumber(playerSource)
+    if playerSource then CompanySessions[playerSource] = nil end
+    return true
+end
+
+function CompanySessionDeposit(playerSource, amount)
+    if not bossMenuCaller() then return false, 'Nicht autorisierte Resource.' end
+    playerSource = tonumber(playerSource)
+    return runCompanySessionOperation(
+        playerSource,
+        'boss_company_deposit',
+        'deposit',
+        function(player, jobName, config)
+            return depositCompanyFunds(playerSource, player, jobName, config, amount)
+        end
+    )
+end
+
+function CompanySessionWithdraw(playerSource, amount)
+    if not bossMenuCaller() then return false, 'Nicht autorisierte Resource.' end
+    playerSource = tonumber(playerSource)
+    return runCompanySessionOperation(
+        playerSource,
+        'boss_company_withdraw',
+        'withdraw',
+        function(player, jobName, config)
+            return withdrawCompanyFunds(playerSource, player, jobName, config, amount)
+        end
+    )
+end
+
+exports('OpenCompanySession', OpenCompanySession)
+exports('CloseCompanySession', CloseCompanySession)
+exports('CompanySessionDeposit', CompanySessionDeposit)
+exports('CompanySessionWithdraw', CompanySessionWithdraw)
 
 function GetAdminAccount()
     if not Ready then return nil end

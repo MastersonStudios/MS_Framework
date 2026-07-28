@@ -1,5 +1,7 @@
 # MS Banking
 
+Aktuelle Resource-Version: `1.3.0`
+
 `MS_Banking` ergänzt MSCore um persönliche Charakterkonten und konfigurierbare
 Banker-NPCs. Das vorhandene MSCore-Guthaben `bank` bleibt die zentrale
 Geldquelle, sodass Jobgehälter, Admin-Gutschriften und Bankgeschäfte immer
@@ -20,6 +22,7 @@ denselben Saldo verwenden.
 - serverseitige Distanz-, Betrags-, Guthaben- und Kontoprüfung
 - unmittelbare Speicherung erfolgreicher Geldbewegungen
 - grafische Bankoberfläche und Interaktion über `E`
+- gesicherte Firmenkonto-Sitzungen für die Boss-Punkte von `MS_BossMenu`
 
 ## Konfiguration
 
