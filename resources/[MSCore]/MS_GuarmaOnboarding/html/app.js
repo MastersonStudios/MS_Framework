@@ -73,6 +73,7 @@ window.addEventListener('message', ({ data }) => {
 
     if (data.action === 'cinematicStart') {
         cinematic.classList.remove('hidden');
+        void post('cinematicReady').catch(() => {});
     } else if (data.action === 'cinematicCaption') {
         cinematicTitle.textContent = data.title || '';
         cinematicText.textContent = data.text || '';

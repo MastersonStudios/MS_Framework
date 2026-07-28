@@ -1092,6 +1092,14 @@ Schiffbruch-Cinematic. Danach beginnt am Strand von Bahia de la Paz ein
 Bewegungstutorial für Laufen, Sprinten, Springen und Ducken, das am Hafen endet.
 Der Abschluss wird in den Charakter-Metadaten gespeichert.
 
+Die Cinematic versetzt den unsichtbaren Spieler bereits während der
+Ausblendung nach Guarma, wartet begrenzt auf Inselkollision und startet erst
+danach Kamerafahrt und animierte Sturm-/Schiffbruch-Ebene. Zeitlimits für
+Bildschirm-Fades, Streaming und NUI-Bereitschaft befinden sich in
+`MS_GuarmaOnboarding/config.lua`. Schlägt eine Kamera oder Oberfläche fehl,
+setzt ein abgesicherter Strand-Fallback Sichtbarkeit, Steuerung und Bildschirm
+wieder her und führt anschließend mit dem Tutorial fort.
+
 Admins mit dem ACE-Recht `mscore.admin.guarma` werden bei der Strandankunft
 benachrichtigt. `/guarmaadmin` öffnet das Teleportmenü, dessen Ziele vollständig
 in `MS_GuarmaOnboarding/config.lua` konfiguriert werden. Mit

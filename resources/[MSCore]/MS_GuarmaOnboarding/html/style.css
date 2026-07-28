@@ -17,7 +17,7 @@ button { font: inherit; }
     inset: 0;
     overflow: hidden;
     color: var(--paper);
-    background: rgba(3, 9, 13, .36);
+    background: rgba(3, 9, 13, .24);
     pointer-events: none;
 }
 
@@ -25,7 +25,26 @@ button { font: inherit; }
     position: absolute;
     inset: 0;
     overflow: hidden;
-    background: radial-gradient(circle at 48% 55%, rgba(41, 58, 66, .3), rgba(2, 7, 10, .78));
+    background:
+        radial-gradient(circle at 48% 46%, rgba(116, 148, 158, .32), transparent 27%),
+        linear-gradient(180deg, rgba(23, 44, 55, .68), rgba(4, 14, 20, .82) 68%, rgba(1, 7, 10, .92));
+}
+
+.storm::before {
+    content: "";
+    position: absolute;
+    inset: 9vh -8vw 24vh;
+    opacity: .7;
+    background:
+        radial-gradient(ellipse at 18% 54%, rgba(173, 197, 202, .2), transparent 28%),
+        radial-gradient(ellipse at 72% 35%, rgba(95, 125, 137, .28), transparent 31%),
+        radial-gradient(ellipse at 48% 70%, rgba(7, 18, 24, .76), transparent 48%);
+    filter: blur(18px);
+    animation: clouds 12s ease-in-out infinite alternate;
+}
+
+@keyframes clouds {
+    to { transform: translateX(4vw) scale(1.06); opacity: .9; }
 }
 
 .rain {
@@ -59,7 +78,7 @@ button { font: inherit; }
     left: 50%;
     bottom: -3vh;
     width: min(72vw, 980px);
-    opacity: .74;
+    opacity: .92;
     transform: translateX(-50%) rotate(-2deg);
     filter: drop-shadow(0 15px 24px rgba(0, 0, 0, .6));
     animation: ship 4.8s ease-in-out infinite;
@@ -70,11 +89,19 @@ button { font: inherit; }
     50% { transform: translateX(-50%) translateY(-12px) rotate(3deg); }
 }
 
-.hull, .mast, .broken-mast { fill: #090b0c; }
-.sail { fill: rgba(27, 31, 32, .95); }
+.hull, .mast, .broken-mast {
+    fill: #101719;
+    stroke: rgba(188, 204, 204, .32);
+    stroke-width: 2px;
+}
+.sail {
+    fill: rgba(40, 49, 51, .96);
+    stroke: rgba(201, 212, 211, .24);
+    stroke-width: 2px;
+}
 .torn { clip-path: polygon(0 0, 100% 0, 77% 32%, 92% 50%, 62% 74%, 100% 100%, 0 100%); }
-.wave { fill: rgba(8, 19, 26, .94); }
-.wave.two { fill: rgba(11, 29, 39, .96); }
+.wave { fill: rgba(15, 42, 55, .96); }
+.wave.two { fill: rgba(10, 31, 43, .98); }
 
 .letterbox {
     position: absolute;

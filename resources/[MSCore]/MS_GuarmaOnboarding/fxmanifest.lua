@@ -4,7 +4,7 @@ rdr3_warning 'I acknowledge that this is a prerelease build of RedM, and I am aw
 
 author 'MSCore Framework'
 description 'Guarma storm intro, movement tutorial and admin travel menu'
-version '1.0.0'
+version '1.1.0'
 
 lua54 'yes'
 

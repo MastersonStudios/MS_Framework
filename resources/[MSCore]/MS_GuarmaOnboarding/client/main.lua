@@ -5,6 +5,7 @@ local CompletedInputs = {}
 local TutorialBlip = nil
 local CinematicCamera = nil
 local CinematicPlaying = false
+local CinematicNuiReady = false
 
 local GUARMA_ZONE_HASH = 1935063277
 local WORLD_ZONE_HASH = -1868977180
@@ -25,10 +26,57 @@ local function setLocalWeather(hash, transition)
     TriggerEvent('mscore:client:weatherChanged', weatherId, hash)
 end
 
+local function fadeOutSafely(duration)
+    if IsScreenFadedOut() then return true end
+    DoScreenFadeOut(math.max(0, math.floor(tonumber(duration) or 500)))
+    local startedAt = GetGameTimer()
+    local timeout = math.max(500, math.floor(tonumber(GuarmaConfig.FadeTimeoutMs) or 3000))
+    while not IsScreenFadedOut() and GetGameTimer() - startedAt < timeout do
+        Wait(0)
+    end
+    return IsScreenFadedOut()
+end
+
+local function fadeInSafely(duration)
+    duration = math.max(0, math.floor(tonumber(duration) or 600))
+    DoScreenFadeIn(duration)
+    local startedAt = GetGameTimer()
+    local timeout = math.max(500, math.floor(tonumber(GuarmaConfig.FadeTimeoutMs) or 3000))
+    while IsScreenFadedOut() and GetGameTimer() - startedAt < timeout do
+        Wait(0)
+    end
+    if IsScreenFadedOut() then DoScreenFadeIn(0) end
+    return not IsScreenFadedOut()
+end
+
+local function streamSceneAt(ped, coords)
+    RequestCollisionAtCoord(coords.x, coords.y, coords.z)
+    SetEntityCoords(ped, coords.x, coords.y, coords.z, false, false, false, false)
+    SetEntityHeading(ped, tonumber(coords.w) or 0.0)
+
+    local timeout = math.max(
+        1000,
+        math.floor(tonumber(GuarmaConfig.StreamingTimeoutMs) or 8000)
+    )
+    if type(HasCollisionLoadedAroundEntity) ~= 'function' then
+        Wait(math.min(timeout, 1800))
+        return true
+    end
+
+    local startedAt = GetGameTimer()
+    while GetGameTimer() - startedAt < timeout do
+        RequestCollisionAtCoord(coords.x, coords.y, coords.z)
+        if HasCollisionLoadedAroundEntity(ped) then return true end
+        Wait(50)
+    end
+    return HasCollisionLoadedAroundEntity(ped)
+end
+
 local function stopCinematic()
     local wasPlaying = CinematicPlaying or CinematicCamera ~= nil
     CinematicPlaying = false
-    if CinematicCamera then
+    CinematicNuiReady = false
+    if CinematicCamera and CinematicCamera ~= 0 then
         RenderScriptCams(false, false, 0, true, true)
         DestroyCam(CinematicCamera, false)
         CinematicCamera = nil
@@ -44,16 +92,12 @@ end
 
 local function teleport(coords)
     local ped = PlayerPedId()
-    DoScreenFadeOut(500)
-    while not IsScreenFadedOut() do Wait(0) end
+    fadeOutSafely(500)
     setGuarmaMode(true)
-    RequestCollisionAtCoord(coords.x, coords.y, coords.z)
-    SetEntityCoords(ped, coords.x, coords.y, coords.z, false, false, false, false)
-    SetEntityHeading(ped, coords.w or 0.0)
     FreezeEntityPosition(ped, true)
-    Wait(900)
+    streamSceneAt(ped, coords)
     FreezeEntityPosition(ped, false)
-    DoScreenFadeIn(600)
+    fadeInSafely(600)
 end
 
 local function removeTutorialBlip()
@@ -87,60 +131,104 @@ local function playCameraShot(camera, shot)
         title = shot.title,
         text = shot.text
     })
+    if camera and camera ~= 0 then
+        SetCamCoord(camera, shot.from.x, shot.from.y, shot.from.z)
+        PointCamAtCoord(camera, shot.lookAt.x, shot.lookAt.y, shot.lookAt.z)
+    end
     local startedAt = GetGameTimer()
-    while OnboardingActive and GetGameTimer() - startedAt < shot.duration do
+    while OnboardingActive and CinematicPlaying
+        and GetGameTimer() - startedAt < shot.duration do
         local progress = math.min((GetGameTimer() - startedAt) / shot.duration, 1.0)
         local eased = progress * progress * (3.0 - 2.0 * progress)
-        SetCamCoord(
-            camera,
-            lerp(shot.from.x, shot.to.x, eased),
-            lerp(shot.from.y, shot.to.y, eased),
-            lerp(shot.from.z, shot.to.z, eased)
-        )
-        PointCamAtCoord(camera, shot.lookAt.x, shot.lookAt.y, shot.lookAt.z)
+        if camera and camera ~= 0 then
+            SetCamCoord(
+                camera,
+                lerp(shot.from.x, shot.to.x, eased),
+                lerp(shot.from.y, shot.to.y, eased),
+                lerp(shot.from.z, shot.to.z, eased)
+            )
+            PointCamAtCoord(camera, shot.lookAt.x, shot.lookAt.y, shot.lookAt.z)
+        end
         Wait(0)
     end
 end
 
-local function playIntro()
+local function arriveAtBeach()
     local ped = PlayerPedId()
-    CinematicPlaying = true
+    local spawn = GuarmaConfig.BeachSpawn
+    fadeOutSafely(500)
+    stopCinematic()
     setGuarmaMode(true)
     SetEntityVisible(ped, false, false)
     SetEntityInvincible(ped, true)
     FreezeEntityPosition(ped, true)
-    setLocalWeather(WEATHER_THUNDERSTORM, 1.5)
-
-    CinematicCamera = CreateCam('DEFAULT_SCRIPTED_CAMERA', true)
-    SetCamActive(CinematicCamera, true)
-    RenderScriptCams(true, false, 0, true, true)
-    SendNUIMessage({ action = 'cinematicStart' })
-
-    for _, shot in ipairs(GuarmaConfig.CinematicCameras) do
-        if not OnboardingActive then break end
-        playCameraShot(CinematicCamera, shot)
-    end
-
-    if not OnboardingActive then
-        stopCinematic()
-        return false
-    end
-    DoScreenFadeOut(700)
-    while not IsScreenFadedOut() do Wait(0) end
-    stopCinematic()
-
-    local spawn = GuarmaConfig.BeachSpawn
-    RequestCollisionAtCoord(spawn.x, spawn.y, spawn.z)
-    SetEntityCoords(ped, spawn.x, spawn.y, spawn.z, false, false, false, false)
-    SetEntityHeading(ped, spawn.w)
-    Wait(1000)
+    streamSceneAt(ped, spawn)
+    SetEntityVisible(ped, true, false)
+    SetEntityInvincible(ped, false)
+    FreezeEntityPosition(ped, false)
     setLocalWeather(WEATHER_SUNNY, 8.0)
-    DoScreenFadeIn(900)
+    fadeInSafely(900)
     TriggerServerEvent('ms_guarma:server:beachArrived')
     SetTimeout(1800, function()
         if OnboardingActive then TriggerServerEvent('ms_guarma:server:beachArrived') end
     end)
     return true
+end
+
+local function playIntro()
+    local ped = PlayerPedId()
+    CinematicPlaying = true
+    fadeOutSafely(500)
+    setGuarmaMode(true)
+    SetEntityVisible(ped, false, false)
+    SetEntityInvincible(ped, true)
+    FreezeEntityPosition(ped, true)
+    streamSceneAt(ped, GuarmaConfig.BeachSpawn)
+    setLocalWeather(WEATHER_THUNDERSTORM, 1.5)
+
+    CinematicCamera = CreateCam('DEFAULT_SCRIPTED_CAMERA', true)
+    if CinematicCamera == 0 then CinematicCamera = nil end
+    local firstShot = GuarmaConfig.CinematicCameras[1]
+    if CinematicCamera and firstShot then
+        SetCamCoord(
+            CinematicCamera,
+            firstShot.from.x,
+            firstShot.from.y,
+            firstShot.from.z
+        )
+        PointCamAtCoord(
+            CinematicCamera,
+            firstShot.lookAt.x,
+            firstShot.lookAt.y,
+            firstShot.lookAt.z
+        )
+        SetCamActive(CinematicCamera, true)
+        RenderScriptCams(true, false, 0, true, true)
+    end
+
+    CinematicNuiReady = false
+    SendNUIMessage({ action = 'cinematicStart' })
+    local nuiStartedAt = GetGameTimer()
+    local nuiTimeout = math.max(
+        250,
+        math.floor(tonumber(GuarmaConfig.NuiReadyTimeoutMs) or 1500)
+    )
+    while OnboardingActive and not CinematicNuiReady
+        and GetGameTimer() - nuiStartedAt < nuiTimeout do
+        Wait(0)
+    end
+    fadeInSafely(900)
+
+    for _, shot in ipairs(GuarmaConfig.CinematicCameras) do
+        if not OnboardingActive or not CinematicPlaying then break end
+        playCameraShot(CinematicCamera, shot)
+    end
+
+    if not OnboardingActive or not CinematicPlaying then
+        stopCinematic()
+        return false
+    end
+    return arriveAtBeach()
 end
 
 local function runTutorial(startIndex)
@@ -204,7 +292,32 @@ RegisterNetEvent('ms_guarma:client:start', function(resume)
     CreateThread(function()
         Wait(GuarmaConfig.StartDelay)
         if not resume then
-            if not playIntro() then return end
+            local succeeded, introResult = xpcall(playIntro, function(errorMessage)
+                if type(debug) == 'table' and type(debug.traceback) == 'function' then
+                    return debug.traceback(tostring(errorMessage), 2)
+                end
+                return tostring(errorMessage)
+            end)
+            if not succeeded then
+                print(('[MS_GuarmaOnboarding] Introfehler, Strand-Fallback wird verwendet:\n%s')
+                    :format(tostring(introResult)))
+                if not OnboardingActive then return end
+                local recovered, recoveryError = pcall(arriveAtBeach)
+                if not recovered then
+                    print(('[MS_GuarmaOnboarding] Strand-Fallback fehlgeschlagen: %s')
+                        :format(tostring(recoveryError)))
+                    OnboardingActive = false
+                    stopCinematic()
+                    local ped = PlayerPedId()
+                    SetEntityVisible(ped, true, false)
+                    SetEntityInvincible(ped, false)
+                    FreezeEntityPosition(ped, false)
+                    fadeInSafely(0)
+                    return
+                end
+                introResult = true
+            end
+            if not introResult then return end
         else
             teleport(GuarmaConfig.BeachSpawn)
             TriggerServerEvent('ms_guarma:server:beachArrived')
@@ -260,6 +373,11 @@ RegisterNetEvent('ms_guarma:client:openAdminMenu', function(data)
         locations = data.locations or {},
         newcomers = data.newcomers or {}
     })
+end)
+
+RegisterNUICallback('cinematicReady', function(_, cb)
+    CinematicNuiReady = true
+    cb({ ok = true })
 end)
 
 RegisterNetEvent('ms_guarma:client:teleport', function(coords)

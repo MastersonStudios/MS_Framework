@@ -5,6 +5,9 @@ GuarmaConfig.AdminPermission = 'mscore.admin.guarma'
 GuarmaConfig.AdminMenuCommand = 'guarmaadmin'
 GuarmaConfig.ResetCommand = 'guarmareset'
 GuarmaConfig.StartDelay = 1800
+GuarmaConfig.FadeTimeoutMs = 3000
+GuarmaConfig.StreamingTimeoutMs = 8000
+GuarmaConfig.NuiReadyTimeoutMs = 1500
 GuarmaConfig.NotifyAdmins = true
 GuarmaConfig.CompletionRadius = 10.0
 
