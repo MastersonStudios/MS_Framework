@@ -11,6 +11,7 @@ Config.VersionCheck = {
 }
 Config.AutoCreateCharacter = false
 Config.MaxCharacters = 3
+Config.CallbackTimeoutMs = 15000
 Config.CharacterBirthDateMin = '1800-01-01'
 Config.CharacterBirthDateMax = '1905-12-31'
 Config.DefaultCharacter = {

@@ -10,6 +10,7 @@ local CreatorZoom = 0.5
 local CreatorPlayerWasVisible = false
 local SelectionPreviewOpen = false
 local SelectorPlayerWasVisible = false
+local SpawnRecoveryToken = 0
 local APPEARANCE_KEYS = { 'head', 'body', 'hair', 'beard', 'eyes', 'height' }
 
 local RawKeyBindings = {}
@@ -177,8 +178,22 @@ end)
 
 function MSCore.TriggerCallback(name, callback, ...)
     NextRequest = NextRequest + 1
-    Callbacks[NextRequest] = callback
-    TriggerServerEvent('mscore:server:callback', NextRequest, name, ...)
+    if NextRequest > 2147483647 then NextRequest = 1 end
+
+    local requestId = NextRequest
+    local entry = {
+        callback = type(callback) == 'function' and callback or function() end,
+        name = tostring(name or 'unknown')
+    }
+    Callbacks[requestId] = entry
+    TriggerServerEvent('mscore:server:callback', requestId, name, ...)
+
+    local timeout = math.max(1000, math.floor(tonumber(Config.CallbackTimeoutMs) or 15000))
+    SetTimeout(timeout, function()
+        if Callbacks[requestId] ~= entry then return end
+        Callbacks[requestId] = nil
+        entry.callback(nil, ('Zeitüberschreitung bei Server-Callback "%s".'):format(entry.name))
+    end)
 end
 exports('TriggerCallback', MSCore.TriggerCallback)
 
@@ -562,8 +577,14 @@ end
 
 local function stopCharacterCreator(restorePlayer)
     if CreatorCamera and DoesCamExist(CreatorCamera) then
-        RenderScriptCams(false, true, 350, true, true, 0)
-        DestroyCam(CreatorCamera, false)
+        -- Eine Kamera-Interpolation auf ein direkt danach gelöschtes Ziel kann
+        -- RedM dauerhaft schwarz lassen. Deshalb immer sofort zur Spielkamera
+        -- zurückschalten und erst danach die Creator-Kamera entfernen.
+        pcall(SetCamActive, CreatorCamera, false)
+        pcall(RenderScriptCams, false, false, 0, true, true, 0)
+        pcall(DestroyCam, CreatorCamera, false)
+    elseif type(RenderScriptCams) == 'function' then
+        pcall(RenderScriptCams, false, false, 0, true, true, 0)
     end
     CreatorCamera = nil
     CreatorCameraDirection = nil
@@ -576,7 +597,7 @@ local function stopCharacterCreator(restorePlayer)
     SelectionPreviewOpen = false
     CreatorAppearance = nil
     CreatorZoom = 0.5
-    ClearFocus()
+    if type(ClearFocus) == 'function' then pcall(ClearFocus) end
     DisplayRadar(true)
 end
 
@@ -592,9 +613,91 @@ local function setSelectorVisible(visible)
     end
 end
 
+local function shutdownLoadingScreens()
+    if type(ShutdownLoadingScreen) == 'function' then
+        pcall(ShutdownLoadingScreen)
+    end
+    if type(ShutdownLoadingScreenNui) == 'function' then
+        pcall(ShutdownLoadingScreenNui)
+    end
+end
+
+local function closeSelectorOverlay()
+    SelectorOpen = false
+    setSelectorInputFocus(false, false)
+    SendNUIMessage({ action = 'close' })
+    stopCharacterCreator(false)
+    shutdownLoadingScreens()
+end
+
+local function restoreGameplayView(ped)
+    ped = ped and ped ~= 0 and ped or PlayerPedId()
+    closeSelectorOverlay()
+
+    if type(ClearFocus) == 'function' then pcall(ClearFocus) end
+    if type(RenderScriptCams) == 'function' then
+        pcall(RenderScriptCams, false, false, 0, true, true, 0)
+    end
+    if ped and ped ~= 0 and DoesEntityExist(ped) then
+        SetEntityVisible(ped, true, false)
+        if type(ResetEntityAlpha) == 'function' then ResetEntityAlpha(ped) end
+        SetEntityInvincible(ped, false)
+        SetEntityCanBeDamaged(ped, true)
+        FreezeEntityPosition(ped, false)
+    end
+    if type(SetPlayerInvincible) == 'function' then
+        SetPlayerInvincible(PlayerId(), false)
+    end
+    if type(SetPlayerControl) == 'function' then
+        SetPlayerControl(PlayerId(), true, 0)
+    end
+    DisplayRadar(true)
+    if type(DisplayHud) == 'function' then DisplayHud(true) end
+    DoScreenFadeIn(0)
+end
+
+local function scheduleGameplayRecovery(delay)
+    SpawnRecoveryToken = SpawnRecoveryToken + 1
+    local token = SpawnRecoveryToken
+    SetTimeout(math.max(0, math.floor(tonumber(delay) or 0)), function()
+        if token ~= SpawnRecoveryToken or SelectorOpen or not PlayerData.characterId then return end
+        restoreGameplayView(PlayerPedId())
+    end)
+    return token
+end
+
+local function streamSpawnArea(ped, x, y, z, heading)
+    RequestCollisionAtCoord(x, y, z)
+    if type(SetEntityCoordsAndHeading) == 'function' then
+        SetEntityCoordsAndHeading(ped, x, y, z, heading, false, false, false)
+    else
+        SetEntityCoords(ped, x, y, z, false, false, false, false)
+        SetEntityHeading(ped, heading)
+    end
+
+    if type(LoadSceneStart) == 'function' and type(IsLoadSceneLoaded) == 'function' then
+        LoadSceneStart(x, y, z, 0.0, 0.0, 0.0, 40.0, 0)
+        local sceneDeadline = GetGameTimer() + 6000
+        while IsLoadSceneLoaded() == 0 and GetGameTimer() < sceneDeadline do
+            RequestCollisionAtCoord(x, y, z)
+            Wait(0)
+        end
+        if type(LoadSceneStop) == 'function' then LoadSceneStop() end
+    end
+
+    local collisionDeadline = GetGameTimer() + 5000
+    while type(HasCollisionLoadedAroundEntity) == 'function'
+        and not HasCollisionLoadedAroundEntity(ped)
+        and GetGameTimer() < collisionDeadline
+    do
+        RequestCollisionAtCoord(x, y, z)
+        Wait(50)
+    end
+end
+
 local function openCharacterSelector()
-    if type(ShutdownLoadingScreen) == 'function' then ShutdownLoadingScreen() end
-    if type(ShutdownLoadingScreenNui) == 'function' then ShutdownLoadingScreenNui() end
+    SpawnRecoveryToken = SpawnRecoveryToken + 1
+    shutdownLoadingScreens()
     if SelectorOpen then
         setSelectorInputFocus(true, false)
         SendNUIMessage({ action = 'loading' })
@@ -630,10 +733,10 @@ local function openCharacterSelector()
 end
 
 RegisterNetEvent('mscore:client:callback', function(requestId, ...)
-    local callback = Callbacks[requestId]
-    if not callback then return end
+    local entry = Callbacks[requestId]
+    if not entry then return end
     Callbacks[requestId] = nil
-    callback(...)
+    entry.callback(...)
 end)
 
 RegisterNetEvent('mscore:client:setPlayerData', function(data)
@@ -655,65 +758,66 @@ RegisterNetEvent('mscore:client:notify', function(message)
 end)
 
 RegisterNetEvent('mscore:client:spawn', function(coords)
-    local x, y, z = tonumber(coords.x), tonumber(coords.y), tonumber(coords.z)
-    if not x or not y or not z then return end
+    coords = type(coords) == 'table' and coords or {}
+    local fallback = Config.Spawn
+    local x = tonumber(coords.x) or tonumber(fallback and fallback.x)
+    local y = tonumber(coords.y) or tonumber(fallback and fallback.y)
+    local z = tonumber(coords.z) or tonumber(fallback and fallback.z)
+    local heading = tonumber(coords.w) or tonumber(fallback and fallback.w) or 0.0
+    if not x or not y or not z then
+        restoreGameplayView(PlayerPedId())
+        return TriggerEvent('mscore:client:notify', 'Spawnkoordinaten sind ungültig.')
+    end
     local spawnStartedAt = GetGameTimer()
+    SpawnRecoveryToken = SpawnRecoveryToken + 1
 
-    -- Die Charakter-NUI zeigt bereits den kurzen Ladehinweis. Ein zusätzlicher
-    -- Screen-Fade konnte bei RedM dauerhaft schwarz bleiben, deshalb wird ein
-    -- eventuell noch aktiver Fade vor dem Spawn sofort aufgehoben.
     DoScreenFadeIn(0)
     stopCharacterCreator(false)
-    local ped, appearanceError = applyAppearanceToPlayer()
-    if appearanceError then
-        TriggerEvent('mscore:client:notify', appearanceError)
-    end
+    local ped = PlayerPedId()
+    local spawnError
+    local success, errorMessage = xpcall(function()
+        local appearanceApplied, appearancePed, appearanceError = pcall(applyAppearanceToPlayer)
+        ped = appearanceApplied and appearancePed or PlayerPedId()
+        ped = ped and ped ~= 0 and ped or PlayerPedId()
+        if not appearanceApplied then
+            spawnError = ('Aussehen konnte nicht angewendet werden: %s'):format(tostring(appearancePed))
+        elseif appearanceError then
+            spawnError = tostring(appearanceError)
+        end
 
-    RequestCollisionAtCoord(x, y, z)
-    SetEntityCoords(ped, x, y, z, false, false, false, false)
-    SetEntityHeading(ped, tonumber(coords.w) or 0.0)
-    SetEntityVisible(ped, true, false)
-    SetEntityInvincible(ped, false)
-    FreezeEntityPosition(ped, true)
+        SetEntityVisible(ped, true, false)
+        SetEntityInvincible(ped, true)
+        FreezeEntityPosition(ped, true)
+        streamSpawnArea(ped, x, y, z, heading)
 
-    local collisionDeadline = GetGameTimer() + 5000
-    while type(HasCollisionLoadedAroundEntity) == 'function'
-        and not HasCollisionLoadedAroundEntity(ped)
-        and GetGameTimer() < collisionDeadline
-    do
-        RequestCollisionAtCoord(x, y, z)
-        Wait(50)
-    end
-
-    local minimumLoadingMs = math.max(
-        0,
-        math.floor(tonumber(
-            Config.CharacterCreator and Config.CharacterCreator.SpawnLoadingMs
-        ) or 1500)
-    )
-    local remainingLoadingMs = minimumLoadingMs - (GetGameTimer() - spawnStartedAt)
-    if remainingLoadingMs > 0 then Wait(remainingLoadingMs) end
-    setSelectorVisible(false)
-    if type(ShutdownLoadingScreen) == 'function' then ShutdownLoadingScreen() end
-    if type(ShutdownLoadingScreenNui) == 'function' then ShutdownLoadingScreenNui() end
-    SetEntityVisible(ped, true, false)
-    SetEntityInvincible(ped, false)
-    FreezeEntityPosition(ped, false)
-    DisplayRadar(true)
-    DoScreenFadeIn(0)
-
-    -- Schutz gegen fremde oder verspätete Fade-/Freeze-Aufrufe während des
-    -- ersten Spawns. Nach geschlossener Charakterauswahl muss der Spieler
-    -- sichtbar und steuerbar bleiben.
-    SetTimeout(1000, function()
-        if SelectorOpen then return end
-        local activePed = PlayerPedId()
-        SetEntityVisible(activePed, true, false)
-        SetEntityInvincible(activePed, false)
-        FreezeEntityPosition(activePed, false)
-        local fadingOut = type(IsScreenFadingOut) == 'function' and IsScreenFadingOut()
-        if IsScreenFadedOut() or fadingOut then DoScreenFadeIn(0) end
+        local minimumLoadingMs = math.max(
+            0,
+            math.floor(tonumber(
+                Config.CharacterCreator and Config.CharacterCreator.SpawnLoadingMs
+            ) or 1500)
+        )
+        local remainingLoadingMs = minimumLoadingMs - (GetGameTimer() - spawnStartedAt)
+        if remainingLoadingMs > 0 then Wait(remainingLoadingMs) end
+    end, function(message)
+        if type(debug) == 'table' and type(debug.traceback) == 'function' then
+            return debug.traceback(tostring(message), 2)
+        end
+        return tostring(message)
     end)
+
+    restoreGameplayView(ped)
+    scheduleGameplayRecovery(1000)
+    SetTimeout(4000, function()
+        if SelectorOpen or not PlayerData.characterId then return end
+        restoreGameplayView(PlayerPedId())
+    end)
+
+    if not success then
+        print(('[MSCore] Charakterspawn fehlgeschlagen:\n%s'):format(tostring(errorMessage)))
+        TriggerEvent('mscore:client:notify', 'Der Spawn wurde wiederhergestellt; Details stehen in der F8-Konsole.')
+    elseif spawnError then
+        TriggerEvent('mscore:client:notify', spawnError)
+    end
     if GetResourceState('MS_Inventory') == 'started' then
         TriggerServerEvent('ms_inventory:server:requestOutfit')
     end
@@ -726,13 +830,22 @@ RegisterNUICallback('selectCharacter', function(data, cb)
     if not id then return cb({ ok = false, error = 'Ungültiger Charakter.' }) end
     MSCore.TriggerCallback('mscore:selectCharacter', function(success, err)
         cb({ ok = success == true, error = err })
-        if success then setSelectorVisible(false) end
+        if success then
+            closeSelectorOverlay()
+            scheduleGameplayRecovery(7000)
+        end
     end, id)
 end)
 
 RegisterNUICallback('createCharacter', function(data, cb)
     MSCore.TriggerCallback('mscore:createCharacter', function(success, err)
         cb({ ok = success == true, error = err })
+        if success then
+            SetTimeout(250, function()
+                if SelectorOpen then closeSelectorOverlay() end
+            end)
+            scheduleGameplayRecovery(7000)
+        end
     end, {
         firstname = data and data.firstname,
         lastname = data and data.lastname,
@@ -833,7 +946,8 @@ RegisterCommand('selectchar', function(_, args)
         if not success then
             TriggerEvent('mscore:client:notify', err or 'Auswahl fehlgeschlagen.')
         else
-            setSelectorVisible(false)
+            closeSelectorOverlay()
+            scheduleGameplayRecovery(7000)
         end
     end, id)
 end)
@@ -847,7 +961,8 @@ RegisterCommand('newchar', function(_, args)
         if not success then
             TriggerEvent('mscore:client:notify', err or 'Erstellung fehlgeschlagen.')
         else
-            setSelectorVisible(false)
+            closeSelectorOverlay()
+            scheduleGameplayRecovery(7000)
         end
     end, { firstname = firstname, lastname = lastname, sex = sex })
 end)
@@ -862,10 +977,7 @@ CreateThread(function()
     while true do
         Wait(30000)
         if PlayerData.characterId then
-            local ped, coords = PlayerPedId(), GetEntityCoords(PlayerPedId())
-            TriggerServerEvent('mscore:server:updatePosition', {
-                x = coords.x, y = coords.y, z = coords.z, w = GetEntityHeading(ped)
-            }, GetEntityHealth(ped))
+            TriggerServerEvent('mscore:server:updatePosition')
         end
     end
 end)

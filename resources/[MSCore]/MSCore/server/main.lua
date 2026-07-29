@@ -40,7 +40,7 @@ local function characterRows(userId)
         FROM mscore_characters
         WHERE user_id = ? AND is_deleted = 0
         ORDER BY id ASC
-    ]], { userId })
+    ]], { userId }) or {}
 
     for _, row in ipairs(rows) do
         local metadata = decodeMetadata(row.metadata)
@@ -338,14 +338,36 @@ exports('RegisterCallback', MSCore.RegisterCallback)
 
 RegisterNetEvent('mscore:server:callback', function(requestId, name, ...)
     local source = source
-    if type(requestId) ~= 'number' or type(name) ~= 'string' or not Callbacks[name] then return end
+    if type(requestId) ~= 'number' or type(name) ~= 'string' then return end
     local replied = false
     local function reply(...)
         if replied then return end
         replied = true
         TriggerClientEvent('mscore:client:callback', source, requestId, ...)
     end
-    Callbacks[name](source, reply, ...)
+
+    local callback = Callbacks[name]
+    if not callback then
+        return reply(nil, 'Unbekannter Server-Callback.')
+    end
+
+    local arguments = table.pack(...)
+    local success, callbackError = xpcall(function()
+        callback(source, reply, table.unpack(arguments, 1, arguments.n))
+    end, function(errorMessage)
+        if type(debug) == 'table' and type(debug.traceback) == 'function' then
+            return debug.traceback(tostring(errorMessage), 2)
+        end
+        return tostring(errorMessage)
+    end)
+    if not success then
+        print(('[MSCore] Callback "%s" für Spieler %d fehlgeschlagen:\n%s'):format(
+            name,
+            source,
+            tostring(callbackError)
+        ))
+        reply(nil, 'Der Server-Callback konnte nicht verarbeitet werden.')
+    end
 end)
 
 MSCore.RegisterCallback('mscore:getCharacters', function(source, reply)
@@ -413,13 +435,24 @@ MSCore.RegisterCallback('mscore:deleteCharacter', function(source, reply, charac
     reply(true, characterRows(userId))
 end)
 
-RegisterNetEvent('mscore:server:updatePosition', function(coords, health)
+RegisterNetEvent('mscore:server:updatePosition', function()
     local player = Players[source]
-    if not player or type(coords) ~= 'table' then return end
-    local x, y, z, heading = tonumber(coords.x), tonumber(coords.y), tonumber(coords.z), tonumber(coords.w)
+    if not player then return end
+
+    local ped = GetPlayerPed(source)
+    if not ped or ped == 0 then return end
+    local coords = GetEntityCoords(ped)
+    if not coords then return end
+
+    local x, y, z = tonumber(coords.x), tonumber(coords.y), tonumber(coords.z)
     if not x or not y or not z or math.abs(x) > 10000 or math.abs(y) > 10000 then return end
-    player.coords = { x = x, y = y, z = z, w = heading or 0.0 }
-    player.metadata.health = math.max(0, math.min(tonumber(health) or 200, 200))
+    player.coords = {
+        x = x,
+        y = y,
+        z = z,
+        w = tonumber(GetEntityHeading(ped)) or 0.0
+    }
+    player.metadata.health = math.max(0, math.min(tonumber(GetEntityHealth(ped)) or 200, 200))
     player.dirty = true
 end)
 
