@@ -68,11 +68,6 @@ local function teleport(coords)
     local ped = PlayerPedId()
     DoScreenFadeOut(350)
     while not IsScreenFadedOut() do Wait(0) end
-    if GetResourceState('MS_GuarmaLoader') == 'started' then
-        pcall(function()
-            exports.MS_GuarmaLoader:PrepareSpawn(coords)
-        end)
-    end
     RequestCollisionAtCoord(x, y, z)
     SetEntityCoords(ped, x, y, z, false, false, false, false)
     SetEntityHeading(ped, tonumber(coords.w) or 0.0)

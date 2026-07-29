@@ -100,8 +100,7 @@ Server neu starten.
 2. Die Ordner aus `resources/` in den `resources`-Ordner des Servers kopieren.
 3. `server.cfg.example` nach `server.cfg` kopieren und Connection-String sowie
    Lizenzschlüssel anpassen.
-4. In der Konsole zuerst `ensure MS_LoadingScreen`, `ensure MS_GuarmaLoader`
-   und `ensure MSCore`,
+4. In der Konsole zuerst `ensure MS_LoadingScreen` und `ensure MSCore`,
    danach
    `ensure MS_Banking`, `ensure MS_BossMenu`, `ensure MS_PlayerSync`, `ensure MS_mechat`, `ensure MS_pointing`,
    `ensure MS_Permadeath`, `ensure MS_Inventory`, `ensure MS_Crime`,
@@ -917,7 +916,7 @@ Video, Musik, Mute-Funktion sowie die frühere Sturm- und Schiffbruchszene wurde
 vollständig entfernt. Titel, Servername, Untertitel und Hinweise werden in
 `resources/[MSCore]/MS_LoadingScreen/html/config.js` konfiguriert.
 Die Resource muss vor den Framework-Resources mit `ensure MS_LoadingScreen`
-gestartet werden. Direkt danach folgt `ensure MS_GuarmaLoader`; die
+gestartet werden. Direkt danach folgt `ensure MSCore`; die
 `server.cfg.example` enthält die passende Reihenfolge.
 
 ## MS Weapon Damage
@@ -1118,10 +1117,6 @@ gespeicherten Position innerhalb der alten Guarma-Grenzen werden beim nächsten
 Laden einmalig zum Bahnhof versetzt; dabei werden auch die veralteten
 Onboarding-Metadaten entfernt. Die Migration kann über
 `Config.LegacySpawnMigration.Enabled` in `MSCore/config.lua` deaktiviert werden.
-
-Der unabhängige `MS_GuarmaLoader` bleibt für ausdrücklich angeforderte
-Teleportationen nach Guarma verfügbar, beeinflusst den Valentine-Spawn jedoch
-nicht.
 
 Die Erstellung läuft in drei Schritten: Charakterdaten und Aussehen eingeben,
 die Zusammenfassung bestätigen und anschließend kurz den Ladebildschirm

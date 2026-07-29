@@ -41,7 +41,6 @@ ensure oxmysql
 
 # MSCore Framework
 ensure MS_LoadingScreen
-ensure MS_GuarmaLoader
 ensure MSCore
 ensure MS_Banking
 ensure MS_BossMenu

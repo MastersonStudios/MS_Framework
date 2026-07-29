@@ -32,7 +32,6 @@ ensure hardcap
 # MSCore
 ensure MS_LoadingScreen
 ensure oxmysql
-ensure MS_GuarmaLoader
 ensure MSCore
 ensure MS_Banking
 ensure MS_BossMenu
