@@ -1,6 +1,6 @@
 # MSCore
 
-MSCore ist ein eigenständiges, modulares Core-Framework für RedM. Version `0.1.0` enthält Account- und Multicharakterverwaltung, persistente Charakterdaten, Jobs, Geldkonten, Metadaten, State-Bag-Synchronisierung, Client-/Server-Callbacks, Autosave und einen sicheren Spawnablauf.
+MSCore ist ein eigenständiges, modulares Core-Framework für RedM. Version `0.1.0` enthält Account- und Multicharakterverwaltung, persistente Charakterdaten, Jobs, Geldkonten, Metadaten, State-Bag-Synchronisierung, Client-/Server-Callbacks, Autosave und einen sicheren Spawnablauf. Die separate Resource `MS_Char` ergänzt eine grafische Charakterauswahl und -erstellung.
 
 Die Architektur orientiert sich an bewährten Core-Grenzen aus dem RedM-Ökosystem – Manifest-Ladereihenfolge, Core-Export, Spieler-/Charakterobjekte, Callback-Schicht und klarer Ladezyklus. Die Implementierung wurde jedoch eigenständig für MSCore geschrieben. Es wurde kein VORP-Quellcode übernommen.
 
@@ -9,7 +9,7 @@ Die Architektur orientiert sich an bewährten Core-Grenzen aus dem RedM-Ökosyst
 - aktueller RedM-Server-Artefaktstand
 - OneSync (`set onesync on`)
 - MariaDB 10.4+ oder MySQL 8
-- [oxmysql](https://github.com/overextended/oxmysql)
+- [oxmysql](https://github.com/CommunityOx/oxmysql)
 
 ## Installation über txAdmin
 
@@ -32,11 +32,11 @@ Wähle bei der Einrichtung eine leere Datenbank, beispielsweise `mscore`. Die Re
 
 ## Manuelle Installation
 
-1. Kopiere `resources/[MSCore]/MSCore` in den Resources-Ordner deines Servers.
+1. Kopiere den Ordner `resources/[MSCore]` mit `MSCore` und `MS_Char` in den Resources-Ordner deines Servers.
 2. Installiere `oxmysql`.
 3. Lege eine leere Datenbank an und setze `mysql_connection_string`.
 4. Übernimm die relevanten Einträge aus `server.cfg.example`.
-5. Starte zuerst `oxmysql`, danach `MSCore`.
+5. Starte zuerst `oxmysql`, danach `MSCore` und anschließend `MS_Char`.
 
 MSCore legt seine Tabellen standardmäßig automatisch an. Wenn `Config.Database.AutoMigrate = false` gesetzt ist, importiere vorher `database/schema.sql`.
 
@@ -48,26 +48,35 @@ MSCore legt seine Tabellen standardmäßig automatisch an. Wenn `Config.Database
 ├── txadmin/server.cfg           server.cfg mit txAdmin-Platzhaltern
 ├── server.cfg.example           Vorlage für manuelle Installationen
 ├── database/schema.sql          manuell importierbares Datenbankschema
-└── resources/[MSCore]/MSCore/
-    ├── fxmanifest.lua           RedM-Metadaten und feste Ladereihenfolge
-    ├── config.lua               Core-, Spawn-, Limit- und Jobkonfiguration
-    ├── shared/utils.lua         gemeinsame Validierung und Hilfsfunktionen
-    ├── server/
-    │   ├── database.lua         Schema-Migration und DB-Bereitschaft
-    │   ├── callbacks.lua        source-gebundene Server-/Client-RPCs
-    │   ├── classes/
-    │   │   ├── player.lua       Account, Slots und Charakter-Lifecycle
-    │   │   └── character.lua    Charakter, Geld, Job und Metadaten
-    │   ├── core.lua             Exports, Jobregister und Spielerregister
-    │   ├── lifecycle.lua        Laden, Auswahl, Speichern und Trennen
-    │   └── commands.lua         Spieler- und Adminbefehle
-    └── client/
-        ├── callbacks.lua        Clientseite der RPC-Schicht
-        ├── main.lua             öffentliche Client-API und Status
-        └── spawn.lua            Valentine-Spawn und Bildschirm-Aufräumung
+└── resources/[MSCore]/
+    ├── MSCore/                   Framework und Daten-Lifecycle
+    │   ├── fxmanifest.lua       RedM-Metadaten und feste Ladereihenfolge
+    │   ├── config.lua           Core-, Spawn-, Limit- und Jobkonfiguration
+    │   ├── shared/utils.lua     gemeinsame Validierung und Hilfsfunktionen
+    │   ├── server/              Datenbank, Klassen, Lifecycle und Befehle
+    │   └── client/              Core-API, Callbacks und Valentine-Spawn
+    └── MS_Char/                 grafische Charakterauswahl und -erstellung
+        ├── config.lua           Alter, Namen, Vorschau und Outfit-Presets
+        ├── server/main.lua      serverseitige Validierung und MSCore-Aufrufe
+        ├── client/main.lua      Kamera, Metaped-Vorschau und NUI-Brücke
+        └── ui/                  mausfähige HTML/CSS/JavaScript-Oberfläche
 ```
 
-Der Core enthält absichtlich keinen fest eingebauten grafischen Charakter-Creator. Ein separates Auswahl- oder Creator-Resource kann die öffentlichen Callbacks verwenden. Ohne UI lässt sich ein erster Charakter über `/mscreate` anlegen.
+Der grafische Creator ist bewusst als separate Resource `MS_Char` umgesetzt. Ohne `MS_Char` lässt sich ein erster Charakter weiterhin über `/mscreate` anlegen.
+
+## MS_Char
+
+`MS_Char` öffnet sich automatisch, wenn MSCore eine Charakterauswahl anfordert oder noch kein Charakter existiert. Die NUI unterstützt die Maus vollständig und bietet:
+
+- Auswahl mit Job, Geburtsdatum, Geld und Charakterbeschreibung
+- Creator mit Vorname, Nachname, Geburtsdatum und Geschlecht
+- konfigurierbare Startbekleidungs-Presets mit direkter Ped-Vorschau
+- drehbare Vorschau am Bahnhof von Valentine
+- serverseitige Alters-, Namens-, Slot- und Besitzprüfung
+- zweistufig bestätigtes Löschen
+- automatisches Anwenden des gespeicherten Aussehens nach jedem Spawn
+
+Alter, verbotene Namen, Vorschauposition und Presets stehen in `resources/[MSCore]/MS_Char/config.lua`. `/mscharacters` meldet den aktiven Charakter ab und öffnet die Auswahl erneut.
 
 ## Konfiguration
 

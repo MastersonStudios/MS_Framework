@@ -2,5 +2,9 @@
   "name": "MSCore",
   "version": "0.1.0",
   "framework": "RedM",
-  "minimumArtifact": 0
+  "minimumArtifact": 0,
+  "resources": {
+    "MSCore": "0.1.0",
+    "MS_Char": "0.1.0"
+  }
 }

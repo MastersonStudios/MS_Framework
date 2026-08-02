@@ -94,7 +94,10 @@ function MSCharacter:ToSelectionData()
         job = self.job,
         jobGrade = self.jobGrade,
         jobLabel = self.jobLabel,
-        lastPlayedAt = self.lastPlayedAt
+        money = self.money,
+        gold = self.gold,
+        lastPlayedAt = self.lastPlayedAt,
+        metadata = MSUtils.Copy(self.metadata)
     }
 end
 

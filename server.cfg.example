@@ -11,6 +11,7 @@ set mysql_connection_string "mysql://mscore:CHANGE_ME@127.0.0.1/mscore?charset=u
 
 ensure oxmysql
 ensure MSCore
+ensure MS_Char
 
 # Grant this ACE through txAdmin or another principal assignment.
 add_ace group.admin mscore.admin allow
