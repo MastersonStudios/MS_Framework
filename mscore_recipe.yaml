@@ -1,0 +1,50 @@
+$engine: 3
+$onesync: on
+$steamRequired: false
+
+name: MSCore
+author: Masterson Studios
+description: Eigenständige MSCore-Basis für RedM mit oxmysql und txAdmin-Installation.
+
+tasks:
+  # Official CFX base resources
+  - action: download_github
+    src: https://github.com/citizenfx/cfx-server-data
+    ref: master
+    subpath: resources
+    dest: ./resources/
+
+  # Stable, reproducible oxmysql dependency
+  - action: download_file
+    path: ./tmp/files/oxmysql.zip
+    url: https://github.com/CommunityOx/oxmysql/releases/download/v2.12.3/oxmysql.zip
+
+  - action: unzip
+    src: ./tmp/files/oxmysql.zip
+    dest: ./resources/[standalone]
+
+  # MSCore source, configuration and database schema
+  - action: download_github
+    src: https://github.com/MastersonStudios/MS_Framework
+    ref: main
+    dest: ./temp/mscore-recipe
+
+  - action: move_path
+    src: ./temp/mscore-recipe/txadmin/server.cfg
+    dest: ./server.cfg
+
+  - action: connect_database
+
+  - action: query_database
+    file: ./temp/mscore-recipe/database/schema.sql
+
+  - action: move_path
+    src: ./temp/mscore-recipe/resources/[MSCore]
+    dest: ./resources/[MSCore]
+
+  # Installation leftovers are not needed by the running server
+  - action: remove_path
+    path: ./temp
+
+  - action: remove_path
+    path: ./tmp

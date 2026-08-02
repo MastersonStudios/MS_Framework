@@ -2,7 +2,7 @@
 cache/
 logs/
 crashes/
-server.cfg
+/server.cfg
 
 # Local development/reference data
 .reference-*/
