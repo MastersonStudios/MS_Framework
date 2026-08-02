@@ -1,9 +1,0 @@
-{
-  "name": "MSCore Framework",
-  "version": "0.0.2",
-  "repository": "https://github.com/MastersonStudios/MS_Framework",
-  "releaseUrl": "https://github.com/MastersonStudios/MS_Framework/releases",
-  "changelog": [
-    "Framework vollständig auf MSCore umbenannt"
-  ]
-}
