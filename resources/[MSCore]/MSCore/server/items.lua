@@ -1,5 +1,6 @@
 local Items = {}
 local ItemsReady = false
+local ItemsInitializationError
 local Rarities = {
     common = true,
     uncommon = true,
@@ -119,15 +120,37 @@ local function loadItems()
 end
 
 MySQL.ready(function()
-    createTable()
-    seedConfigItems()
-    loadItems()
-    print(('[MSCore] %d Datenbank-Items geladen.'):format((function()
-        local count = 0
-        for _ in pairs(Items) do count = count + 1 end
-        return count
-    end)()))
+    local success, initError = xpcall(function()
+        createTable()
+        seedConfigItems()
+        loadItems()
+        print(('[MSCore] %d Datenbank-Items geladen.'):format((function()
+            local count = 0
+            for _ in pairs(Items) do count = count + 1 end
+            return count
+        end)()))
+    end, function(errorMessage)
+        if type(debug) == 'table' and type(debug.traceback) == 'function' then
+            return debug.traceback(tostring(errorMessage), 2)
+        end
+        return tostring(errorMessage)
+    end)
+    if not success then
+        ItemsInitializationError = tostring(initError)
+        print(('[MSCore] Item-Datenbankinitialisierung fehlgeschlagen:\n%s'):format(
+            ItemsInitializationError
+        ))
+    end
 end)
+
+local function waitForItems()
+    local deadline = GetGameTimer() + 10000
+    while not ItemsReady and not ItemsInitializationError and GetGameTimer() < deadline do Wait(25) end
+    if ItemsReady then return true end
+    return false, ItemsInitializationError
+        and 'Die Item-Datenbank konnte nicht initialisiert werden.'
+        or 'Die Item-Datenbank ist noch nicht bereit.'
+end
 
 function MSCore.GetItemDefinition(name)
     return type(name) == 'string' and Items[name] or nil
@@ -205,7 +228,8 @@ local function validateItem(data)
 end
 
 function CreateItem(data, createdBy)
-    while not ItemsReady do Wait(25) end
+    local ready, readyError = waitForItems()
+    if not ready then return false, readyError end
     local item, validationError = validateItem(data)
     if not item then return false, validationError end
     if Items[item.name] then return false, 'Ein Item mit diesem technischen Namen existiert bereits.' end
@@ -268,7 +292,8 @@ local function itemUsage(name)
 end
 
 function DeleteItem(name)
-    while not ItemsReady do Wait(25) end
+    local ready, readyError = waitForItems()
+    if not ready then return false, readyError end
     name = type(name) == 'string' and name:lower()
     local item = name and Items[name]
     if not item then return false, 'Item nicht gefunden.' end

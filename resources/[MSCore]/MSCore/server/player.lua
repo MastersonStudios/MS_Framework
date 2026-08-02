@@ -1,5 +1,6 @@
 local Player = {}
 Player.__index = Player
+local InventoryLockSequence = 0
 
 local function decodeJson(value, fallback)
     if type(value) == 'table' then return value end
@@ -40,6 +41,8 @@ function Player:new(source, row)
     if type(instance.metadata) ~= 'table' then instance.metadata = {} end
     instance.coords = decodeJson(row.coords, nil)
     instance.dirty = false
+    instance.inventoryLock = nil
+    instance.savePending = false
     bindPlayerMethods(instance)
     return instance
 end
@@ -95,6 +98,10 @@ function Player:getInventory()
     return self.metadata.inventory
 end
 
+function Player:getMetadataJson()
+    return json.encode(self.metadata)
+end
+
 local function inventoryLimits()
     local config = type(Config.Inventory) == 'table' and Config.Inventory or {}
     return {
@@ -139,7 +146,39 @@ function Player:canCarryItem(itemName, amount, inventory)
     return self:getInventoryUsage(simulated).hasCapacity
 end
 
-function Player:addItem(itemName, amount, reason)
+function Player:acquireInventoryLock()
+    if self.inventoryLock then return nil end
+    InventoryLockSequence = InventoryLockSequence + 1
+    if InventoryLockSequence > 2147483647 then InventoryLockSequence = 1 end
+    local token = ('%d:%d:%d'):format(
+        tonumber(self.characterId) or 0,
+        os.time(),
+        InventoryLockSequence
+    )
+    self.inventoryLock = token
+    return token
+end
+
+function Player:releaseInventoryLock(token)
+    if not self.inventoryLock or self.inventoryLock ~= token then return false end
+    local pendingSave = self.savePending
+    self.savePending = false
+
+    if not pendingSave then
+        self.inventoryLock = nil
+        return true
+    end
+
+    local saveCallOk, saveResult = pcall(function()
+        return self:save(nil, token)
+    end)
+    self.inventoryLock = nil
+    if not saveCallOk then error(saveResult) end
+    return saveResult == true
+end
+
+function Player:addItem(itemName, amount, reason, lockToken)
+    if self.inventoryLock and self.inventoryLock ~= lockToken then return false end
     local item = type(itemName) == 'string' and MSCore.GetItemDefinition(itemName)
     if not item or not MSCore.IsInteger(amount) or amount < 1 then return false end
     if not self:canCarryItem(itemName, amount) then return false end
@@ -154,7 +193,8 @@ function Player:addItem(itemName, amount, reason)
     return true
 end
 
-function Player:removeItem(itemName, amount, reason)
+function Player:removeItem(itemName, amount, reason, lockToken)
+    if self.inventoryLock and self.inventoryLock ~= lockToken then return false end
     local item = type(itemName) == 'string' and MSCore.GetItemDefinition(itemName)
     if not item or not MSCore.IsInteger(amount) or amount < 1 then return false end
 
@@ -205,9 +245,14 @@ function Player:setMetadataValues(values)
     return true
 end
 
-function Player:save(coords)
+function Player:save(coords, lockToken)
     if coords then self.coords = coords end
-    MySQL.update.await([[
+    if self.inventoryLock and self.inventoryLock ~= lockToken then
+        self.savePending = true
+        return false
+    end
+
+    local affected = MySQL.update.await([[
         UPDATE mscore_characters
         SET job = ?, job_grade = ?, group_name = ?, cash = ?, bank = ?,
             coords = ?, metadata = ?
@@ -216,7 +261,9 @@ function Player:save(coords)
         self.job, self.jobGrade, self.group, self.money.cash, self.money.bank,
         json.encode(self.coords), json.encode(self.metadata), self.characterId
     })
+    if affected == nil then return false end
     self.dirty = false
+    return true
 end
 
 MSCore.Player = Player
