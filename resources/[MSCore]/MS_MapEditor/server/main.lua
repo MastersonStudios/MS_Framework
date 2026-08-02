@@ -2,6 +2,7 @@ local Objects = {}
 local UndoStacks = {}
 local LastMutation = {}
 local Ready = false
+local InitializationError
 
 local function notify(source, message)
     if source == 0 then
@@ -132,13 +133,15 @@ local function insertObject(data, createdBy)
         data.model, data.x, data.y, data.z, data.rotX, data.rotY, data.rotZ,
         data.collision and 1 or 0, data.frozen and 1 or 0, createdBy
     })
+    id = tonumber(id)
+    if not id then error('Die Datenbank hat keine Objekt-ID zurückgegeben.') end
     data.id = id
     Objects[id] = data
     return id
 end
 
 local function updateObject(data)
-    MySQL.update.await([[
+    local affected = MySQL.update.await([[
         UPDATE mscore_map_objects
         SET model = ?, x = ?, y = ?, z = ?, rot_x = ?, rot_y = ?, rot_z = ?,
             collision_enabled = ?, frozen = ?
@@ -147,48 +150,76 @@ local function updateObject(data)
         data.model, data.x, data.y, data.z, data.rotX, data.rotY, data.rotZ,
         data.collision and 1 or 0, data.frozen and 1 or 0, data.id
     })
+    if affected == nil then return false end
     Objects[data.id] = data
+    return true
 end
 
 MySQL.ready(function()
-    MySQL.query.await([[
-        CREATE TABLE IF NOT EXISTS mscore_map_objects (
-            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-            model VARCHAR(100) NOT NULL,
-            x DOUBLE NOT NULL,
-            y DOUBLE NOT NULL,
-            z DOUBLE NOT NULL,
-            rot_x DOUBLE NOT NULL DEFAULT 0,
-            rot_y DOUBLE NOT NULL DEFAULT 0,
-            rot_z DOUBLE NOT NULL DEFAULT 0,
-            collision_enabled TINYINT(1) NOT NULL DEFAULT 1,
-            frozen TINYINT(1) NOT NULL DEFAULT 1,
-            created_by VARCHAR(64) NULL,
-            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            PRIMARY KEY (id),
-            KEY idx_mscore_map_objects_position (x, y)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ]])
+    local success, initError = xpcall(function()
+        MySQL.query.await([[
+            CREATE TABLE IF NOT EXISTS mscore_map_objects (
+                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+                model VARCHAR(100) NOT NULL,
+                x DOUBLE NOT NULL,
+                y DOUBLE NOT NULL,
+                z DOUBLE NOT NULL,
+                rot_x DOUBLE NOT NULL DEFAULT 0,
+                rot_y DOUBLE NOT NULL DEFAULT 0,
+                rot_z DOUBLE NOT NULL DEFAULT 0,
+                collision_enabled TINYINT(1) NOT NULL DEFAULT 1,
+                frozen TINYINT(1) NOT NULL DEFAULT 1,
+                created_by VARCHAR(64) NULL,
+                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                KEY idx_mscore_map_objects_position (x, y)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        ]])
 
-    for _, row in ipairs(MySQL.query.await('SELECT * FROM mscore_map_objects ORDER BY id') or {}) do
-        local object = rowToObject(row)
-        Objects[object.id] = object
+        for _, row in ipairs(MySQL.query.await('SELECT * FROM mscore_map_objects ORDER BY id') or {}) do
+            local object = rowToObject(row)
+            Objects[object.id] = object
+        end
+        local objectCount = #(MySQL.query.await('SELECT id FROM mscore_map_objects') or {})
+        Ready = true
+        print(('[MSCore Mapeditor] %d Objekte geladen.'):format(objectCount))
+    end, function(errorMessage)
+        if type(debug) == 'table' and type(debug.traceback) == 'function' then
+            return debug.traceback(tostring(errorMessage), 2)
+        end
+        return tostring(errorMessage)
+    end)
+    if not success then
+        InitializationError = tostring(initError)
+        print(('[MSCore Mapeditor] Datenbankinitialisierung fehlgeschlagen:\n%s'):format(
+            InitializationError
+        ))
     end
-    Ready = true
-    print(('[MSCore Mapeditor] %d Objekte geladen.'):format(#(MySQL.query.await('SELECT id FROM mscore_map_objects') or {})))
 end)
+
+local function waitUntilReady(source)
+    local deadline = GetGameTimer() + 10000
+    while not Ready and not InitializationError and GetGameTimer() < deadline do Wait(50) end
+    if Ready then return true end
+    notify(source, InitializationError
+        and 'Der Mapeditor konnte seine Datenbank nicht initialisieren.'
+        or 'Der Mapeditor ist noch nicht bereit.')
+    return false
+end
 
 RegisterNetEvent('ms_mapeditor:server:requestSync', function()
     local source = source
-    while not Ready do Wait(50) end
+    if not waitUntilReady(source) then return end
     TriggerClientEvent('ms_mapeditor:client:sync', source, Objects)
 end)
 
 RegisterNetEvent('ms_mapeditor:server:create', function(rawData)
     local source = source
     if not canMutate(source) then return end
-    if MySQL.scalar.await('SELECT COUNT(*) FROM mscore_map_objects') >= MapEditorConfig.MaxObjects then
+    if not waitUntilReady(source) then return end
+    if (tonumber(MySQL.scalar.await('SELECT COUNT(*) FROM mscore_map_objects')) or 0)
+        >= MapEditorConfig.MaxObjects then
         return notify(source, 'Das Objektlimit wurde erreicht.')
     end
     local data, err = validateData(rawData)
@@ -205,13 +236,17 @@ RegisterNetEvent('ms_mapeditor:server:update', function(id, rawData)
     local source = source
     id = tonumber(id)
     if not canMutate(source) or not id or not Objects[id] then return end
+    if not waitUntilReady(source) then return end
     local data, err = validateData(rawData)
     if not data then return notify(source, err) end
     if not isNearPlayer(source, data) then return notify(source, 'Das Objekt ist zu weit entfernt.') end
 
     pushUndo(source, { type = 'update', object = cloneObject(Objects[id]) })
     data.id = id
-    updateObject(data)
+    if not updateObject(data) then
+        table.remove(UndoStacks[source])
+        return notify(source, 'Das Objekt wurde in der Datenbank nicht gefunden.')
+    end
     TriggerClientEvent('ms_mapeditor:client:upsert', -1, data)
     notify(source, ('Objekt #%d aktualisiert.'):format(id))
 end)
@@ -221,10 +256,15 @@ RegisterNetEvent('ms_mapeditor:server:delete', function(id)
     id = tonumber(id)
     local object = id and Objects[id]
     if not canMutate(source) or not object then return end
+    if not waitUntilReady(source) then return end
     if not isNearPlayer(source, object) then return notify(source, 'Das Objekt ist zu weit entfernt.') end
 
     pushUndo(source, { type = 'delete', object = cloneObject(object) })
-    MySQL.update.await('DELETE FROM mscore_map_objects WHERE id = ?', { id })
+    local affected = MySQL.update.await('DELETE FROM mscore_map_objects WHERE id = ?', { id })
+    if tonumber(affected) ~= 1 then
+        table.remove(UndoStacks[source])
+        return notify(source, 'Das Objekt wurde in der Datenbank nicht gefunden.')
+    end
     Objects[id] = nil
     TriggerClientEvent('ms_mapeditor:client:remove', -1, id)
     notify(source, ('Objekt #%d gelöscht.'):format(id))
@@ -262,6 +302,7 @@ end, false)
 
 RegisterCommand('mapundo', function(source)
     if source == 0 or not canMutate(source) then return end
+    if not waitUntilReady(source) then return end
     local stack = UndoStacks[source]
     local action = stack and table.remove(stack)
     if not action then return notify(source, 'Keine Änderung zum Rückgängigmachen.') end

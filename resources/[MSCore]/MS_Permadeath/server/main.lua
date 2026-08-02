@@ -525,30 +525,65 @@ AddEventHandler('playerDropped', function()
 end)
 
 CreateThread(function()
-    MySQL.query.await([[
-        CREATE TABLE IF NOT EXISTS ms_permadeath_states (
-            character_id BIGINT UNSIGNED NOT NULL,
-            risk_percent TINYINT UNSIGNED NOT NULL DEFAULT 0,
-            recorded_deaths INT UNSIGNED NOT NULL DEFAULT 0,
-            last_increase TINYINT UNSIGNED NOT NULL DEFAULT 0,
-            last_cause VARCHAR(32) NULL,
-            death_active TINYINT(1) NOT NULL DEFAULT 0,
-            pending_finale TINYINT(1) NOT NULL DEFAULT 0,
-            permadead TINYINT(1) NOT NULL DEFAULT 0,
-            last_death_at TIMESTAMP NULL DEFAULT NULL,
-            permadeath_at TIMESTAMP NULL DEFAULT NULL,
-            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            PRIMARY KEY (character_id),
-            KEY idx_ms_permadeath_pending (pending_finale, permadead),
-            CONSTRAINT fk_ms_permadeath_character
-                FOREIGN KEY (character_id) REFERENCES mscore_characters (id) ON DELETE CASCADE
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ]])
-    DatabaseReady = true
+    local success, initError = xpcall(function()
+        MySQL.query.await([[
+            CREATE TABLE IF NOT EXISTS ms_permadeath_states (
+                character_id BIGINT UNSIGNED NOT NULL,
+                risk_percent TINYINT UNSIGNED NOT NULL DEFAULT 0,
+                recorded_deaths INT UNSIGNED NOT NULL DEFAULT 0,
+                last_increase TINYINT UNSIGNED NOT NULL DEFAULT 0,
+                last_cause VARCHAR(32) NULL,
+                death_active TINYINT(1) NOT NULL DEFAULT 0,
+                pending_finale TINYINT(1) NOT NULL DEFAULT 0,
+                permadead TINYINT(1) NOT NULL DEFAULT 0,
+                last_death_at TIMESTAMP NULL DEFAULT NULL,
+                permadeath_at TIMESTAMP NULL DEFAULT NULL,
+                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (character_id),
+                KEY idx_ms_permadeath_pending (pending_finale, permadead),
+                CONSTRAINT fk_ms_permadeath_character
+                    FOREIGN KEY (character_id) REFERENCES mscore_characters (id) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        ]])
+        DatabaseReady = true
 
-    for playerSource, player in pairs(exports.MSCore:GetPlayers()) do
-        loadCharacterState(tonumber(playerSource), player)
+        local players = exports.MSCore:GetPlayers()
+        local activeCharacters = {}
+        for playerSource, player in pairs(players) do
+            local characterId = tonumber(player.characterId)
+            if characterId then activeCharacters[characterId] = tonumber(playerSource) end
+        end
+
+        local unfinished = MySQL.query.await([[
+            SELECT state.character_id
+            FROM ms_permadeath_states AS state
+            INNER JOIN mscore_characters AS character_row
+                ON character_row.id = state.character_id
+            WHERE state.pending_finale = 1
+               OR (state.permadead = 1 AND character_row.is_deleted = 0)
+        ]]) or {}
+        for _, row in ipairs(unfinished) do
+            local characterId = tonumber(row.character_id)
+            if characterId and not activeCharacters[characterId] then
+                finishPermanentDeath(nil, characterId, 'startup_recovery')
+            end
+        end
+
+        for playerSource, player in pairs(players) do
+            loadCharacterState(tonumber(playerSource), player)
+        end
+        print('[MS_Permadeath] Datenbank und Todeswahrscheinlichkeit bereit.')
+    end, function(errorMessage)
+        if type(debug) == 'table' and type(debug.traceback) == 'function' then
+            return debug.traceback(tostring(errorMessage), 2)
+        end
+        return tostring(errorMessage)
+    end)
+    if not success then
+        DatabaseReady = false
+        print(('[MS_Permadeath] Datenbankinitialisierung fehlgeschlagen:\n%s'):format(
+            tostring(initError)
+        ))
     end
-    print('[MS_Permadeath] Datenbank und Todeswahrscheinlichkeit bereit.')
 end)

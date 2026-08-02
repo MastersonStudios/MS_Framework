@@ -3,6 +3,7 @@ local ActiveJails = {}
 local LastReturns = {}
 local LastPersists = {}
 local DatabaseReady = false
+local DatabaseInitializationError
 
 local function debugLog(message, ...)
     if Config.Debug ~= true then return end
@@ -132,25 +133,34 @@ local function createTable()
     ]])
 end
 
-local function columnExists(columnName)
-    return (tonumber(MySQL.scalar.await([[
-        SELECT COUNT(*)
+local function columnDefinition(columnName)
+    return MySQL.single.await([[
+        SELECT COLUMN_TYPE AS column_type,
+               IS_NULLABLE AS is_nullable,
+               COLUMN_DEFAULT AS column_default
         FROM information_schema.COLUMNS
         WHERE TABLE_SCHEMA = DATABASE()
           AND TABLE_NAME = 'ms_jail_sentences'
           AND COLUMN_NAME = ?
-    ]], { columnName })) or 0) > 0
+        LIMIT 1
+    ]], { columnName })
+end
+
+local function normalizedDefault(definition)
+    local value = definition and definition.column_default
+    if value == nil then return nil end
+    return tostring(value):lower():gsub('%(%s*%)', '')
 end
 
 local function migrateTable()
     createTable()
-    if not columnExists('remaining_seconds') then
+    if not columnDefinition('remaining_seconds') then
         MySQL.query.await([[
             ALTER TABLE ms_jail_sentences
             ADD COLUMN remaining_seconds INT UNSIGNED NULL AFTER release_at
         ]])
     end
-    if not columnExists('last_update_at') then
+    if not columnDefinition('last_update_at') then
         MySQL.query.await([[
             ALTER TABLE ms_jail_sentences
             ADD COLUMN last_update_at TIMESTAMP NULL DEFAULT NULL AFTER remaining_seconds
@@ -170,12 +180,40 @@ local function migrateTable()
         SET last_update_at = CURRENT_TIMESTAMP
         WHERE last_update_at IS NULL
     ]])
-    MySQL.query.await([[
-        ALTER TABLE ms_jail_sentences
-            MODIFY release_at TIMESTAMP NULL,
-            MODIFY remaining_seconds INT UNSIGNED NOT NULL DEFAULT 0,
-            MODIFY last_update_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-    ]])
+
+    local releaseAt = columnDefinition('release_at')
+    local remaining = columnDefinition('remaining_seconds')
+    local lastUpdate = columnDefinition('last_update_at')
+    local modifications = {}
+
+    if not releaseAt
+        or tostring(releaseAt.column_type or ''):lower():find('timestamp', 1, true) == nil
+        or tostring(releaseAt.is_nullable or ''):upper() ~= 'YES' then
+        modifications[#modifications + 1] = 'MODIFY release_at TIMESTAMP NULL'
+    end
+
+    local remainingType = tostring(remaining and remaining.column_type or ''):lower()
+    if not remaining
+        or remainingType:find('int', 1, true) == nil
+        or remainingType:find('unsigned', 1, true) == nil
+        or tostring(remaining.is_nullable or ''):upper() ~= 'NO'
+        or normalizedDefault(remaining) ~= '0' then
+        modifications[#modifications + 1] = 'MODIFY remaining_seconds INT UNSIGNED NOT NULL DEFAULT 0'
+    end
+
+    local lastUpdateType = tostring(lastUpdate and lastUpdate.column_type or ''):lower()
+    local lastUpdateDefault = normalizedDefault(lastUpdate)
+    if not lastUpdate
+        or lastUpdateType:find('timestamp', 1, true) == nil
+        or tostring(lastUpdate.is_nullable or ''):upper() ~= 'NO'
+        or (lastUpdateDefault ~= 'current_timestamp' and lastUpdateDefault ~= 'current_timestamp()') then
+        modifications[#modifications + 1] =
+            'MODIFY last_update_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP'
+    end
+
+    if #modifications > 0 then
+        MySQL.query.await('ALTER TABLE ms_jail_sentences ' .. table.concat(modifications, ', '))
+    end
 end
 
 local function deleteSentence(characterId)
@@ -486,12 +524,26 @@ AddEventHandler('playerDropped', function()
 end)
 
 MySQL.ready(function()
-    migrateTable()
-    DatabaseReady = true
-    for playerSource, player in pairs(exports.MSCore:GetPlayers() or {}) do
-        loadSentence(tonumber(playerSource), player)
+    local success, initError = xpcall(function()
+        migrateTable()
+        DatabaseReady = true
+        for playerSource, player in pairs(exports.MSCore:GetPlayers() or {}) do
+            loadSentence(tonumber(playerSource), player)
+        end
+        print('[MS_Jail] Datenbank und persistente Haftverwaltung bereit.')
+    end, function(errorMessage)
+        if type(debug) == 'table' and type(debug.traceback) == 'function' then
+            return debug.traceback(tostring(errorMessage), 2)
+        end
+        return tostring(errorMessage)
+    end)
+    if not success then
+        DatabaseReady = false
+        DatabaseInitializationError = tostring(initError)
+        print(('[MS_Jail] Datenbankinitialisierung fehlgeschlagen:\n%s'):format(
+            DatabaseInitializationError
+        ))
     end
-    print('[MS_Jail] Datenbank und persistente Haftverwaltung bereit.')
 end)
 
 CreateThread(function()

@@ -4,6 +4,7 @@ local Doors = {}
 local InventoryLocks = {}
 local LastActions = {}
 local Ready = false
+local InitializationError
 
 local function notify(source, message)
     if source == 0 then
@@ -270,46 +271,67 @@ local function createTables()
 end
 
 MySQL.ready(function()
-    createTables()
-    for _, row in ipairs(MySQL.query.await('SELECT * FROM mscore_world_npcs ORDER BY id') or {}) do
-        local npc = rowToNpc(row)
-        Npcs[npc.id] = npc
+    local success, initError = xpcall(function()
+        createTables()
+        for _, row in ipairs(MySQL.query.await('SELECT * FROM mscore_world_npcs ORDER BY id') or {}) do
+            local npc = rowToNpc(row)
+            Npcs[npc.id] = npc
+        end
+        for _, row in ipairs(MySQL.query.await('SELECT * FROM mscore_storages ORDER BY id') or {}) do
+            local storage = rowToStorage(row)
+            Storages[storage.id] = storage
+        end
+        for _, row in ipairs(MySQL.query.await('SELECT * FROM mscore_doors ORDER BY id') or {}) do
+            local door = rowToDoor(row)
+            Doors[door.id] = door
+        end
+        Ready = true
+        print(('[MSCore World Builder] %d NPCs, %d Lager und %d Türen geladen.'):format(
+            mapCount(Npcs), mapCount(Storages), mapCount(Doors)
+        ))
+    end, function(errorMessage)
+        if type(debug) == 'table' and type(debug.traceback) == 'function' then
+            return debug.traceback(tostring(errorMessage), 2)
+        end
+        return tostring(errorMessage)
+    end)
+    if not success then
+        InitializationError = tostring(initError)
+        print(('[MSCore World Builder] Datenbankinitialisierung fehlgeschlagen:\n%s'):format(
+            InitializationError
+        ))
     end
-    for _, row in ipairs(MySQL.query.await('SELECT * FROM mscore_storages ORDER BY id') or {}) do
-        local storage = rowToStorage(row)
-        Storages[storage.id] = storage
-    end
-    for _, row in ipairs(MySQL.query.await('SELECT * FROM mscore_doors ORDER BY id') or {}) do
-        local door = rowToDoor(row)
-        Doors[door.id] = door
-    end
-    Ready = true
-    print(('[MSCore World Builder] %d NPCs, %d Lager und %d Türen geladen.'):format(
-        mapCount(Npcs), mapCount(Storages), mapCount(Doors)
-    ))
 end)
 
-local function waitUntilReady()
-    while not Ready do Wait(50) end
+local function waitUntilReady(source)
+    local deadline = GetGameTimer() + 10000
+    while not Ready and not InitializationError and GetGameTimer() < deadline do Wait(50) end
+    if Ready then return true end
+    if source then
+        notify(source, InitializationError
+            and 'Der World Builder konnte seine Datenbank nicht initialisieren.'
+            or 'Der World Builder ist noch nicht bereit.')
+    end
+    return false
 end
 
 exports('GetAcpData', function(source)
     source = tonumber(source)
     if not source or not isBuilder(source) then return nil end
-    waitUntilReady()
+    if not waitUntilReady(source) then return nil end
     return acpPayload()
 end)
 
 RegisterNetEvent('ms_worldbuilder:server:requestSync', function()
     local source = source
-    waitUntilReady()
+    if not waitUntilReady(source) then return end
     TriggerClientEvent('ms_worldbuilder:client:sync', source, definitions())
 end)
 
 RegisterNetEvent('ms_worldbuilder:server:openBuilder', function()
     local source = source
     if not isBuilder(source) then return notify(source, 'Keine Berechtigung für den World Builder.') end
-    waitUntilReady()
+    if not waitUntilReady(source) then return end
     TriggerClientEvent('ms_worldbuilder:client:openBuilder', source, builderPayload())
 end)
 
@@ -317,7 +339,7 @@ RegisterNetEvent('ms_worldbuilder:server:create', function(kind, data)
     local source = source
     if not isBuilder(source) or type(kind) ~= 'string' or type(data) ~= 'table' then return end
     if onCooldown(source, 'create', 500) then return end
-    waitUntilReady()
+    if not waitUntilReady(source) then return end
 
     local label = cleanText(data.label, 64)
     local x, y, z = coordinates(data)
@@ -344,14 +366,15 @@ RegisterNetEvent('ms_worldbuilder:server:create', function(kind, data)
             x = x, y = y, z = z,
             heading = normalizeHeading(data.heading)
         }
-        npc.id = MySQL.insert.await([[
+        npc.id = tonumber(MySQL.insert.await([[
             INSERT INTO mscore_world_npcs
                 (label, model, scenario, x, y, z, heading, created_by)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ]], {
             npc.label, npc.model, npc.scenario ~= '' and npc.scenario or nil,
             npc.x, npc.y, npc.z, npc.heading, getLicense(source)
-        })
+        }))
+        if not npc.id then return result(source, false, 'Der NPC konnte nicht gespeichert werden.') end
         Npcs[npc.id] = npc
         syncAll()
         audit(source, 'NPC erstellt', ('#%d %s (%s)'):format(npc.id, npc.label, npc.model))
@@ -382,14 +405,15 @@ RegisterNetEvent('ms_worldbuilder:server:create', function(kind, data)
             heading = normalizeHeading(data.heading),
             radius = radius
         }
-        storage.id = MySQL.insert.await([[
+        storage.id = tonumber(MySQL.insert.await([[
             INSERT INTO mscore_storages
                 (label, storage_type, capacity, access_job, x, y, z, heading, interact_radius, created_by)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ]], {
             storage.label, storage.type, storage.capacity, storage.accessJob,
             storage.x, storage.y, storage.z, storage.heading, storage.radius, getLicense(source)
-        })
+        }))
+        if not storage.id then return result(source, false, 'Das Lager konnte nicht gespeichert werden.') end
         Storages[storage.id] = storage
         syncAll()
         audit(source, 'Lager erstellt', ('#%d %s (%s)'):format(storage.id, storage.label, storage.type))
@@ -419,14 +443,15 @@ RegisterNetEvent('ms_worldbuilder:server:create', function(kind, data)
             accessJob = accessJob,
             radius = radius
         }
-        door.id = MySQL.insert.await([[
+        door.id = tonumber(MySQL.insert.await([[
             INSERT INTO mscore_doors
                 (label, model_hash, x, y, z, heading, locked, access_job, interact_radius, created_by)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ]], {
             door.label, door.modelHash, door.x, door.y, door.z, door.heading,
             door.locked and 1 or 0, door.accessJob, door.radius, getLicense(source)
-        })
+        }))
+        if not door.id then return result(source, false, 'Die Tür konnte nicht gespeichert werden.') end
         Doors[door.id] = door
         syncAll()
         audit(source, 'Tür erstellt', ('#%d %s (%s)'):format(door.id, door.label, door.modelHash))
@@ -440,6 +465,7 @@ RegisterNetEvent('ms_worldbuilder:server:delete', function(kind, id)
     local source = source
     if not isBuilder(source) then return end
     if onCooldown(source, 'delete', 500) then return end
+    if not waitUntilReady(source) then return end
     id = tonumber(id)
     local definitionsByKind = {
         npc = { items = Npcs, tableName = 'mscore_world_npcs' },
@@ -450,7 +476,13 @@ RegisterNetEvent('ms_worldbuilder:server:delete', function(kind, id)
     if not id or not definition or not definition.items[id] then
         return result(source, false, 'Eintrag nicht gefunden.')
     end
-    MySQL.update.await(('DELETE FROM %s WHERE id = ?'):format(definition.tableName), { id })
+    local affected = MySQL.update.await(
+        ('DELETE FROM %s WHERE id = ?'):format(definition.tableName),
+        { id }
+    )
+    if tonumber(affected) ~= 1 then
+        return result(source, false, 'Der Eintrag wurde in der Datenbank nicht gefunden.')
+    end
     definition.items[id] = nil
     syncAll()
     audit(source, 'Eintrag gelöscht', ('%s #%d'):format(kind, id))
@@ -477,15 +509,32 @@ local function loadInventory(storageId, ownerKey)
         )
         return {}
     end
-    local inventory = json.decode(encoded)
+    local success, inventory = pcall(json.decode, encoded)
+    if not success then
+        error(('Storage-Inventar %d/%s enthält ungültiges JSON.'):format(storageId, ownerKey))
+    end
     return type(inventory) == 'table' and inventory or {}
 end
 
-local function saveInventory(storageId, ownerKey, inventory)
-    MySQL.update.await(
-        'UPDATE mscore_storage_inventories SET items = ? WHERE storage_id = ? AND owner_key = ?',
-        { json.encode(inventory), storageId, ownerKey }
-    )
+local function persistStorageTransfer(storageId, ownerKey, inventory, player)
+    return MySQL.transaction.await({
+        {
+            query = [[
+                INSERT INTO mscore_storage_inventories (storage_id, owner_key, items)
+                VALUES (?, ?, ?)
+                ON DUPLICATE KEY UPDATE items = VALUES(items)
+            ]],
+            values = { storageId, ownerKey, json.encode(inventory) }
+        },
+        {
+            query = [[
+                UPDATE mscore_characters
+                SET metadata = ?
+                WHERE id = ? AND is_deleted = 0
+            ]],
+            values = { player:getMetadataJson(), player.characterId }
+        }
+    })
 end
 
 local function catalogMap()
@@ -525,6 +574,7 @@ local function storageView(source, storage, player, ownerKey, inventory)
 end
 
 local function openStorage(source, storageId)
+    if not waitUntilReady(source) then return end
     local storage = Storages[tonumber(storageId)]
     local player = exports.MSCore:GetPlayer(source)
     if not storage or not player then return end
@@ -535,7 +585,16 @@ local function openStorage(source, storageId)
         return notify(source, 'Du hast keinen Zugriff auf dieses Lager.')
     end
     local ownerKey = storageOwner(storage, player)
-    storageView(source, storage, player, ownerKey, loadInventory(storage.id, ownerKey))
+    local loaded, inventory = pcall(loadInventory, storage.id, ownerKey)
+    if not loaded then
+        print(('[MSCore World Builder] Storage %d/%s konnte nicht geladen werden: %s'):format(
+            storage.id,
+            ownerKey,
+            tostring(inventory)
+        ))
+        return notify(source, 'Dieses Lager konnte nicht geladen werden.')
+    end
+    storageView(source, storage, player, ownerKey, inventory)
 end
 
 RegisterNetEvent('ms_worldbuilder:server:openStorage', function(storageId)
@@ -546,6 +605,7 @@ end)
 RegisterNetEvent('ms_worldbuilder:server:transfer', function(storageId, direction, itemName, rawAmount)
     local source = source
     if onCooldown(source, 'transfer', 200) then return end
+    if not waitUntilReady(source) then return end
     local storage = Storages[tonumber(storageId)]
     local player = exports.MSCore:GetPlayer(source)
     local amount = tonumber(rawAmount)
@@ -568,34 +628,102 @@ RegisterNetEvent('ms_worldbuilder:server:transfer', function(storageId, directio
     if InventoryLocks[lockKey] then return notify(source, 'Dieses Lager wird gerade verwendet.') end
     InventoryLocks[lockKey] = true
 
-    local inventory = loadInventory(storage.id, ownerKey)
+    local inventoryLock = player:acquireInventoryLock()
+    if not inventoryLock then
+        InventoryLocks[lockKey] = nil
+        return notify(source, 'Dein Inventar verarbeitet gerade einen anderen Auftrag.')
+    end
+
+    local inventory = {}
+    local originalInventory = {}
+    local mutationDirection
+    local transactionCommitted = false
     local success, message
-    if direction == 'deposit' then
-        if inventoryTotal(inventory) + amount > storage.capacity then
-            message = 'Das Lager hat nicht genügend freie Kapazität.'
-        elseif player:removeItem(itemName, amount, 'storage_deposit') then
-            inventory[itemName] = (tonumber(inventory[itemName]) or 0) + amount
-            saveInventory(storage.id, ownerKey, inventory)
-            player:save()
-            success, message = true, ('%dx %s eingelagert.'):format(amount, catalog[itemName].label)
-        else
-            message = 'Du besitzt nicht genügend Items.'
+    local operationOk, operationError = xpcall(function()
+        inventory = loadInventory(storage.id, ownerKey)
+        for name, storedAmount in pairs(inventory) do
+            originalInventory[name] = storedAmount
         end
-    else
+        if direction == 'deposit' then
+            if inventoryTotal(inventory) + amount > storage.capacity then
+                message = 'Das Lager hat nicht genügend freie Kapazität.'
+                return
+            end
+            if not player:removeItem(itemName, amount, 'storage_deposit', inventoryLock) then
+                message = 'Du besitzt nicht genügend Items.'
+                return
+            end
+            mutationDirection = 'deposit'
+
+            inventory[itemName] = (tonumber(inventory[itemName]) or 0) + amount
+            if not persistStorageTransfer(storage.id, ownerKey, inventory, player) then
+                inventory[itemName] = math.max(0, (tonumber(inventory[itemName]) or 0) - amount)
+                if inventory[itemName] == 0 then inventory[itemName] = nil end
+                player:addItem(itemName, amount, 'storage_deposit_rollback', inventoryLock)
+                mutationDirection = nil
+                message = 'Die Einlagerung konnte nicht gespeichert werden.'
+                return
+            end
+            transactionCommitted = true
+            success, message = true, ('%dx %s eingelagert.'):format(amount, catalog[itemName].label)
+            return
+        end
+
         local stored = tonumber(inventory[itemName]) or 0
         if stored < amount then
             message = 'Im Lager sind nicht genügend Items.'
-        elseif player:addItem(itemName, amount, 'storage_withdraw') then
-            local remaining = stored - amount
-            inventory[itemName] = remaining > 0 and remaining or nil
-            saveInventory(storage.id, ownerKey, inventory)
-            player:save()
-            success, message = true, ('%dx %s entnommen.'):format(amount, catalog[itemName].label)
-        else
-            message = 'Dein Inventar kann diese Menge nicht aufnehmen.'
+            return
         end
+        if not player:addItem(itemName, amount, 'storage_withdraw', inventoryLock) then
+            message = 'Dein Inventar kann diese Menge nicht aufnehmen.'
+            return
+        end
+        mutationDirection = 'withdraw'
+
+        local remaining = stored - amount
+        inventory[itemName] = remaining > 0 and remaining or nil
+        if not persistStorageTransfer(storage.id, ownerKey, inventory, player) then
+            inventory[itemName] = stored
+            player:removeItem(itemName, amount, 'storage_withdraw_rollback', inventoryLock)
+            mutationDirection = nil
+            message = 'Die Entnahme konnte nicht gespeichert werden.'
+            return
+        end
+        transactionCommitted = true
+        success, message = true, ('%dx %s entnommen.'):format(amount, catalog[itemName].label)
+    end, function(errorMessage)
+        if type(debug) == 'table' and type(debug.traceback) == 'function' then
+            return debug.traceback(tostring(errorMessage), 2)
+        end
+        return tostring(errorMessage)
+    end)
+
+    if not operationOk and not transactionCommitted then
+        if mutationDirection == 'deposit' then
+            player:addItem(itemName, amount, 'storage_deposit_rollback', inventoryLock)
+        elseif mutationDirection == 'withdraw' then
+            player:removeItem(itemName, amount, 'storage_withdraw_rollback', inventoryLock)
+        end
+        inventory = originalInventory
     end
+
+    local releaseCallOk, releaseResult = pcall(function()
+        return player:releaseInventoryLock(inventoryLock)
+    end)
     InventoryLocks[lockKey] = nil
+
+    if not operationOk then
+        print(('[MSCore World Builder] Storage-Transfer für Spieler %d fehlgeschlagen:\n%s'):format(
+            source,
+            tostring(operationError)
+        ))
+        success, message = false, 'Der Lagertransfer konnte nicht verarbeitet werden.'
+    elseif not releaseCallOk or releaseResult ~= true then
+        print(('[MSCore World Builder] Inventarsperre für Spieler %d konnte nicht freigegeben werden: %s'):format(
+            source,
+            tostring(releaseResult)
+        ))
+    end
 
     TriggerClientEvent('ms_worldbuilder:client:result', source, {
         success = success == true,
@@ -606,6 +734,7 @@ end)
 
 local function toggleDoor(source, doorId, requireNearby)
     if onCooldown(source, 'door', 500) then return end
+    if not waitUntilReady(source) then return end
     local door = Doors[tonumber(doorId)]
     local player = exports.MSCore:GetPlayer(source)
     if not door or not player then return end
@@ -615,8 +744,15 @@ local function toggleDoor(source, doorId, requireNearby)
     if not canAccess(player, door.accessJob, source) then
         return notify(source, 'Du hast keinen Schlüssel für diese Tür.')
     end
-    door.locked = not door.locked
-    MySQL.update.await('UPDATE mscore_doors SET locked = ? WHERE id = ?', { door.locked and 1 or 0, door.id })
+    local nextLocked = not door.locked
+    local affected = MySQL.update.await(
+        'UPDATE mscore_doors SET locked = ? WHERE id = ?',
+        { nextLocked and 1 or 0, door.id }
+    )
+    if tonumber(affected) ~= 1 then
+        return notify(source, 'Die Tür konnte nicht gespeichert werden.')
+    end
+    door.locked = nextLocked
     TriggerClientEvent('ms_worldbuilder:client:updateDoor', -1, door)
     notify(source, door.locked and 'Tür abgeschlossen.' or 'Tür aufgeschlossen.')
     if isBuilder(source) then
@@ -637,7 +773,7 @@ end)
 
 AddEventHandler('mscore:server:playerLoaded', function(source)
     SetTimeout(1200, function()
-        if GetPlayerName(source) then
+        if Ready and GetPlayerName(source) then
             TriggerClientEvent('ms_worldbuilder:client:sync', source, definitions())
         end
     end)
