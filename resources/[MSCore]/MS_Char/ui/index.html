@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>MS_Char</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <main id="app" aria-hidden="true">
+        <div class="grain"></div>
+        <section class="interface">
+            <header class="masthead">
+                <div>
+                    <p class="eyebrow">MASTERSON STUDIOS</p>
+                    <h1 id="title">CHARAKTERE</h1>
+                    <p id="subtitle" class="subtitle">Wähle dein nächstes Kapitel</p>
+                </div>
+                <div class="slot-stamp">
+                    <span id="slotsLabel">Charakterplätze</span>
+                    <strong id="slotCount">0 / 1</strong>
+                </div>
+            </header>
+
+            <section id="selectionView" class="view">
+                <div id="characterList" class="character-list"></div>
+                <p id="emptyState" class="empty-state">Noch kein Charakter vorhanden.</p>
+
+                <article id="characterDetails" class="details hidden">
+                    <p id="detailJob" class="detail-kicker"></p>
+                    <h2 id="detailName"></h2>
+                    <dl>
+                        <div><dt>Geboren</dt><dd id="detailBirth"></dd></div>
+                        <div><dt id="moneyLabel">Dollar</dt><dd id="detailMoney"></dd></div>
+                    </dl>
+                    <p id="detailDescription" class="description"></p>
+                </article>
+
+                <div class="actions">
+                    <button id="createButton" class="button secondary" type="button">Neuer Charakter</button>
+                    <button id="deleteButton" class="button danger" type="button">Löschen</button>
+                    <button id="playButton" class="button primary" type="button">Spielen</button>
+                </div>
+            </section>
+
+            <section id="creatorView" class="view hidden">
+                <form id="creatorForm" autocomplete="off">
+                    <div class="form-grid">
+                        <label>
+                            <span id="firstnameLabel">Vorname</span>
+                            <input id="firstname" name="firstname" type="text" minlength="2" maxlength="32" required>
+                        </label>
+                        <label>
+                            <span id="lastnameLabel">Nachname</span>
+                            <input id="lastname" name="lastname" type="text" minlength="2" maxlength="32" required>
+                        </label>
+                        <label class="full-width">
+                            <span id="birthLabel">Geburtsdatum</span>
+                            <input id="dateOfBirth" name="dateOfBirth" type="date" required>
+                        </label>
+                    </div>
+
+                    <fieldset>
+                        <legend id="sexLabel">Geschlecht</legend>
+                        <div class="segmented">
+                            <button id="maleButton" class="segment active" type="button" data-sex="male">Männlich</button>
+                            <button id="femaleButton" class="segment" type="button" data-sex="female">Weiblich</button>
+                        </div>
+                    </fieldset>
+
+                    <label class="outfit-field">
+                        <span id="outfitLabel">Startbekleidung</span>
+                        <select id="outfitPreset" name="outfitPreset"></select>
+                    </label>
+
+                    <div class="rotate-controls">
+                        <button id="rotateLeft" class="icon-button" type="button" aria-label="Nach links drehen">↶</button>
+                        <span>VORSCHAU DREHEN</span>
+                        <button id="rotateRight" class="icon-button" type="button" aria-label="Nach rechts drehen">↷</button>
+                    </div>
+
+                    <label class="description-field">
+                        <span id="descriptionLabel">Kurzbeschreibung</span>
+                        <textarea id="description" name="description" maxlength="240" rows="3"></textarea>
+                    </label>
+
+                    <div class="actions">
+                        <button id="backButton" class="button secondary" type="button">Zurück</button>
+                        <button id="saveButton" class="button primary" type="submit">Charakter erstellen</button>
+                    </div>
+                </form>
+            </section>
+
+            <p id="status" class="status" role="status" aria-live="polite"></p>
+        </section>
+    </main>
+    <script src="app.js"></script>
+</body>
+</html>
