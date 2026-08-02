@@ -9,6 +9,7 @@ description: Vollständiges MSCore Roleplay-Framework für RedM mit automatische
 
 variables:
   mysqlSlowQueryWarning: 500
+  txAdminMenuPtfxDisable: true
 
 tasks:
   # Framework zuerst laden, damit vor Datenbankänderungen alle Installationsdateien vorliegen.
@@ -17,6 +18,13 @@ tasks:
     ref: main
     dest: ./tmp/mscore
     timeoutSeconds: 300
+
+  # Die fertige Grundkonfiguration früh bereitstellen, wie bei bewährten
+  # RedM-Recipes. txAdmin ersetzt nach dem letzten Task automatisch alle {{...}}-Werte.
+  - action: move_path
+    src: ./tmp/mscore/server.cfg.txadmin
+    dest: ./server.cfg
+    overwrite: true
 
   # Datenbankverbindung prüfen, bei Bedarf eine Datenbank anlegen und das Schema importieren.
   - action: connect_database
@@ -57,6 +65,11 @@ tasks:
     dest: ./resources/[MSCore]
     overwrite: true
 
+  # Legacy-Guarma-Code darf bei Neuinstallationen weder vorhanden sein noch
+  # versehentlich durch einen Gruppen-Ensure gestartet werden.
+  - action: remove_path
+    path: ./resources/[MSCore]/MS_GuarmaLoader
+
   - action: ensure_dir
     path: ./MSCore
 
@@ -88,11 +101,6 @@ tasks:
   - action: copy_path
     src: ./tmp/mscore/version.json
     dest: ./MSCore/version.json
-    overwrite: true
-
-  - action: move_path
-    src: ./tmp/mscore/server.cfg.txadmin
-    dest: ./server.cfg
     overwrite: true
 
   - action: remove_path

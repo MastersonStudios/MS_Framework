@@ -6,6 +6,9 @@ sets sv_projectName "MSCore RedM"
 sets sv_projectDesc "MSCore Roleplay Framework by Masterson Studios"
 sets tags "redm, roleplay, mscore"
 sets locale "de-DE"
+sets Framework "MSCore"
+sets FrameworkVersion "0.0.2"
+sets Repository "https://github.com/MastersonStudios/MS_Framework"
 set gamename rdr3
 set sv_enforceGameBuild 1491
 set onesync on
@@ -14,6 +17,7 @@ set resources_useSystemChat true
 set chat_showJoins false
 set chat_showQuits false
 set steam_webApiKey "none"
+set txAdmin-menuPtfxDisable true
 sv_maxclients 64
 sv_licenseKey "CHANGE_ME"
 

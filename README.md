@@ -73,10 +73,29 @@ https://raw.githubusercontent.com/MastersonStudios/MS_Framework/main/recipe.yaml
 
 Das Recipe installiert die offiziellen RedM-Basisresources isoliert unter
 `resources/[cfx-default]`, die gepinnte `oxmysql`-Release `2.14.1`, sämtliche
-MSCore-Resources, die [txAdmin-Serverkonfiguration](server.cfg.txadmin) und das
-vollständige Datenbankschema. Größere Downloads besitzen feste Zeitlimits.
+aktiven MSCore-Resources, die
+[txAdmin-Serverkonfiguration](server.cfg.txadmin) und das vollständige
+Datenbankschema. Größere Downloads besitzen feste Zeitlimits.
 Die Platzhalter für Endpoints, Slots, Lizenz, Datenbank und den ersten
 Master-Admin werden ausschließlich durch txAdmin ausgefüllt.
+
+Der Deployment-Aufbau wurde mit der
+[Rexshack-RedM-Recipe](https://github.com/Rexshack-RedM/txAdminRecipe)
+abgeglichen. MSCore übernimmt daraus die frühe Bereitstellung der
+`server.cfg`, die Trennung von CFX-, Standalone- und Framework-Resources, den
+automatischen Datenbankimport und das Aufräumen des temporären Downloads.
+RSG-spezifische Ressourcen, `ox_lib`, `ox_target`, Mapmods und Voice-Skripte
+werden nicht installiert, weil MSCore diese Abhängigkeiten nicht verwendet.
+Anders als die aus vielen Einzel-Repositories zusammengesetzte Rexshack-
+Installation wird MSCore einmalig als zusammenpassender Stand geladen; das
+reduziert GitHub-Anfragen und verhindert gemischte Resource-Versionen.
+
+Die alte Resource `MS_GuarmaLoader` wird bei einer txAdmin-Neuinstallation
+explizit entfernt. Neue Charaktere verwenden damit ausschließlich den in
+MSCore konfigurierten Spawn am Bahnhof von Valentine. Die Serverliste weist
+Framework, Version und Repository aus; der txAdmin-Noclip-Partikeleffekt ist
+standardmäßig deaktiviert und kann über `txAdminMenuPtfxDisable` in
+`recipe.yaml` umgestellt werden.
 
 In der erzeugten `server.cfg` werden SQL-Abfragen ab `500` Millisekunden als
 langsam protokolliert. Der Grenzwert stammt aus `mysqlSlowQueryWarning` in
