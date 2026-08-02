@@ -1,0 +1,17 @@
+# MSCore example configuration
+# Copy this file to server.cfg and replace the database credentials.
+
+sv_licenseKey "replace-with-your-cfx-license-key"
+sv_hostname "MSCore RedM Server"
+set gamename rdr3
+set onesync on
+sv_maxclients 64
+
+set mysql_connection_string "mysql://mscore:CHANGE_ME@127.0.0.1/mscore?charset=utf8mb4"
+
+ensure oxmysql
+ensure MSCore
+
+# Grant this ACE through txAdmin or another principal assignment.
+add_ace group.admin mscore.admin allow
+# add_principal identifier.license:replace-me group.admin
