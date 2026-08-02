@@ -11,7 +11,26 @@ Die Architektur orientiert sich an bewährten Core-Grenzen aus dem RedM-Ökosyst
 - MariaDB 10.4+ oder MySQL 8
 - [oxmysql](https://github.com/overextended/oxmysql)
 
-## Installation
+## Installation über txAdmin
+
+MSCore kann als Remote-URL-Template installiert werden. Verwende im txAdmin Recipe Deployer diese URL:
+
+```text
+https://raw.githubusercontent.com/MastersonStudios/MS_Framework/main/mscore_recipe.yaml
+```
+
+Das Recipe führt folgende Schritte aus:
+
+1. lädt die offiziellen `citizenfx/cfx-server-data`-Resources,
+2. installiert das fest gepinnte oxmysql-Release `v2.12.3`,
+3. lädt MSCore aus diesem Repository,
+4. erzeugt die `server.cfg` aus der txAdmin-Vorlage,
+5. verbindet die in txAdmin konfigurierte Datenbank und importiert das Schema,
+6. verschiebt die MSCore-Resource nach `resources/[MSCore]` und entfernt temporäre Dateien.
+
+Wähle bei der Einrichtung eine leere Datenbank, beispielsweise `mscore`. Die Recipe-Konfiguration startet `oxmysql` immer vor `MSCore`. `sessionmanager-rdr3` wird nicht ausdrücklich gestartet; die aktuellen offiziellen Basisresources verwalten die erforderliche Sitzung selbst.
+
+## Manuelle Installation
 
 1. Kopiere `resources/[MSCore]/MSCore` in den Resources-Ordner deines Servers.
 2. Installiere `oxmysql`.
@@ -24,23 +43,28 @@ MSCore legt seine Tabellen standardmäßig automatisch an. Wenn `Config.Database
 ## Aufbau
 
 ```text
-resources/[MSCore]/MSCore/
-├── fxmanifest.lua              RedM-Metadaten und feste Ladereihenfolge
-├── config.lua                  Core-, Spawn-, Limit- und Jobkonfiguration
-├── shared/utils.lua            gemeinsame Validierung und Hilfsfunktionen
-├── server/
-│   ├── database.lua            Schema-Migration und DB-Bereitschaft
-│   ├── callbacks.lua           source-gebundene Server-/Client-RPCs
-│   ├── classes/
-│   │   ├── player.lua          Account, Slots und Charakter-Lifecycle
-│   │   └── character.lua       Charakter, Geld, Job und Metadaten
-│   ├── core.lua                Exports, Jobregister und Spielerregister
-│   ├── lifecycle.lua           Laden, Auswahl, Speichern und Trennen
-│   └── commands.lua            Spieler- und Adminbefehle
-└── client/
-    ├── callbacks.lua           Clientseite der RPC-Schicht
-    ├── main.lua                öffentliche Client-API und Status
-    └── spawn.lua               Valentine-Spawn und Bildschirm-Aufräumung
+.
+├── mscore_recipe.yaml           txAdmin Remote-URL-Recipe
+├── txadmin/server.cfg           server.cfg mit txAdmin-Platzhaltern
+├── server.cfg.example           Vorlage für manuelle Installationen
+├── database/schema.sql          manuell importierbares Datenbankschema
+└── resources/[MSCore]/MSCore/
+    ├── fxmanifest.lua           RedM-Metadaten und feste Ladereihenfolge
+    ├── config.lua               Core-, Spawn-, Limit- und Jobkonfiguration
+    ├── shared/utils.lua         gemeinsame Validierung und Hilfsfunktionen
+    ├── server/
+    │   ├── database.lua         Schema-Migration und DB-Bereitschaft
+    │   ├── callbacks.lua        source-gebundene Server-/Client-RPCs
+    │   ├── classes/
+    │   │   ├── player.lua       Account, Slots und Charakter-Lifecycle
+    │   │   └── character.lua    Charakter, Geld, Job und Metadaten
+    │   ├── core.lua             Exports, Jobregister und Spielerregister
+    │   ├── lifecycle.lua        Laden, Auswahl, Speichern und Trennen
+    │   └── commands.lua         Spieler- und Adminbefehle
+    └── client/
+        ├── callbacks.lua        Clientseite der RPC-Schicht
+        ├── main.lua             öffentliche Client-API und Status
+        └── spawn.lua            Valentine-Spawn und Bildschirm-Aufräumung
 ```
 
 Der Core enthält absichtlich keinen fest eingebauten grafischen Charakter-Creator. Ein separates Auswahl- oder Creator-Resource kann die öffentlichen Callbacks verwenden. Ohne UI lässt sich ein erster Charakter über `/mscreate` anlegen.
@@ -160,4 +184,4 @@ Netzwerkereignisse mit sensiblen Daten werden serverseitig immer an die auslöse
 
 ## Lizenz und Referenz
 
-MSCore steht unter der MIT-Lizenz. Als Architekturstudie diente unter anderem [VORPCORE/vorp_core](https://github.com/VORPCORE/vorp_core), das selbst unter GPL-2.0 veröffentlicht ist. MSCore ist keine Abspaltung und benötigt VORP nicht.
+MSCore steht unter der MIT-Lizenz. Als Architekturstudien dienten unter anderem [VORPCORE/vorp_core](https://github.com/VORPCORE/vorp_core) und der Installationsaufbau von [VORPCORE/VORP_txAdmin](https://github.com/VORPCORE/VORP_txAdmin). MSCore ist keine Abspaltung, übernimmt keinen VORP-Quellcode und benötigt VORP nicht.
